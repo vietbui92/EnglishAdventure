@@ -1,0 +1,135 @@
+{
+  "admin": {
+    "title": "Administration",
+    "nav": {
+      "dashboard": "Overview",
+      "users": "Users",
+      "roles": "Roles",
+      "content": "Content"
+    },
+    "dashboard": {
+      "description": "Welcome to the administration area."
+    },
+    "users": {
+      "title": "Users",
+      "searchLabel": "Search by email",
+      "searchPlaceholder": "Part of an email",
+      "search": "Search",
+      "clearSearch": "Clear search",
+      "total": "Total: {{count}}",
+      "loading": "Loading…",
+      "empty": "There are no users yet.",
+      "noResults": "No users match “{{search}}”.",
+      "loadError": "Could not load the users.",
+      "retry": "Try again",
+      "columns": {
+        "email": "Email",
+        "userType": "Type",
+        "roles": "Roles",
+        "status": "Status",
+        "lastLogin": "Last sign-in"
+      },
+      "pagination": {
+        "label": "Pagination",
+        "previous": "Previous page",
+        "next": "Next page",
+        "status": "Page {{page}} of {{pages}}"
+      },
+      "never": "Never signed in",
+      "noRoles": "No roles",
+      "userType": {
+        "Admin": "Administrator",
+        "Parent": "Parent",
+        "Child": "Child"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Deactivated",
+        "locked": "Temporarily locked"
+      },
+      "roles": {
+        "SuperAdmin": "Super administrator",
+        "ContentAdmin": "Content administrator",
+        "Parent": "Parent"
+      },
+      "detail": {
+        "back": "All users",
+        "userId": "User ID",
+        "createdAt": "Created",
+        "lastLogin": "Last sign-in",
+        "notFound": "This user was not found. The address may be wrong.",
+        "loadError": "Could not load this user."
+      },
+      "addUser": "Add user",
+      "create": {
+        "title": "Add user",
+        "description": "Create an administrator or parent account. Send the password to the user through a secure channel.",
+        "email": "Email",
+        "userType": "Account type",
+        "userTypeAdmin": "Administrator",
+        "userTypeAdminHint": "Choose roles after creating it.",
+        "userTypeParent": "Parent",
+        "userTypeParentHint": "Gets the Parent role automatically.",
+        "password": "Password",
+        "confirmPassword": "Repeat the password",
+        "submit": "Create user",
+        "submitting": "Creating…",
+        "cancel": "Cancel",
+        "passwordRules": {
+          "title": "The password needs:",
+          "length": "At least 12 characters",
+          "upper": "An upper-case letter",
+          "lower": "A lower-case letter",
+          "digit": "A digit",
+          "symbol": "A symbol, such as ! @ # -",
+          "met": "met",
+          "notMet": "not met"
+        },
+        "validation": {
+          "emailRequired": "Enter an email.",
+          "emailInvalid": "This email is not valid.",
+          "emailTooLong": "This email is too long.",
+          "passwordWeak": "The password does not meet the rules below yet.",
+          "passwordTooLong": "The password can have at most 128 characters.",
+          "passwordMismatch": "The passwords do not match.",
+          "serverInvalid": "This value is not valid."
+        },
+        "errors": {
+          "duplicate": "This email already has an account.",
+          "failed": "Could not create the user. Try again."
+        },
+        "createdAdmin": "User created. Choose roles to give them access.",
+        "createdParent": "User created."
+      },
+      "actions": {
+        "title": "Account status",
+        "deactivate": "Deactivate",
+        "activate": "Reactivate",
+        "activating": "Reactivating…",
+        "confirmTitle": "Deactivate {{email}}?",
+        "confirmDescription": "The user can no longer sign in and every open session ends. You can reactivate the account later.",
+        "confirm": "Deactivate",
+        "cancel": "Cancel",
+        "deactivated": "The account was deactivated.",
+        "activated": "The account was reactivated.",
+        "self": "You cannot deactivate yourself or change your own roles.",
+        "lastSuperAdmin": "Cannot deactivate: this is the last active super administrator.",
+        "failed": "That did not work. Try again."
+      },
+      "rolesEditor": {
+        "description": "The user gets their permissions from these roles.",
+        "parentOnly": "A parent account always has the Parent role.",
+        "save": "Save roles",
+        "saving": "Saving…",
+        "saved": "Roles saved.",
+        "noRolesWarning": "Without any role the user cannot use any administration feature.",
+        "lastSuperAdmin": "The last active super administrator must keep the Super administrator role.",
+        "failed": "Could not save the roles. Try again.",
+        "roleDescriptions": {
+          "SuperAdmin": "Full administration, except family data.",
+          "ContentAdmin": "Writes and publishes lesson content."
+        }
+      }
+    }
+  }
+}

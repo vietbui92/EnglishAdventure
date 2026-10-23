@@ -1,0 +1,8 @@
+{
+  "parent": {
+    "nav": {
+      "children": "My children",
+      "progress": "Progress"
+    }
+  }
+}

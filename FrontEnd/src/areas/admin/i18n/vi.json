@@ -1,0 +1,135 @@
+{
+  "admin": {
+    "title": "Quản trị",
+    "nav": {
+      "dashboard": "Tổng quan",
+      "users": "Người dùng",
+      "roles": "Vai trò",
+      "content": "Nội dung"
+    },
+    "dashboard": {
+      "description": "Chào mừng đến khu vực quản trị."
+    },
+    "users": {
+      "title": "Người dùng",
+      "searchLabel": "Tìm theo email",
+      "searchPlaceholder": "Nhập một phần email",
+      "search": "Tìm",
+      "clearSearch": "Xóa tìm kiếm",
+      "total": "Tổng: {{count}}",
+      "loading": "Đang tải…",
+      "empty": "Chưa có người dùng nào.",
+      "noResults": "Không có người dùng nào khớp với “{{search}}”.",
+      "loadError": "Không tải được danh sách người dùng.",
+      "retry": "Thử lại",
+      "columns": {
+        "email": "Email",
+        "userType": "Loại",
+        "roles": "Vai trò",
+        "status": "Trạng thái",
+        "lastLogin": "Đăng nhập gần nhất"
+      },
+      "pagination": {
+        "label": "Phân trang",
+        "previous": "Trang trước",
+        "next": "Trang sau",
+        "status": "Trang {{page}} / {{pages}}"
+      },
+      "never": "Chưa đăng nhập",
+      "noRoles": "Không có vai trò",
+      "userType": {
+        "Admin": "Quản trị",
+        "Parent": "Phụ huynh",
+        "Child": "Trẻ em"
+      },
+      "status": {
+        "active": "Đang hoạt động",
+        "inactive": "Đã vô hiệu hóa",
+        "locked": "Đang tạm khóa"
+      },
+      "roles": {
+        "SuperAdmin": "Quản trị cấp cao",
+        "ContentAdmin": "Quản trị nội dung",
+        "Parent": "Phụ huynh"
+      },
+      "detail": {
+        "back": "Danh sách người dùng",
+        "userId": "Mã người dùng",
+        "createdAt": "Ngày tạo",
+        "lastLogin": "Đăng nhập gần nhất",
+        "notFound": "Không tìm thấy người dùng này. Có thể địa chỉ bị sai.",
+        "loadError": "Không tải được thông tin người dùng."
+      },
+      "addUser": "Thêm người dùng",
+      "create": {
+        "title": "Thêm người dùng",
+        "description": "Tạo tài khoản quản trị hoặc phụ huynh. Hãy gửi mật khẩu cho người dùng qua một kênh an toàn.",
+        "email": "Email",
+        "userType": "Loại tài khoản",
+        "userTypeAdmin": "Quản trị",
+        "userTypeAdminHint": "Chọn vai trò sau khi tạo.",
+        "userTypeParent": "Phụ huynh",
+        "userTypeParentHint": "Tự động có vai trò Phụ huynh.",
+        "password": "Mật khẩu",
+        "confirmPassword": "Nhập lại mật khẩu",
+        "submit": "Tạo người dùng",
+        "submitting": "Đang tạo…",
+        "cancel": "Hủy",
+        "passwordRules": {
+          "title": "Mật khẩu cần có:",
+          "length": "Ít nhất 12 ký tự",
+          "upper": "Một chữ in hoa",
+          "lower": "Một chữ thường",
+          "digit": "Một chữ số",
+          "symbol": "Một ký hiệu, ví dụ ! @ # -",
+          "met": "đã đạt",
+          "notMet": "chưa đạt"
+        },
+        "validation": {
+          "emailRequired": "Hãy nhập email.",
+          "emailInvalid": "Email không hợp lệ.",
+          "emailTooLong": "Email quá dài.",
+          "passwordWeak": "Mật khẩu chưa đủ các yêu cầu bên dưới.",
+          "passwordTooLong": "Mật khẩu tối đa 128 ký tự.",
+          "passwordMismatch": "Hai mật khẩu không khớp.",
+          "serverInvalid": "Giá trị này chưa hợp lệ."
+        },
+        "errors": {
+          "duplicate": "Email này đã có tài khoản.",
+          "failed": "Không tạo được người dùng. Hãy thử lại."
+        },
+        "createdAdmin": "Đã tạo người dùng. Hãy chọn vai trò để cấp quyền.",
+        "createdParent": "Đã tạo người dùng."
+      },
+      "actions": {
+        "title": "Trạng thái tài khoản",
+        "deactivate": "Vô hiệu hóa",
+        "activate": "Kích hoạt lại",
+        "activating": "Đang kích hoạt…",
+        "confirmTitle": "Vô hiệu hóa {{email}}?",
+        "confirmDescription": "Người dùng sẽ không đăng nhập được và mọi phiên đang mở sẽ kết thúc. Bạn có thể kích hoạt lại sau.",
+        "confirm": "Vô hiệu hóa",
+        "cancel": "Hủy",
+        "deactivated": "Đã vô hiệu hóa tài khoản.",
+        "activated": "Đã kích hoạt lại tài khoản.",
+        "self": "Bạn không thể tự vô hiệu hóa hoặc đổi vai trò của chính mình.",
+        "lastSuperAdmin": "Không thể vô hiệu hóa: đây là Quản trị cấp cao cuối cùng còn hoạt động.",
+        "failed": "Không thực hiện được. Hãy thử lại."
+      },
+      "rolesEditor": {
+        "description": "Quyền của người dùng đến từ các vai trò này.",
+        "parentOnly": "Tài khoản phụ huynh luôn có vai trò Phụ huynh.",
+        "save": "Lưu vai trò",
+        "saving": "Đang lưu…",
+        "saved": "Đã lưu vai trò.",
+        "noRolesWarning": "Không có vai trò nào thì người dùng không dùng được chức năng quản trị nào.",
+        "lastSuperAdmin": "Không thể bỏ vai trò Quản trị cấp cao của người cuối cùng còn hoạt động.",
+        "failed": "Không lưu được vai trò. Hãy thử lại.",
+        "roleDescriptions": {
+          "SuperAdmin": "Toàn quyền quản trị, trừ dữ liệu gia đình.",
+          "ContentAdmin": "Soạn và xuất bản nội dung bài học."
+        }
+      }
+    }
+  }
+}

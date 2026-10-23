@@ -1,0 +1,92 @@
+{
+  "public": {
+    "nav": {
+      "features": "Features",
+      "howItWorks": "How it works",
+      "parents": "For parents",
+      "signIn": "Sign in",
+      "register": "Register",
+      "myArea": "Go to my area"
+    },
+    "landing": {
+      "hero": {
+        "eyebrow": "English for children",
+        "title": "Learning English is an adventure",
+        "subtitle": "Short lessons, fun games and small rewards help your child learn a little every day. You always know how far they have come.",
+        "register": "Register as a parent",
+        "signIn": "I already have an account"
+      },
+      "features": {
+        "title": "One step of the journey every day",
+        "levels": {
+          "title": "Lessons by level",
+          "description": "Lessons go from easy to harder. Finishing one unlocks the next."
+        },
+        "games": {
+          "title": "Mini-games",
+          "description": "Quizzes and matching words to pictures help vocabulary stick without getting boring."
+        },
+        "rewards": {
+          "title": "Points and badges",
+          "description": "Every finished lesson earns points and badges that keep motivation up."
+        }
+      },
+      "steps": {
+        "title": "Start in three steps",
+        "account": {
+          "title": "Create a parent account",
+          "description": "Register with your email. Children need no email."
+        },
+        "profile": {
+          "title": "Add a profile for your child",
+          "description": "Each child gets their own profile with a nickname and an avatar."
+        },
+        "learn": {
+          "title": "They learn, you follow along",
+          "description": "Your child learns through lessons and games; you see each child's progress and rewards."
+        }
+      },
+      "parents": {
+        "title": "Peace of mind for parents",
+        "privacy": "No email or personal details needed from children.",
+        "control": "Only parents manage their children's profiles and account.",
+        "progress": "See finished lessons, scores and badges.",
+        "content": "Content written by our team, never generated automatically."
+      },
+      "cta": {
+        "title": "Ready for the first adventure?",
+        "register": "Register now"
+      },
+      "footer": "© {{year}} English Adventure"
+    },
+    "register": {
+      "title": "Register a parent account",
+      "comingSoon": "Online registration opens soon. Until then, contact an administrator to get an account.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "login": {
+      "title": "Sign in",
+      "description": "For administrators and parents.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "validation": {
+        "emailRequired": "Enter your email.",
+        "emailInvalid": "This email is not valid.",
+        "emailTooLong": "This email is too long.",
+        "passwordRequired": "Enter your password.",
+        "passwordTooLong": "This password is too long.",
+        "serverInvalid": "This value is not valid."
+      },
+      "errors": {
+        "invalidCredentials": "The email or password is incorrect. After several wrong attempts the account is locked for 15 minutes.",
+        "inactive": "This account has been deactivated. Contact an administrator.",
+        "invalidInput": "The sign-in details are not valid.",
+        "unavailable": "Cannot reach the server. Try again later."
+      },
+      "expired": "Your session has expired. Please sign in again."
+    }
+  }
+}

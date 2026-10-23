@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "English Adventure"
+  },
+  "common": {
+    "comingSoon": "Coming soon",
+    "comingSoonDescription": "This screen will be built in a later step.",
+    "backHome": "Back to home",
+    "language": "Language",
+    "mainNavigation": "Main navigation",
+    "signIn": "Sign in",
+    "loading": "Loading…"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "auth": {
+    "restoring": "Checking your session…",
+    "signOut": "Sign out"
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you are looking for does not exist or has moved."
+    },
+    "forbidden": {
+      "title": "Access denied",
+      "description": "Your account cannot use this page. Contact an administrator if you need access."
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "description": "Reload the page. If the problem persists, contact an administrator."
+    }
+  }
+}

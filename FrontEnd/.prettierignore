@@ -2,4 +2,4 @@ dist
 coverage
 node_modules
 package-lock.json
-src/api/schema.d.ts
+src/shared/api/schema.d.ts

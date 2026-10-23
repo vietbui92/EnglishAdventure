@@ -11,7 +11,7 @@
 | Topic | Decision |
 |---|---|
 | Technology | React + Vite + TypeScript, single-page app in `FrontEnd/`. |
-| App layout | One app with three areas: `/admin` (SuperAdmin, ContentAdmin), `/parent` (Parent), `/play` (child session). Shared auth, API client and design tokens. |
+| App layout | One app with four areas, each in its own folder (`src/areas/{public,admin,parent,kids}`) with shared code in `src/shared`: the public site (`/`, `/login`, `/register`), `/admin` (SuperAdmin, ContentAdmin), `/parent` (Parent), `/kids` (child session). ESLint keeps the areas from importing each other. *(Restructured by the owner's decision, 2026-10-23: R1.)* |
 | Refresh token | httpOnly cookie set by the API. The access token lives in memory only, never in `localStorage`. Needs one small backend step (**B-F1**). |
 | UI language | Vietnamese first, with i18n from day one. Lesson content stays in English. |
 
@@ -37,15 +37,20 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F0.2 | Scaffold the Vite + React + TS project, lint, format, scripts | | ✅ Done 2026-10-23 |
 | F0.3 | API client: generated types, fetch wrapper, ProblemDetails, dev proxy | | ✅ Done 2026-10-23 |
 | F0.4 | i18n, design tokens, layout shells for the three areas | | ✅ Done 2026-10-23 |
-| F0.5 | Test setup (unit, component, API mocks) | | 🟢 Ready |
+| F0.5 | Test setup (unit, component, API mocks) | | ✅ Done 2026-10-23 |
 | **Phase F1: Authentication** | | | |
 | B-F1 | **Backend:** refresh token in an httpOnly cookie | | ✅ Done 2026-10-23 |
-| F1.1 | Login page | F0.3, F0.4 | ⚪ Waiting |
-| F1.2 | Session: silent refresh, 401 retry, logout | B-F1, F1.1 | ⚪ Waiting |
-| F1.3 | Route guards by user type and permission, 403/404 pages | F1.2 | ⚪ Waiting |
+| F1.1 | Login page | | ✅ Done 2026-10-23 |
+| F1.2 | Session: silent refresh, 401 retry, logout | | ✅ Done 2026-10-23 |
+| F1.3 | Route guards by user type and permission, 403/404 pages | | ✅ Done 2026-10-23 |
+| **Phase FP: Public site** | | | |
+| R1 | Restructure the source by area; `/play` → `/kids`; texts per area; import boundaries | | ✅ Done 2026-10-23 |
+| P1 | Landing page (product, steps, promises to parents) with sign-in and register | | ✅ Done 2026-10-23 |
+| F-R1 | Registration form | S1.4 | 🟡 Needs decision |
+| F-R2 | Email confirmation page, resend link | S1.4 | ⚪ Waiting |
 | **Phase F2: Admin area** | | | |
-| F2.1 | Users: list, search, paging, detail | F1.3 (API: S1.3 ✅) | ⚪ Waiting |
-| F2.2 | Users: create, activate/deactivate, set roles | F2.1 (role picker: S1.5) | ⚪ Waiting |
+| F2.1 | Users: list, search, paging, detail | | ✅ Done 2026-10-23 |
+| F2.2 | Users: create, activate/deactivate, set roles | | ✅ Done 2026-10-23 (role list: S1.5) |
 | F2.3 | Role management | S1.5 | ⚪ Waiting |
 | F2.4 | Content: levels and lessons, publish | S3.1 | 🟡 Needs decision |
 | F2.5 | Content: quiz and matching editors | S3.2, S3.3 | ⚪ Waiting |
@@ -55,12 +60,13 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F3.2 | Start a child session ("hand the device to the child") | S2.2 | 🟡 Needs decision |
 | F3.3 | Progress and rewards per child | S4.3, S5.3 | ⚪ Waiting |
 | **Phase F4: Child play area** | | | |
-| F4.1 | Kid-friendly visual style and play shell | F0.4 | ⚪ Waiting |
+| F4.1 | Kid-friendly visual style and kids shell | | ⚪ Waiting (shell and theme exist since F0.4) |
 | F4.2 | Lesson map (Locked / Available / Completed) | S3.4, S4.2 | ⚪ Waiting |
 | F4.3 | Quiz player | S4.1 | ⚪ Waiting |
 | F4.4 | Matching player | S4.1 | ⚪ Waiting |
 | F4.5 | Lesson result, points and badges | S5.3 | ⚪ Waiting |
 | **Phase F5: Release hardening** | | | |
+| F5.0 | Split the bundle per area (lazy routes) | | ✅ Done 2026-10-23 |
 | F5.1 | End-to-end tests of the main flows | F4.x | ⚪ Waiting |
 | F5.2 | Accessibility and tablet/phone layout review | | ⚪ Waiting |
 | F5.3 | Security headers (CSP), production build, same-origin hosting | S7.x | 💤 Later |
@@ -188,7 +194,15 @@ Original scope:
 - Layout shells: `AdminLayout` (side nav), `ParentLayout` (top nav), `PlayLayout` (full screen, big touch targets).
 - *Done when:* the three empty areas render with Vietnamese labels.
 
-**F0.5 Test setup.**
+**F0.5 Test setup.** ✅ Done 2026-10-23. Built as below, with these details:
+- Packages: `@testing-library/react` 16.3.3 (+ its peer `@testing-library/dom`), `@testing-library/user-event`, `jsdom` 30, `msw` 3.0.3, and `@tanstack/react-query` 5.104.5 (approved in F0.1, needed for the query-client provider). `@testing-library/jest-dom` was not added (not approved); tests use plain `expect`.
+- `src/test/setup.ts`: MSW server for every test, `onUnhandledFrame: 'error'` (MSW 3's name for `onUnhandledRequest`) so an unmocked request fails; cleanup, handler reset, and language reset to `vi` after each test.
+- `src/test/api-mocks.ts`: `mockApi(method, path, resolver)` checks the path and the success body against `schema.d.ts`, so mocks break when the backend contract changes; `problem(status, details)` returns a backend-shaped ProblemDetails.
+- `src/test/render.tsx`: `renderWithProviders`, `renderRoutes` (real route tree in a memory router), `renderHookWithProviders`; each returns a `user-event` instance and the query client.
+- App changes: `createQueryClient()` (no retry on 4xx, 30 s stale time) wired in `main.tsx`; routes moved to `src/app/routes.tsx` (the browser router is created in `main.tsx`); the home page's API check is now the `useApiStatus` query hook; the API client looks up `fetch` per request so MSW can intercept it.
+- Tests (22): hook test (`useApiStatus` success and 503), component test (`HomePage`: area links, API status, language switch), route tests (admin shell with active link, `/parent` redirect, play theme, 404 and back home), plus the earlier unit tests.
+
+Original scope:
 - Vitest + jsdom + Testing Library; MSW handlers typed from `schema.d.ts`.
 - A `renderWithProviders` helper (router, query client, i18n).
 - *Done when:* one sample component test and one hook test pass.
@@ -204,12 +218,28 @@ Original scope:
 - **Tests:** `RefreshTokenCookieSqlServerTests` (cookie attributes and empty body field, rotation and replay, no cookie → 401, cookie ignored without the header, logout revokes and deletes). All 139 tests pass with LocalDB.
 - **Known limit:** Safari does not accept `Secure` cookies on `http://localhost`; develop with Chrome, Edge or Firefox, or use the API's https profile.
 
-**F1.1 Login page.**
+**F1.1 Login page.** ✅ Done 2026-10-23. Built as below, with these details:
+- Packages: `react-hook-form` 7.90.0 and `zod` 4.6.7. **`@hookform/resolvers` was dropped:** versions 5 and 6 declare dozens of optional peer dependencies (effect, yup, joi, ...) that conflict on install. `src/lib/zod-resolver.ts` (about 30 lines) does the same job. shadcn `input`, `label`, `card` and `alert` were added (no new packages).
+- `src/auth/session.ts`: a minimal in-memory session store (`sessionStore`, `useSession`) that also feeds the API client's bearer token. F1.2 adds refresh, retry and logout to it.
+- `src/auth/sign-in.ts`: `signIn()` posts to `login` with the web-client header (refresh token goes to the cookie), loads `/me` with the new access token, then stores the session. `homePathFor()`: Admin → `/admin`, Parent → `/parent`, anything else → `/` (Child sign-in waits for OQ-001 / OQ-009).
+- `src/auth/LoginPage.tsx` on `/login`: zod rules match `LoginCommandValidator` (email required, at most 256 characters, valid format; password required, at most 256). Messages are translation keys, so they follow a language switch. Errors: 401 → "wrong email or password" (the API gives a locked account the same answer on purpose), 403 → "account deactivated", 400 → the rejected fields are marked, network/5xx → "server unavailable". A signed-in user who opens `/login` is sent to their area. The temporary home page links to it.
+- Tests (8): Admin and Parent sign-in with redirect, web-client header, request body and bearer token on `/me`; client validation; 401, 403, 400 and network errors; already signed in.
+- Not checked against the real API with a real account (no test credentials here); the owner tries it with the SuperAdmin from `bootstrap-superadmin`. Bundle now 576 kB (183 kB gzip), see the F5 note.
+
+Original scope:
 - Email + password form, validation messages in Vietnamese, ProblemDetails errors (wrong credentials, locked account, deactivated account).
 - After login: `GET /me`, then redirect by `userType` (Admin → `/admin`, Parent → `/parent`).
 - *Done when:* component tests cover success, 401, 403 and validation errors.
 
-**F1.2 Session.**
+**F1.2 Session.** ✅ Done 2026-10-23. Built in `src/auth/session.ts` and `src/api/client.ts`, no new packages:
+- State `restoring` → `signed-in` / `signed-out` (with `reason: 'expired'` when a running session could not be renewed). `main.tsx` calls `restoreSession()` on load: `POST refresh` with the web header and no body, then `/me`.
+- `refreshSession()` is single-flight and reloads `/me`, so permission changes show up within one refresh. A timer refreshes 60 s before the access token expires.
+- 401 handling in the API client middleware: a copy of each non-auth request is kept, and on 401 the client asks the session for a new token once and repeats the request. It passes the rejected token, so requests that failed together share one refresh. Auth endpoints (including `/me`) are never retried, which prevents a refresh loop.
+- **Tabs:** a `BroadcastChannel` signs out the other tabs and lets them restore after a sign-in elsewhere. Refreshes take turns through a Web Lock (`navigator.locks`): two tabs refreshing with the same cookie at once would look like token theft to the API (reuse detection) and end the whole session.
+- `signOut()`: `POST logout` (cookie revoked and deleted), signed out locally even if the server is unreachable. `clearCacheOnSignOut()` drops the TanStack Query cache whenever the session ends.
+- Tests: restore from cookie, no cookie, one refresh for concurrent callers, expiry, 401 → refresh → retry, failed renewal, three 401s sharing one refresh, sign-out (also offline), cache clearing.
+
+Original scope:
 - Access token and `/me` profile in memory (React context or a small store).
 - On app start: call `refresh` (cookie) silently; signed in if it succeeds.
 - On 401: one shared refresh request (single-flight), then retry the original request once; if refresh fails, go to login.
@@ -218,19 +248,53 @@ Original scope:
 - Multiple tabs: a `BroadcastChannel` message signs out the other tabs.
 - *Done when:* tests cover start-up refresh, concurrent 401s causing only one refresh, and logout.
 
-**F1.3 Guards and error pages.**
+**F1.3 Guards and error pages.** ✅ Done 2026-10-23:
+- `src/auth/guards.tsx`: `RequireAuth` (optionally `userTypes`) as a layout route, and `RequirePermission` per page. Restoring shows "checking your session"; signed out → `/login` with `state.from`; wrong user type → full-page 403; missing permission → 403 inside the area layout. `src/auth/permissions.ts` mirrors the backend permission codes.
+- Rules: `/admin` Admin users; Users needs `users.read`, Roles `roles.manage`, Content `content.manage`. `/parent` Parent users; Children `family.children.manage`, Progress `family.progress.read`. `/play` any signed-in user until the child session exists (S2.2).
+- The menus hide items without permission (a ContentAdmin sees Overview and Content only). The Admin and Parent headers show the email and a sign-out button.
+- After sign-in the user returns to the page they asked for, but only inside their own area and only for same-app paths. The login page explains an expired session.
+- Tests: signed-out redirect with return path for four areas, restoring, Parent kept out of admin and Admin out of parent, ContentAdmin menu and embedded 403, sign-out, return after sign-in, return path outside the area ignored, expiry notice.
+
+Original scope:
 - `RequireAuth`, `RequireUserType`, `RequirePermission` route wrappers using `/me` `permissions`.
 - Navigation items are shown only when the permission is present.
 - 403, 404 and "session expired" pages.
 - *Done when:* a ContentAdmin cannot open the users area (UI) and gets the 403 page; the API still enforces it.
 
+### Phase FP: Public site
+
+**R1 Source by area.** ✅ Done 2026-10-23 (owner request: avoid mixing up which part a fix is for).
+- `src/areas/public`, `admin`, `parent`, `kids`: each has `routes.tsx` (its routes, pages loaded lazily), `index.ts` (the chunk entry exporting its pages), `i18n/{vi,en}.json` (its texts under one top-level key) and its pages, layout, features and tests. `src/shared`: api, auth, components (shadcn `ui/`, nav, account menu, error pages), i18n, lib, test, `routing.tsx` (`lazyPage`, `withPermission`). `src/app/routes.tsx` only puts the areas together.
+- ESLint `no-restricted-imports` (built in, no package): an area imports only itself and `@/shared`; `@/shared` imports neither an area nor `@/app`; no `../` imports. Verified with deliberate violations.
+- Texts: the shared file keeps `app`, `common`, `language`, `auth`, `errors`; the areas' files are collected with `import.meta.glob` so shared code never imports an area. Tests check key parity per file pair and that no two files share a top-level key. Keys renamed: `auth.login.*` → `public.login.*`, `play.*` → `kids.*`.
+- `/play` → `/kids` (`KidsLayout`, `.theme-kids`, `kids.css` now loads with the kids chunk). The temporary home page and its API status check were removed.
+- Files moved with `git mv` where they were tracked. No behaviour change apart from the renamed path; 95 tests pass.
+
+**P1 Landing page.** ✅ Done 2026-10-23. `/` (`areas/public/LandingPage.tsx`, in the main bundle): sticky header (logo, section links, language, sign in, register; "my area" when signed in), hero with the two calls to action, features (lessons by level, mini-games, points and badges: PD-002 to PD-004), three steps (parent account, child profile, learn and follow), promises to parents (no child email or personal data, parent control, progress, content written by the team: PD-006/PD-007 privacy principles), closing call to action, footer. It makes no claim about price. `/register` explains that online registration opens soon (until F-R1). Tests: content and links, section anchors, signed-in variant, English, register page → sign-in.
+
+**F-R1 / F-R2 Registration.** Wait for backend S1.4 (PD-009: self-registration with email confirmation). Register form (email, password with the live rule checklist from F2.2, consent), "check your email" page, confirmation page for the emailed link, resend.
+
 ### Phase F2: Admin area
 
-**F2.1 Users list and detail.** API: `GET /api/v1/admin/users`, `GET /{id}` (`users.read`).
+**F2.1 Users list and detail.** ✅ Done 2026-10-23. API: `GET /api/v1/admin/users`, `GET /{id}` (`users.read`).
+- `src/features/admin-users`: `useUserList` / `useUser` query hooks (the previous page stays visible while the next loads), `UsersListPage` on `/admin/users`, `UserDetailPage` on `/admin/users/:userId`, both behind `users.read`. shadcn `table` and `badge` added (no new packages).
+- List: email (link to the detail), user type, roles, status (active / deactivated, temporarily locked), last sign-in in the interface language. Search by part of the email (trimmed, at most 256 characters, like the API) and paging by 20 are kept in the URL (`?q=...&page=2`). Loading, empty, no-match and error-with-retry states.
+- Detail: the same fields plus created date and user ID; a missing user shows "not found".
+- Names: the three system roles and the user types are translated; roles created at runtime (S1.5) keep their own name.
+- Tests (9): list fields and badges, search with URL and request, clear search, no match, paging over 45 users, retry, open from the list, detail, 404, ContentAdmin blocked.
 - Table with search, paging (in the URL query string), user type, roles, active state.
 - Detail page.
 
-**F2.2 User actions.** API: `POST /`, `/deactivate`, `/activate` (`users.manage`), `PUT /{id}/roles` (`roles.manage`).
+**F2.2 User actions.** API: `POST /`, `/deactivate`, `/activate` (`users.manage`), `PUT /{id}/roles` (`roles.manage`). ✅ Done 2026-10-23.
+- **Create** (`/admin/users/new`, `users.manage`; button on the list only with that permission): email, account type (Admin / Parent), password and confirmation. The password rule is checked live as a checklist and mirrors the backend `PasswordRules` with the same Unicode classes (`src/features/admin-users/password-rules.ts`). 409 marks the email as taken. Afterwards the detail page opens; for an Admin it says to choose roles next (a new Admin has no roles, so no permissions).
+- **Status** (`users.manage`): "Deactivate" asks for confirmation in a dialog (sessions end); "Reactivate" needs none.
+- **Roles** (`roles.manage`): checkboxes for SuperAdmin and ContentAdmin, plus any role the user already has, so a save never drops a role this list does not know. Warning when no role is left. A Parent user shows "always has the Parent role" instead.
+- **Rule messages without parsing English server text:** the UI never offers changes to your own account, and offers Admin users only Admin roles, so a 422 from deactivate or roles can only be the last-SuperAdmin rule and is shown as such in Vietnamese.
+- shadcn `alert-dialog`, `checkbox`, `radio-group` added (no new packages; `button.tsx` kept). Test setup gained a `ResizeObserver` stub for Radix in jsdom.
+- Tests (23): password rules incl. Vietnamese letters; create Admin and Parent, live checklist, weak and mismatched password, duplicate email, no create button or page without `users.manage`; deactivate with confirm, cancel, last SuperAdmin, reactivate, own account, hidden without permission; save roles, no-role warning, unknown role kept, last SuperAdmin, Parent user.
+- Follow-up: when S1.5 adds `GET /api/v1/admin/roles`, list the real roles. The bundle is now 681 kB (213 kB gzip), past Vite's 500 kB warning: lazy-load the areas soon (moved up from F5).
+
+Original scope:
 - Create Admin or Parent user (password rule shown up front: 12+ characters, upper, lower, digit, symbol).
 - Activate/deactivate with a confirmation dialog explaining that sessions end.
 - Role editor. Until S1.5 provides `GET /api/v1/admin/roles`, it offers the three system roles only.
@@ -249,7 +313,7 @@ Original scope:
 All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 
 - **F3.1 Child profiles:** list, create (nickname and avatar only, no email, PD-007 privacy rules), rename, archive.
-- **F3.2 Child session:** the Parent picks a profile and enters child mode; the app switches to `/play` with the child token. Leaving child mode asks the Parent to sign in again (S2.2).
+- **F3.2 Child session:** the Parent picks a profile and enters child mode; the app switches to `/kids` with the child token. Leaving child mode asks the Parent to sign in again (S2.2).
 - **F3.3 Progress and rewards:** per-child completions, scores, points and badges.
 
 ### Phase F4: Child play area
@@ -260,6 +324,8 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 - **F4.5 Result screen:** score from the server, points and new badges with a small celebration.
 
 ### Phase F5: Release hardening
+
+- **F5.0 Code splitting.** ✅ Done 2026-10-23 (moved up: the bundle had passed Vite's 500 kB warning). Routes load each area from `src/app/areas/{admin,parent,play}.ts` with React Router `lazy`; the sign-in page is lazy too, so the form libraries (`zod`, `react-hook-form`) are not in the first download. Permission checks moved to pathless layout routes (`withPermission`) so pages stay lazy. A `PageLoading` fallback shows while the first chunk downloads. Initial JavaScript 681 kB → 441 kB (gzip 213 → 139 kB); admin 89 kB and sign-in about 150 kB load on demand. Tests: `renderRoutes` is now async and waits until the router has settled, including redirects.
 
 - **F5.1 E2E:** Playwright tests for login, admin user creation, and (later) one full lesson.
 - **F5.2 Accessibility:** keyboard navigation for admin/parent, contrast, screen-reader labels; layout check at phone, tablet and desktop widths.
@@ -276,3 +342,10 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | 2026-10-23 | Owner upgraded to Node 24 LTS. F0.2 done (Vite 8, React 19, TS 6, Tailwind 4, shadcn/ui, ESLint, Prettier, Vitest). F0.3–F0.5 Ready. |
 | 2026-10-23 | F0.3 done: generated API types, `openapi-fetch` client, `ApiError` mapping, Vite proxy. |
 | 2026-10-23 | F0.4 done: typed i18n (vi/en), play theme tokens, router with Admin/Parent/Play shells. |
+| 2026-10-23 | F0.5 done: Testing Library, MSW with schema-typed mocks, render helpers, TanStack Query client. Phase F0 complete; F1.1 is Ready. |
+| 2026-10-23 | F1.1 done: login page with zod validation, in-memory session store, redirect by user type. `@hookform/resolvers` replaced by a local resolver. F1.2 Ready. |
+| 2026-10-23 | F1.2 and F1.3 done: session restore, single-flight refresh with cross-tab lock, 401 retry, sign-out with cache clearing; route guards by user type and permission, 403 page, permission-filtered menus. Phase F1 complete; F2.1 Ready. |
+| 2026-10-23 | F2.1 done: users list (search, paging in the URL) and user detail. F2.2 Ready. |
+| 2026-10-23 | R1 and P1 done (owner request): source split into `areas/{public,admin,parent,kids}` and `shared` with ESLint boundaries, `/play` renamed `/kids`, public landing page. OQ-010 decided (PD-009); registration steps F-R1, F-R2 added. |
+| 2026-10-23 | F5.0 done early: lazy routes per area and for sign-in; initial JavaScript 681 → 441 kB. |
+| 2026-10-23 | F2.2 done: create user with live password rules, deactivate/reactivate with confirmation, role editor for Admin users (system roles until S1.5). |

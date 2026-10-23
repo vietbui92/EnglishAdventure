@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "English Adventure"
+  },
+  "common": {
+    "comingSoon": "Sắp ra mắt",
+    "comingSoonDescription": "Màn hình này sẽ được làm ở một bước sau.",
+    "backHome": "Về trang chủ",
+    "language": "Ngôn ngữ",
+    "mainNavigation": "Điều hướng chính",
+    "signIn": "Đăng nhập",
+    "loading": "Đang tải…"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "auth": {
+    "restoring": "Đang kiểm tra phiên đăng nhập…",
+    "signOut": "Đăng xuất"
+  },
+  "errors": {
+    "notFound": {
+      "title": "Không tìm thấy trang",
+      "description": "Trang bạn tìm không tồn tại hoặc đã được chuyển đi."
+    },
+    "forbidden": {
+      "title": "Không có quyền truy cập",
+      "description": "Tài khoản của bạn không được dùng trang này. Nếu cần quyền, hãy liên hệ quản trị viên."
+    },
+    "unexpected": {
+      "title": "Đã có lỗi xảy ra",
+      "description": "Hãy tải lại trang. Nếu lỗi vẫn còn, hãy báo cho quản trị viên."
+    }
+  }
+}

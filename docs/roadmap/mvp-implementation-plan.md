@@ -47,7 +47,7 @@ Rules for every step:
 | S1.1 | Permission catalog and policy-based authorization | | ✅ Done 2026-10-23 |
 | S1.2 | Secure SuperAdmin bootstrap and role/permission sync | | ✅ Done 2026-10-23 |
 | S1.3 | Admin user management (create users, assign roles) | | ✅ Done 2026-10-23 |
-| S1.4 | Parent user creation (self-registration?) | OQ-010, OQ-008 | 🟡 Needs decision |
+| S1.4 | Parent self-registration with email confirmation (PD-009) | owner approval of the draft below | 🟡 Needs decision |
 | S1.5 | Role management (create roles, choose their permissions) | | 🟢 Ready |
 | **Phase 2: Family** | | | |
 | S2.1 | Child profiles for Parents | OQ-001, OQ-013, S1.4 | 🟡 Needs decision |
@@ -202,9 +202,18 @@ flowchart LR
   - SuperAdmin always keeps every non-family permission.
   - Changes apply within the 1-minute permission cache.
 
-**S1.4 Parent user creation.** *Needs OQ-010 and the relevant parts of OQ-008.*
-- Either public self-registration (needs email confirmation, abuse protection and consent) or creation by an Admin (S1.3 already covers that).
-- *Done when:* defined after the decision.
+**S1.4 Parent self-registration with email confirmation.** OQ-010 decided 2026-10-23 (PD-009). **Draft scope, waiting for approval:**
+- **Endpoints** (anonymous, `api/v1/auth`):
+  - `POST register` with email, password (the S1.2 rule) and consent. Always answers `202 Accepted` with the same body, also when the email already has an account, so the endpoint never reveals who is registered. A taken email gets a "you already have an account" email instead.
+  - `POST confirm-email` with the token from the link: confirms the account (`204`). An expired or used token gives `400`.
+  - `POST resend-confirmation` with an email: always `202`; sends a new link only to an unconfirmed account.
+- **Sign-in:** an unconfirmed Parent gets `403` with a distinct problem type (only after the correct password, like a deactivated account), so the web app can offer "resend the link". Users created by an Admin count as confirmed.
+- **Domain and database** (migration): `User.EmailConfirmedAtUtc` (existing users backfilled as confirmed); `User.ConsentAcceptedAtUtc` and `ConsentVersion`; table `auth_email_confirmation_tokens` (SHA-256 hash only, like refresh tokens; 24 h lifetime; single use).
+- **Email:** `IEmailSender` in Application. Development implementation writes each email as a file to a local folder and logs the link; no package. The production provider is a separate decision (SMTP, SendGrid, Azure Communication Services, ...).
+- **Abuse protection:** ASP.NET Core's built-in rate limiter on `register`, `resend-confirmation` and `login` (moves part of S6.1 forward).
+- **Tests:** no account enumeration (same answer for new and taken emails), token hashing, expiry, single use, unconfirmed sign-in refused, Admin-created users unaffected, rate limit.
+- **Questions for the owner:** (1) production email provider now or later; (2) the consent text and its version (links to terms and privacy pages that do not exist yet, part of OQ-008); (3) link lifetime (proposed 24 h); (4) delete accounts never confirmed after N days?
+- *Done when:* the tests above pass and the front end (F-R1, F-R2) can register, confirm and sign in end to end.
 
 ### Phase 2: Family
 

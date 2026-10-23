@@ -49,6 +49,7 @@ User type, role and permission are three different things:
 | PD-006 | Content source | `admin-configured`: Admins manage content; seed data is for development and demos only | ✅ Decided |
 | PD-007 | Child privacy and identity | `independent-identity`: each child has a distinct identity | ❓ Conflicts with PD-001. See Section 8 |
 | PD-008 | Initial roles and permissions (answers OQ-007) | Three roles: SuperAdmin, ContentAdmin, Parent | ✅ Decided 2026-10-23 |
+| PD-009 | Parent registration (answers OQ-010) | Parents register themselves on the public site and must confirm their email before signing in | ✅ Decided 2026-10-23 (details in S1.4) |
 
 ### PD-001: Parent-managed child profiles
 - A Parent can manage several child profiles.
@@ -105,6 +106,13 @@ A distinct child identity does not have to mean a separate email or password. It
 - **No extra roles** in the MVP unless an existing requirement makes one necessary.
   - *Changed by the owner on 2026-10-23:* holders of `roles.manage` may create roles at runtime and choose their permissions from the catalog (plan step S1.5). The three roles above remain the built-in system roles. Permissions themselves are still defined only in code.
 - **Extensible, but simple.** The permission catalog can grow without adding a complex authorization framework.
+
+### PD-009: Parent registration (answers OQ-010)
+
+- Parents create their own account on the public website (landing page → register).
+- The email address must be confirmed through a link before the account can sign in.
+- Admins can still create Parent users (S1.3).
+- **Still open:** the email provider; the consent and privacy text parents accept (part of OQ-008); link lifetime and resend limits; abuse protection (rate limiting, S6.1). These are settled in plan step S1.4.
 
 **Not decided by PD-008:**
 - The exact permission catalog. The proposal is in the [domain model proposal §9](../../BackEnd/docs/architecture/domain-model-proposal.md) and is finalized in plan step S1.1.
@@ -189,7 +197,7 @@ Rows marked _(added)_ were raised while preparing the plan. They are not in the 
 | OQ-007 | Which roles and permissions does the first release need? | Authorization policies | ✅ **DECIDED** 2026-10-23 → PD-008. Roles: SuperAdmin, ContentAdmin, Parent. The permission catalog is finalized in S1.1 |
 | OQ-008 | Which markets, and what child-consent, retention and deletion rules apply? | Privacy controls, production readiness | S1.4, S6.4 |
 | OQ-009 | If independent identity is kept: how does a child start a session? | Credentials, or parent-authorized access | S2.2 |
-| OQ-010 _(added)_ | How are Parent users created: self-registration, or created by an Admin? Is email confirmation required? | Public endpoints, consent, abuse protection | S1.4 |
+| OQ-010 _(added)_ | How are Parent users created: self-registration, or created by an Admin? Is email confirmation required? | Public endpoints, consent, abuse protection | ✅ **DECIDED** 2026-10-23 → PD-009: self-registration with email confirmation |
 | OQ-011 _(added)_ | Where do Matching pictures come from: a URL entered by the Admin, or uploaded files? | Media storage (uploads need Blob Storage) | S3.3 |
 | OQ-012 _(added)_ | Does "resume" mean continuing from the next lesson, or from the middle of a lesson? | Saving answers per activity or per lesson | S4.1 |
 | OQ-013 _(added)_ | Can a child profile belong to more than one Parent (for example two guardians)? | Family data model | S2.1 |
@@ -233,3 +241,4 @@ The conflict goes away if we separate three things:
 | 2026-10-23 | Naming: "account" renamed to "user" (permissions `users.read` / `users.manage`, "user type"). |
 | 2026-10-23 | OQ-014 decided by the owner: front-end technology and session transport (see the front-end plan). |
 | 2026-10-23 | PD-008 amended by the owner: roles can be created at runtime (role management, S1.5). Password rule for Admin/Parent users: at least 12 characters with upper case, lower case, a digit and a symbol. |
+| 2026-10-23 | OQ-010 decided by the owner: Parents self-register with email confirmation (PD-009). Front end restructured by area with a public landing page. |

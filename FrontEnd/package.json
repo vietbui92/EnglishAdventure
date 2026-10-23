@@ -15,7 +15,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "api:types": "openapi-typescript http://localhost:5063/openapi/v1.json -o src/api/schema.d.ts"
+    "api:types": "openapi-typescript http://localhost:5063/openapi/v1.json -o src/shared/api/schema.d.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",

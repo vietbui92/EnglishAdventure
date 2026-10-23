@@ -1,0 +1,92 @@
+{
+  "public": {
+    "nav": {
+      "features": "Tính năng",
+      "howItWorks": "Cách học",
+      "parents": "Dành cho phụ huynh",
+      "signIn": "Đăng nhập",
+      "register": "Đăng ký",
+      "myArea": "Vào trang của tôi"
+    },
+    "landing": {
+      "hero": {
+        "eyebrow": "Tiếng Anh cho trẻ em",
+        "title": "Học tiếng Anh như một chuyến phiêu lưu",
+        "subtitle": "Bài học ngắn, trò chơi vui và phần thưởng nhỏ giúp con học đều đặn mỗi ngày. Phụ huynh luôn biết con đã học đến đâu.",
+        "register": "Đăng ký cho phụ huynh",
+        "signIn": "Tôi đã có tài khoản"
+      },
+      "features": {
+        "title": "Mỗi ngày một chặng đường",
+        "levels": {
+          "title": "Bài học theo cấp độ",
+          "description": "Bài học đi từ dễ đến khó. Hoàn thành một bài sẽ mở khóa bài tiếp theo."
+        },
+        "games": {
+          "title": "Trò chơi nhỏ",
+          "description": "Trắc nghiệm và nối từ với hình giúp con nhớ từ vựng mà không thấy nhàm chán."
+        },
+        "rewards": {
+          "title": "Điểm và huy hiệu",
+          "description": "Mỗi bài hoàn thành mang lại điểm thưởng và huy hiệu để con thêm hứng thú."
+        }
+      },
+      "steps": {
+        "title": "Bắt đầu trong ba bước",
+        "account": {
+          "title": "Phụ huynh tạo tài khoản",
+          "description": "Đăng ký bằng email của bạn. Trẻ không cần email."
+        },
+        "profile": {
+          "title": "Tạo hồ sơ cho con",
+          "description": "Mỗi con có một hồ sơ riêng với biệt danh và hình đại diện."
+        },
+        "learn": {
+          "title": "Con học, bạn theo dõi",
+          "description": "Con học qua bài học và trò chơi; bạn xem tiến độ và phần thưởng của từng con."
+        }
+      },
+      "parents": {
+        "title": "An tâm cho phụ huynh",
+        "privacy": "Không cần email hay thông tin cá nhân của trẻ.",
+        "control": "Chỉ phụ huynh quản lý hồ sơ và tài khoản của con.",
+        "progress": "Xem bài con đã hoàn thành, điểm số và huy hiệu.",
+        "content": "Nội dung do đội ngũ biên soạn, không dùng nội dung tự động sinh ra."
+      },
+      "cta": {
+        "title": "Sẵn sàng cho chuyến phiêu lưu đầu tiên?",
+        "register": "Đăng ký ngay"
+      },
+      "footer": "© {{year}} English Adventure"
+    },
+    "register": {
+      "title": "Đăng ký tài khoản phụ huynh",
+      "comingSoon": "Đăng ký trực tuyến sắp được mở. Trong thời gian này, hãy liên hệ quản trị viên để được tạo tài khoản.",
+      "haveAccount": "Đã có tài khoản?",
+      "signIn": "Đăng nhập"
+    },
+    "login": {
+      "title": "Đăng nhập",
+      "description": "Dành cho quản trị viên và phụ huynh.",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập…",
+      "validation": {
+        "emailRequired": "Hãy nhập email.",
+        "emailInvalid": "Email không hợp lệ.",
+        "emailTooLong": "Email quá dài.",
+        "passwordRequired": "Hãy nhập mật khẩu.",
+        "passwordTooLong": "Mật khẩu quá dài.",
+        "serverInvalid": "Giá trị này chưa hợp lệ."
+      },
+      "errors": {
+        "invalidCredentials": "Email hoặc mật khẩu không đúng. Nếu nhập sai nhiều lần, tài khoản sẽ bị tạm khóa 15 phút.",
+        "inactive": "Tài khoản này đã bị vô hiệu hóa. Hãy liên hệ quản trị viên.",
+        "invalidInput": "Thông tin đăng nhập chưa hợp lệ.",
+        "unavailable": "Không kết nối được máy chủ. Hãy thử lại sau."
+      },
+      "expired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
+    }
+  }
+}
