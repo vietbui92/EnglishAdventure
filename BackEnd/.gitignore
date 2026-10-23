@@ -1,0 +1,14 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+
+## Secrets and local config
+appsettings.*.local.json
+secrets.json
+
+## Tools
+*.DotSettings.user

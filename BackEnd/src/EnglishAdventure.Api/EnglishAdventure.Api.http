@@ -1,0 +1,38 @@
+@EnglishAdventure.Api_HostAddress = http://localhost:5063
+
+GET {{EnglishAdventure.Api_HostAddress}}/health
+
+###
+
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "parent@example.com",
+  "password": "<password>"
+}
+
+###
+
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "<refresh token from login>"
+}
+
+###
+
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "<refresh token>"
+}
+
+###
+
+GET {{EnglishAdventure.Api_HostAddress}}/api/v1/auth/me
+Authorization: Bearer <access token>
+
+###
