@@ -3,6 +3,48 @@
     "nav": {
       "children": "My children",
       "progress": "Progress"
+    },
+    "children": {
+      "title": "My children",
+      "subtitle": "Each child has their own profile to learn with and earn rewards.",
+      "count": "{{count}} of {{max}} profiles in use",
+      "add": "Add a profile",
+      "limitReached": "Your family already has {{max}} profiles. Archive one to add a new one.",
+      "emptyTitle": "No profiles yet",
+      "emptyDescription": "Create the first profile so your child can start learning.",
+      "loading": "Loading…",
+      "loadError": "Could not load the profiles.",
+      "retry": "Try again",
+      "edit": "Edit",
+      "archive": "Archive",
+      "archiveTitle": "Archive {{nickname}}'s profile?",
+      "archiveDescription": "The profile is hidden and cannot be used to learn. Progress and rewards are kept, and you can restore it at any time.",
+      "cancel": "Cancel",
+      "archivedTitle": "Archived profiles",
+      "restore": "Restore",
+      "restoreLimit": "Cannot restore: your family already has {{max}} profiles in use.",
+      "restoreConflict": "Cannot restore: a profile in use has the same nickname. Change that profile's nickname first.",
+      "failed": "That did not work. Try again.",
+      "form": {
+        "createTitle": "Add a profile for your child",
+        "editTitle": "Edit profile",
+        "nickname": "Nickname",
+        "nicknameHint": "What you call your child at home, for example Bin or Bông. No real name needed.",
+        "avatar": "Avatar",
+        "create": "Create profile",
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "validation": {
+          "nicknameRequired": "Enter a nickname.",
+          "nicknameTooLong": "A nickname can have at most 50 characters.",
+          "nicknameTaken": "Another child in your family already has this nickname."
+        },
+        "errors": {
+          "limit": "Your family already has {{max}} profiles in use.",
+          "failed": "Could not save the profile. Try again."
+        }
+      }
     }
   }
 }

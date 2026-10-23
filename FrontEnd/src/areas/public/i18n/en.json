@@ -61,9 +61,28 @@
     },
     "register": {
       "title": "Register a parent account",
-      "comingSoon": "Online registration opens soon. Until then, contact an administrator to get an account.",
+      "description": "Create an account to manage your children's learning profiles. Children need no email.",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Repeat the password",
+      "acceptTerms": "I accept the <terms>Terms of use</terms> and the <privacy>Privacy policy</privacy>.",
+      "submit": "Register",
+      "submitting": "Registering…",
       "haveAccount": "Already have an account?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "validation": {
+        "emailRequired": "Enter your email.",
+        "emailInvalid": "This email is not valid.",
+        "emailTooLong": "This email is too long.",
+        "passwordWeak": "The password does not meet the rules below yet.",
+        "passwordTooLong": "The password can have at most 128 characters.",
+        "passwordMismatch": "The passwords do not match.",
+        "termsRequired": "Please accept to continue.",
+        "serverInvalid": "This value is not valid."
+      },
+      "errors": {
+        "failed": "Registration did not work. Try again later."
+      }
     },
     "login": {
       "title": "Sign in",
@@ -84,9 +103,41 @@
         "invalidCredentials": "The email or password is incorrect. After several wrong attempts the account is locked for 15 minutes.",
         "inactive": "This account has been deactivated. Contact an administrator.",
         "invalidInput": "The sign-in details are not valid.",
-        "unavailable": "Cannot reach the server. Try again later."
+        "unavailable": "Cannot reach the server. Try again later.",
+        "emailNotConfirmed": "Your email is not confirmed yet. Open the link in the registration email, or send it again."
       },
-      "expired": "Your session has expired. Please sign in again."
-    }
+      "expired": "Your session has expired. Please sign in again.",
+      "noAccount": "No account yet?",
+      "register": "Register as a parent"
+    },
+    "checkEmail": {
+      "title": "Check your inbox",
+      "description": "If {{email}} does not have an account yet, we just sent it a confirmation link. The link works for 24 hours.",
+      "descriptionNoEmail": "We just sent a confirmation link to your email. The link works for 24 hours.",
+      "hint": "No email? Look in your spam folder, or send the link again."
+    },
+    "resend": {
+      "email": "Email",
+      "submit": "Send the link again",
+      "submitting": "Sending…",
+      "sent": "If this email is waiting for confirmation, a new link is on its way.",
+      "failed": "Could not send the link again. Try again later."
+    },
+    "confirm": {
+      "checking": "Confirming your email…",
+      "successTitle": "Your email is confirmed",
+      "successDescription": "Your account is ready. Sign in to get started.",
+      "signIn": "Sign in",
+      "invalidTitle": "This link is invalid or has expired",
+      "invalidDescription": "A link works for 24 hours, and only the newest link you received works. Enter your email to get a new one.",
+      "failed": "Could not confirm right now. Try again later.",
+      "retry": "Try again"
+    },
+    "legal": {
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "draft": "The full text is being finalized and will be published before English Adventure launches."
+    },
+    "tooManyAttempts": "Too many attempts. Wait a minute and try again."
   }
 }

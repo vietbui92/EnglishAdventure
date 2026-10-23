@@ -18,7 +18,7 @@ src/
   main.tsx, index.css   entry and global styles (shadcn tokens)
   app/routes.tsx        puts the areas' routes together; nothing else lives here
   areas/
-    public/             landing page, sign-in, registration
+    public/             landing, sign-in, registration, email confirmation, legal pages
     admin/              AdminLayout, users/ (list, detail, create, roles), placeholders
     parent/             ParentLayout, placeholders
     kids/               KidsLayout, kids.css (bright theme), KidsHomePage
@@ -54,5 +54,7 @@ Every area folder has the same shape:
 - API types are generated from the backend OpenAPI document, never written by hand: `npm run api:types` (API running) rewrites `src/shared/api/schema.d.ts`. Call endpoints through `api` in `src/shared/api/client.ts` and `unwrap()`; handle failures by `ApiError.kind`, and show `fieldErrors` on form fields. Server data is read with TanStack Query hooks (`useQuery`/`useMutation`, client from `createQueryClient()`); keep an area's hooks in that area (e.g. `areas/admin/users/api.ts`).
 - Tests (Vitest, jsdom): put `*.test.ts(x)` next to the code. Render with `renderWithProviders`, `await renderRoutes(routes, { route })` (async: it waits for lazy routes and redirects) or `renderHookWithProviders` from `src/shared/test/render.tsx`. Mock the API only with `server.use(mockApi(...))` and `problem(...)` from `src/shared/test/api-mocks.ts`; an unmocked request fails the test. Query by role and visible Vietnamese text, and interact through the returned `user`.
 - Auth: the session lives in `src/shared/auth/session.ts` (`useSession`, `useSessionState`, `refreshSession`, `signOut`), sign-in in `src/shared/auth/sign-in.ts`. Protect routes with `RequireAuth` / `RequirePermission` (`src/shared/auth/guards.tsx`) and permission codes from `src/shared/auth/permissions.ts`; give menu items a `permission`. In tests use `signInAs(role)` from `src/shared/test/session.ts`. Access token in memory only; the refresh token is an httpOnly cookie. Send `X-EnglishAdventure-Client: web` on `login`, `refresh` and `logout` (see `BackEnd/src/EnglishAdventure.Api/Authentication/RefreshTokenCookie.cs`). Never store tokens in `localStorage`.
+- Passwords for new accounts: validate with `isStrongPassword` (`src/shared/auth/password-rules.ts`, mirrors the backend rule) and show `PasswordChecklist` under the field.
+- Child avatars: draw them only with `ChildAvatar` (`src/shared/components/ChildAvatar.tsx`); its keys mirror the backend `ChildProfile.AvatarKeys`. Tests that pass through `/parent/children` need `server.use(...mockFamilyWithoutChildren())`.
 - The UI never decides access or grades answers. Hiding a control by permission is convenience; the API is the authority.
 - Prettier style: no semicolons, single quotes, 120 columns. Run `npm run lint`, `npm run build` and `npm test` before finishing a step.

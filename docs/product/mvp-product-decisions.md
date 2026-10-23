@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Owner** | Quoc Viet Bui (product owner). Only the owner changes a decision. |
-| **Status** | Baseline. PD-001 to PD-006 and PD-008 are decided. PD-007 conflicts with PD-001 and is waiting for a decision (Section 8). |
+| **Status** | Baseline. PD-001 to PD-010 are decided; PD-010 reconciles PD-001 and PD-007 (Section 8, option B). |
 | **Last updated** | 2026-10-23 |
 | **Related** | [Implementation plan](../roadmap/mvp-implementation-plan.md) · [Domain model proposal](../../BackEnd/docs/architecture/domain-model-proposal.md) · [Architecture decisions](../../BackEnd/docs/architecture/decisions.md) |
 
@@ -41,14 +41,15 @@ User type, role and permission are three different things:
 
 | ID | Topic | Choice | Status |
 |---|---|---|---|
-| PD-001 | Child user model | `parent-profile`: a Parent manages child learning profiles under the Parent's account | ✅ Decided, but conflicts with PD-007 |
+| PD-001 | Child user model | `parent-profile`: a Parent manages child learning profiles under the Parent's account | ✅ Decided; conflict with PD-007 resolved by PD-010 |
 | PD-002 | Learning progression | `sequential-unlock`: lessons are ordered; completing one unlocks the next | ✅ Decided |
 | PD-003 | First mini-games | `quiz-match`: Quiz and Matching | ✅ Decided |
 | PD-004 | Rewards | `points-badges`: points and badges | ✅ Decided |
 | PD-005 | MVP scope | `admin-parent-child`: Admin content, Parent monitoring, Child learning | ✅ Decided |
 | PD-006 | Content source | `admin-configured`: Admins manage content; seed data is for development and demos only | ✅ Decided |
-| PD-007 | Child privacy and identity | `independent-identity`: each child has a distinct identity | ❓ Conflicts with PD-001. See Section 8 |
+| PD-007 | Child privacy and identity | `independent-identity`: each child has a distinct identity | ✅ Reconciled with PD-001 by PD-010 (Section 8, option B) |
 | PD-008 | Initial roles and permissions (answers OQ-007) | Three roles: SuperAdmin, ContentAdmin, Parent | ✅ Decided 2026-10-23 |
+| PD-010 | Child identity, session and guardians (answers OQ-001, OQ-009, OQ-013) | Section 8 option B: parent-owned child profiles, child session started by the Parent, one Parent per profile, several profiles per Parent | ✅ Decided 2026-10-24 |
 | PD-009 | Parent registration (answers OQ-010) | Parents register themselves on the public site and must confirm their email before signing in | ✅ Decided 2026-10-23 (details in S1.4) |
 
 ### PD-001: Parent-managed child profiles
@@ -106,6 +107,14 @@ A distinct child identity does not have to mean a separate email or password. It
 - **No extra roles** in the MVP unless an existing requirement makes one necessary.
   - *Changed by the owner on 2026-10-23:* holders of `roles.manage` may create roles at runtime and choose their permissions from the catalog (plan step S1.5). The three roles above remain the built-in system roles. Permissions themselves are still defined only in code.
 - **Extensible, but simple.** The permission catalog can grow without adding a complex authorization framework.
+
+### PD-010: Child identity, session and guardians (answers OQ-001, OQ-009, OQ-013)
+
+Decided by the owner on 2026-10-24, adopting option B of Section 8:
+- **OQ-001:** a child is a **learning profile** (nickname and avatar) owned by a Parent account. The child has no email and no password. All progress belongs to the profile's stable ID.
+- **Several profiles per Parent** (owner addition): a Parent creates one profile per child, for example three profiles for three children.
+- **OQ-009:** the Parent picks a profile on the device and starts a **child session**. That session can only learn as that profile; it cannot reach Parent or Admin features. Leaving child mode requires the Parent to sign in again.
+- **OQ-013:** in the MVP each profile belongs to exactly **one** Parent. A second guardian can be added later (the model allows a guardian list without moving data).
 
 ### PD-009: Parent registration (answers OQ-010)
 
@@ -188,7 +197,7 @@ Rows marked _(added)_ were raised while preparing the plan. They are not in the 
 
 | ID | Question | Why it matters | Blocks plan step |
 |---|---|---|---|
-| OQ-001 | Are children profiles under a Parent, or independent application identities? | Account relationships, sign-in flow, privacy | S2.1, S2.2 |
+| OQ-001 | Are children profiles under a Parent, or independent application identities? | Account relationships, sign-in flow, privacy | ✅ **DECIDED** 2026-10-24 → PD-010: parent-owned learning profiles, several per Parent |
 | OQ-002 | What counts as completing a lesson (for example, a minimum score)? | Scoring, unlocking, progress state | S4.1, S4.2 |
 | OQ-003 | Can a child replay completed lessons? How are repeat scores handled? | Attempt history, best score, rewards | S4.2, S5.1 |
 | OQ-004 | What are the exact rules for awarding points and badges? | Reward integrity | S5.1, S5.2 |
@@ -196,18 +205,18 @@ Rows marked _(added)_ were raised while preparing the plan. They are not in the 
 | OQ-006 | What levels, topics and lessons does the MVP start with? | Seed content, acceptance tests | S3.5 |
 | OQ-007 | Which roles and permissions does the first release need? | Authorization policies | ✅ **DECIDED** 2026-10-23 → PD-008. Roles: SuperAdmin, ContentAdmin, Parent. The permission catalog is finalized in S1.1 |
 | OQ-008 | Which markets, and what child-consent, retention and deletion rules apply? | Privacy controls, production readiness | S1.4, S6.4 |
-| OQ-009 | If independent identity is kept: how does a child start a session? | Credentials, or parent-authorized access | S2.2 |
+| OQ-009 | If independent identity is kept: how does a child start a session? | Credentials, or parent-authorized access | ✅ **DECIDED** 2026-10-24 → PD-010: the Parent starts a child session |
 | OQ-010 _(added)_ | How are Parent users created: self-registration, or created by an Admin? Is email confirmation required? | Public endpoints, consent, abuse protection | ✅ **DECIDED** 2026-10-23 → PD-009: self-registration with email confirmation |
 | OQ-011 _(added)_ | Where do Matching pictures come from: a URL entered by the Admin, or uploaded files? | Media storage (uploads need Blob Storage) | S3.3 |
 | OQ-012 _(added)_ | Does "resume" mean continuing from the next lesson, or from the middle of a lesson? | Saving answers per activity or per lesson | S4.1 |
-| OQ-013 _(added)_ | Can a child profile belong to more than one Parent (for example two guardians)? | Family data model | S2.1 |
+| OQ-013 _(added)_ | Can a child profile belong to more than one Parent (for example two guardians)? | Family data model | ✅ **DECIDED** 2026-10-24 → PD-010: one Parent per profile in the MVP |
 | OQ-014 _(added)_ | Which front-end technology? (`FrontEnd/` is empty) | Front-end track, API contract style, refresh-token transport | ✅ **DECIDED** 2026-10-23: React + Vite + TS, one app with Admin/Parent/Play areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. See the [front-end plan](../roadmap/frontend-implementation-plan.md) |
 | OQ-015 _(added)_ | Does a quiz question always have exactly one correct answer? | Quiz validation and scoring | S3.2 |
 | OQ-016 _(added)_ | How do levels unlock: when every lesson of the previous level is complete, or does the lesson order simply continue across levels? | Unlock rule | S4.2 |
 
 ## 8. Proposed resolution of PD-001 versus PD-007
 
-💡 **Proposed. Waiting for the owner's decision on OQ-001 and OQ-009.**
+✅ **Decided 2026-10-24: option B (PD-010).**
 
 The conflict goes away if we separate three things:
 
@@ -242,3 +251,4 @@ The conflict goes away if we separate three things:
 | 2026-10-23 | OQ-014 decided by the owner: front-end technology and session transport (see the front-end plan). |
 | 2026-10-23 | PD-008 amended by the owner: roles can be created at runtime (role management, S1.5). Password rule for Admin/Parent users: at least 12 characters with upper case, lower case, a digit and a symbol. |
 | 2026-10-23 | OQ-010 decided by the owner: Parents self-register with email confirmation (PD-009). Front end restructured by area with a public landing page. |
+| 2026-10-24 | OQ-001, OQ-009 and OQ-013 decided by the owner (PD-010, Section 8 option B): parent-owned child profiles, several per Parent, child session started by the Parent, one Parent per profile. PD-001 and PD-007 are no longer in conflict. |

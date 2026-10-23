@@ -3,7 +3,7 @@ import { HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { routes } from '@/app/routes'
 import { sessionStore } from '@/shared/auth/session'
-import { mockApi, problem } from '@/shared/test/api-mocks'
+import { mockApi, mockFamilyWithoutChildren, problem } from '@/shared/test/api-mocks'
 import { renderRoutes } from '@/shared/test/render'
 import { signInAs, testUser } from '@/shared/test/session'
 import { server } from '@/shared/test/server'
@@ -54,6 +54,7 @@ describe('LoginPage', () => {
 
   it('opens the parent area for a Parent', async () => {
     server.use(
+      ...mockFamilyWithoutChildren(),
       mockApi('post', '/api/v1/auth/login', () => tokens),
       mockApi('get', '/api/v1/auth/me', () => testUser('Parent')),
     )
@@ -122,6 +123,7 @@ describe('LoginPage', () => {
   })
 
   it('sends a signed-in user to their area', async () => {
+    server.use(...mockFamilyWithoutChildren())
     signInAs('Parent')
 
     const { router } = await renderLogin()
@@ -145,6 +147,7 @@ describe('LoginPage', () => {
 
   it('ignores a return page outside the user area', async () => {
     server.use(
+      ...mockFamilyWithoutChildren(),
       mockApi('post', '/api/v1/auth/login', () => tokens),
       mockApi('get', '/api/v1/auth/me', () => testUser('Parent')),
     )

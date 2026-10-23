@@ -6,14 +6,25 @@ export interface ProblemDetails {
   detail?: string | null
   instance?: string | null
   errors?: Record<string, string[]>
+  /** Why a sign-in was refused (403): 'email-not-confirmed' or 'user-inactive'. */
+  code?: string
 }
 
 /**
  * What the UI does with a failed request. Mirrors the backend's status mapping:
- * 400 validation, 401 not signed in, 403 no permission, 404 not found, 409 conflict, 422 business rule.
+ * 400 validation, 401 not signed in, 403 no permission, 404 not found, 409 conflict, 422 business rule, 429 too many
+ * attempts (rate limit).
  */
 export type ApiErrorKind =
-  'validation' | 'unauthorized' | 'forbidden' | 'not-found' | 'conflict' | 'rule' | 'server' | 'network'
+  | 'validation'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'not-found'
+  | 'conflict'
+  | 'rule'
+  | 'rate-limited'
+  | 'server'
+  | 'network'
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind
@@ -22,6 +33,8 @@ export class ApiError extends Error {
   readonly problem: ProblemDetails | null
   /** Validation messages keyed by camelCase field name, ready for form fields. */
   readonly fieldErrors: Record<string, string[]>
+  /** The problem's "code" extension, when the API gives one. */
+  readonly code: string | undefined
 
   constructor(kind: ApiErrorKind, status: number, problem: ProblemDetails | null, options?: ErrorOptions) {
     super(problem?.detail ?? problem?.title ?? `Request failed (${kind})`, options)
@@ -30,6 +43,7 @@ export class ApiError extends Error {
     this.status = status
     this.problem = problem
     this.fieldErrors = normalizeFieldErrors(problem?.errors)
+    this.code = problem?.code
   }
 }
 
@@ -51,6 +65,8 @@ export function kindForStatus(status: number): ApiErrorKind {
       return 'conflict'
     case 422:
       return 'rule'
+    case 429:
+      return 'rate-limited'
     default:
       return 'server'
   }

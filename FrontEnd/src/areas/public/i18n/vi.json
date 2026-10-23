@@ -61,9 +61,28 @@
     },
     "register": {
       "title": "Đăng ký tài khoản phụ huynh",
-      "comingSoon": "Đăng ký trực tuyến sắp được mở. Trong thời gian này, hãy liên hệ quản trị viên để được tạo tài khoản.",
+      "description": "Tạo tài khoản để quản lý hồ sơ học của con. Trẻ không cần email.",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "confirmPassword": "Nhập lại mật khẩu",
+      "acceptTerms": "Tôi đồng ý với <terms>Điều khoản sử dụng</terms> và <privacy>Chính sách quyền riêng tư</privacy>.",
+      "submit": "Đăng ký",
+      "submitting": "Đang đăng ký…",
       "haveAccount": "Đã có tài khoản?",
-      "signIn": "Đăng nhập"
+      "signIn": "Đăng nhập",
+      "validation": {
+        "emailRequired": "Hãy nhập email.",
+        "emailInvalid": "Email không hợp lệ.",
+        "emailTooLong": "Email quá dài.",
+        "passwordWeak": "Mật khẩu chưa đủ các yêu cầu bên dưới.",
+        "passwordTooLong": "Mật khẩu tối đa 128 ký tự.",
+        "passwordMismatch": "Hai mật khẩu không khớp.",
+        "termsRequired": "Bạn cần đồng ý để tiếp tục.",
+        "serverInvalid": "Giá trị này chưa hợp lệ."
+      },
+      "errors": {
+        "failed": "Không đăng ký được. Hãy thử lại sau."
+      }
     },
     "login": {
       "title": "Đăng nhập",
@@ -84,9 +103,41 @@
         "invalidCredentials": "Email hoặc mật khẩu không đúng. Nếu nhập sai nhiều lần, tài khoản sẽ bị tạm khóa 15 phút.",
         "inactive": "Tài khoản này đã bị vô hiệu hóa. Hãy liên hệ quản trị viên.",
         "invalidInput": "Thông tin đăng nhập chưa hợp lệ.",
-        "unavailable": "Không kết nối được máy chủ. Hãy thử lại sau."
+        "unavailable": "Không kết nối được máy chủ. Hãy thử lại sau.",
+        "emailNotConfirmed": "Email của bạn chưa được xác nhận. Hãy mở liên kết trong email đăng ký, hoặc gửi lại liên kết."
       },
-      "expired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
-    }
+      "expired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.",
+      "noAccount": "Chưa có tài khoản?",
+      "register": "Đăng ký cho phụ huynh"
+    },
+    "checkEmail": {
+      "title": "Kiểm tra hộp thư của bạn",
+      "description": "Nếu {{email}} chưa có tài khoản, chúng tôi vừa gửi tới địa chỉ này một liên kết xác nhận. Liên kết có hiệu lực trong 24 giờ.",
+      "descriptionNoEmail": "Chúng tôi vừa gửi một liên kết xác nhận tới email của bạn. Liên kết có hiệu lực trong 24 giờ.",
+      "hint": "Không thấy email? Hãy xem thư mục thư rác, hoặc gửi lại liên kết."
+    },
+    "resend": {
+      "email": "Email",
+      "submit": "Gửi lại liên kết",
+      "submitting": "Đang gửi…",
+      "sent": "Nếu email này đang chờ xác nhận, liên kết mới đã được gửi.",
+      "failed": "Không gửi lại được. Hãy thử lại sau."
+    },
+    "confirm": {
+      "checking": "Đang xác nhận email…",
+      "successTitle": "Email đã được xác nhận",
+      "successDescription": "Tài khoản của bạn đã sẵn sàng. Hãy đăng nhập để bắt đầu.",
+      "signIn": "Đăng nhập",
+      "invalidTitle": "Liên kết không hợp lệ hoặc đã hết hạn",
+      "invalidDescription": "Liên kết có hiệu lực trong 24 giờ, và chỉ liên kết mới nhất bạn nhận được còn dùng được. Nhập email để nhận liên kết mới.",
+      "failed": "Không xác nhận được lúc này. Hãy thử lại sau.",
+      "retry": "Thử lại"
+    },
+    "legal": {
+      "terms": "Điều khoản sử dụng",
+      "privacy": "Chính sách quyền riêng tư",
+      "draft": "Nội dung chi tiết đang được hoàn thiện và sẽ được công bố trước khi English Adventure chính thức ra mắt."
+    },
+    "tooManyAttempts": "Bạn đã thử quá nhiều lần. Hãy đợi một phút rồi thử lại."
   }
 }

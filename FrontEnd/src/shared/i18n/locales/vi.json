@@ -32,5 +32,31 @@
       "title": "Đã có lỗi xảy ra",
       "description": "Hãy tải lại trang. Nếu lỗi vẫn còn, hãy báo cho quản trị viên."
     }
+  },
+  "password": {
+    "title": "Mật khẩu cần có:",
+    "met": "đã đạt",
+    "notMet": "chưa đạt",
+    "rules": {
+      "length": "Ít nhất 12 ký tự",
+      "upper": "Một chữ in hoa",
+      "lower": "Một chữ thường",
+      "digit": "Một chữ số",
+      "symbol": "Một ký hiệu, ví dụ ! @ # -"
+    }
+  },
+  "avatars": {
+    "fox": "Cáo",
+    "owl": "Cú",
+    "cat": "Mèo",
+    "bear": "Gấu",
+    "rabbit": "Thỏ",
+    "panda": "Gấu trúc",
+    "lion": "Sư tử",
+    "penguin": "Chim cánh cụt",
+    "elephant": "Voi",
+    "monkey": "Khỉ",
+    "koala": "Gấu túi",
+    "turtle": "Rùa"
   }
 }

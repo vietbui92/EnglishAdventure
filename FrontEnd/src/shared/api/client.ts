@@ -53,7 +53,7 @@ const bearerToken: Middleware = {
       return response
     }
     copy.headers.set('Authorization', `Bearer ${token}`)
-    return globalThis.fetch(copy)
+    return send(copy)
   },
   onError({ id }) {
     pendingCopies.delete(id)
@@ -65,11 +65,25 @@ function isAuthEndpoint(schemaPath: string) {
   return schemaPath.startsWith('/api/v1/auth/')
 }
 
-// Same origin as the page: the Vite dev server (and later the production host) forwards /api to the backend.
+let requestTimeoutMs = 20_000
+
+/** For tests: shortens the time after which a request without an answer fails. */
+export function setRequestTimeout(milliseconds: number) {
+  requestTimeoutMs = milliseconds
+}
+
+// A request that gets no answer (server stuck, or paused in a debugger) fails as a network error after
+// requestTimeoutMs, so the page shows "try again" instead of loading forever. The caller's own abort still works.
 // fetch is looked up per request, so test mocks (MSW) that replace it after this module loads still apply.
+function send(request: Request) {
+  const signal = AbortSignal.any([request.signal, AbortSignal.timeout(requestTimeoutMs)])
+  return globalThis.fetch(request, { signal })
+}
+
+// Same origin as the page: the Vite dev server (and later the production host) forwards /api to the backend.
 export const api = createClient<paths>({
   baseUrl: window.location.origin,
-  fetch: (request) => globalThis.fetch(request),
+  fetch: send,
 })
 api.use(bearerToken)
 

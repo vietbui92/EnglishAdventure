@@ -48,18 +48,3 @@ describe('LandingPage', () => {
     expect(document.documentElement.lang).toBe('en')
   })
 })
-
-describe('RegisterPage', () => {
-  it('explains that online registration opens soon and links to sign-in', async () => {
-    const { user, router } = await renderRoutes(routes, { route: '/' })
-
-    await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'Đăng ký' }))
-
-    expect(await screen.findByRole('heading', { name: 'Đăng ký tài khoản phụ huynh' })).toBeTruthy()
-    expect(router.state.location.pathname).toBe('/register')
-
-    await user.click(within(screen.getByRole('main')).getByRole('link', { name: 'Đăng nhập' }))
-    expect(await screen.findByRole('heading', { name: 'Đăng nhập' })).toBeTruthy()
-    expect(router.state.location.pathname).toBe('/login')
-  })
-})

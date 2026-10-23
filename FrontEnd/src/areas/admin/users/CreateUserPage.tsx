@@ -1,24 +1,19 @@
 import type { ParseKeys } from 'i18next'
-import { ArrowLeft, Check, CircleAlert, X } from 'lucide-react'
+import { ArrowLeft, CircleAlert } from 'lucide-react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { z } from 'zod'
+import { useCreateUser } from '@/areas/admin/users/api'
 import { ApiError } from '@/shared/api/problem-details'
+import { isStrongPassword, passwordMaxLength } from '@/shared/auth/password-rules'
+import { PasswordChecklist } from '@/shared/components/PasswordChecklist'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group'
-import { useCreateUser } from '@/areas/admin/users/api'
-import {
-  isStrongPassword,
-  passwordMaxLength,
-  passwordRules,
-  type PasswordRule,
-} from '@/areas/admin/users/password-rules'
 import { zodResolver } from '@/shared/lib/zod-resolver'
-import { cn } from '@/shared/lib/utils'
 
 /** Tells the detail page that the user was just created, so it can explain the next step. */
 export interface CreatedUserLocationState {
@@ -47,14 +42,6 @@ const createUserSchema = z
   })
 
 type CreateUserForm = z.input<typeof createUserSchema>
-
-const ruleLabels: Record<PasswordRule, ParseKeys> = {
-  length: 'admin.users.create.passwordRules.length',
-  upper: 'admin.users.create.passwordRules.upper',
-  lower: 'admin.users.create.passwordRules.lower',
-  digit: 'admin.users.create.passwordRules.digit',
-  symbol: 'admin.users.create.passwordRules.symbol',
-}
 
 export function CreateUserPage() {
   const { t } = useTranslation()
@@ -178,26 +165,7 @@ export function CreateUserPage() {
             {...form.register('password')}
           />
           {fieldError('password')}
-          <div id="password-rules" className="text-sm">
-            <p className="text-muted-foreground">{t('admin.users.create.passwordRules.title')}</p>
-            <ul className="mt-1 grid gap-0.5">
-              {(Object.keys(passwordRules) as PasswordRule[]).map((rule) => {
-                const met = passwordRules[rule](password)
-                return (
-                  <li
-                    key={rule}
-                    className={cn('flex items-center gap-1.5', met ? 'text-foreground' : 'text-muted-foreground')}
-                  >
-                    {met ? <Check className="size-4 text-primary" aria-hidden /> : <X className="size-4" aria-hidden />}
-                    {t(ruleLabels[rule])}
-                    <span className="sr-only">
-                      ({met ? t('admin.users.create.passwordRules.met') : t('admin.users.create.passwordRules.notMet')})
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
+          <PasswordChecklist id="password-rules" password={password} />
         </div>
 
         <div className="flex flex-col gap-2">

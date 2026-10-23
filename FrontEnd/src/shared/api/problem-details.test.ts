@@ -9,6 +9,7 @@ describe('kindForStatus', () => {
     [404, 'not-found'],
     [409, 'conflict'],
     [422, 'rule'],
+    [429, 'rate-limited'],
     [500, 'server'],
     [502, 'server'],
   ] as const)('maps %i to %s', (status, kind) => {
@@ -17,6 +18,13 @@ describe('kindForStatus', () => {
 })
 
 describe('toApiError', () => {
+  it('keeps the code that explains a refused sign-in', () => {
+    const error = toApiError(403, { title: 'Access denied.', status: 403, code: 'email-not-confirmed' })
+
+    expect(error.kind).toBe('forbidden')
+    expect(error.code).toBe('email-not-confirmed')
+  })
+
   it('uses the problem detail as the message', () => {
     const error = toApiError(422, { title: 'Domain rule violation.', status: 422, detail: 'The last SuperAdmin.' })
 

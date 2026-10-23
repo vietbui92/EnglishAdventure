@@ -1,4 +1,5 @@
 using EnglishAdventure.Domain.Common;
+using EnglishAdventure.Domain.Entities.Family;
 using EnglishAdventure.Domain.Entities.Identity;
 using EnglishAdventure.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -6,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace EnglishAdventure.Infrastructure.Persistence;
 
 /// <summary>
-/// The application's single EF Core context for every module (ADR-1). It currently holds the <c>identity</c> schema:
-/// users, roles, permissions, refresh tokens and email confirmation tokens. Each entity is mapped by its own configuration class in
+/// The application's single EF Core context for every module (ADR-1). It currently holds the Identity module (users,
+/// roles, permissions, refresh and email confirmation tokens) and the Family module (child profiles). Each entity is mapped by its own configuration class in
 /// <c>Persistence/Configurations/&lt;Module&gt;</c>.
 /// </summary>
 public sealed class EnglishAdventureDbContext : DbContext
@@ -26,6 +27,8 @@ public sealed class EnglishAdventureDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
+
+    public DbSet<ChildProfile> ChildProfiles => Set<ChildProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

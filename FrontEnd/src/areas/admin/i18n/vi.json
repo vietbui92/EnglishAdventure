@@ -75,16 +75,6 @@
         "submit": "Tạo người dùng",
         "submitting": "Đang tạo…",
         "cancel": "Hủy",
-        "passwordRules": {
-          "title": "Mật khẩu cần có:",
-          "length": "Ít nhất 12 ký tự",
-          "upper": "Một chữ in hoa",
-          "lower": "Một chữ thường",
-          "digit": "Một chữ số",
-          "symbol": "Một ký hiệu, ví dụ ! @ # -",
-          "met": "đã đạt",
-          "notMet": "chưa đạt"
-        },
         "validation": {
           "emailRequired": "Hãy nhập email.",
           "emailInvalid": "Email không hợp lệ.",

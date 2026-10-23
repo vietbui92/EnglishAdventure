@@ -46,8 +46,8 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | **Phase FP: Public site** | | | |
 | R1 | Restructure the source by area; `/play` → `/kids`; texts per area; import boundaries | | ✅ Done 2026-10-23 |
 | P1 | Landing page (product, steps, promises to parents) with sign-in and register | | ✅ Done 2026-10-23 |
-| F-R1 | Registration form | S1.4 | 🟡 Needs decision |
-| F-R2 | Email confirmation page, resend link | S1.4 | ⚪ Waiting |
+| F-R1 | Registration form | | ✅ Done 2026-10-23 |
+| F-R2 | Email confirmation page, resend link | | ✅ Done 2026-10-23 |
 | **Phase F2: Admin area** | | | |
 | F2.1 | Users: list, search, paging, detail | | ✅ Done 2026-10-23 |
 | F2.2 | Users: create, activate/deactivate, set roles | | ✅ Done 2026-10-23 (role list: S1.5) |
@@ -56,8 +56,8 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F2.5 | Content: quiz and matching editors | S3.2, S3.3 | ⚪ Waiting |
 | F2.6 | Badge definitions | S5.2 | ⚪ Waiting |
 | **Phase F3: Parent area** | | | |
-| F3.1 | Child profiles: create, rename, archive | S2.1 | 🟡 Needs decision |
-| F3.2 | Start a child session ("hand the device to the child") | S2.2 | 🟡 Needs decision |
+| F3.1 | Child profiles: list, create, edit, archive, restore (several per Parent) | | ✅ Done 2026-10-24 |
+| F3.2 | Start a child session ("hand the device to the child") | S2.2 | ⚪ Waiting |
 | F3.3 | Progress and rewards per child | S4.3, S5.3 | ⚪ Waiting |
 | **Phase F4: Child play area** | | | |
 | F4.1 | Kid-friendly visual style and kids shell | | ⚪ Waiting (shell and theme exist since F0.4) |
@@ -216,6 +216,7 @@ Original scope:
 - **CORS:** none. The app is served from the same origin (Vite proxy now; reverse proxy in F5.3).
 - **Code:** `Api/Authentication/RefreshTokenCookie.cs`, `AuthController`; `AuthTokensResponse.RefreshToken` is now nullable. No Application, Domain or database change.
 - **Tests:** `RefreshTokenCookieSqlServerTests` (cookie attributes and empty body field, rotation and replay, no cookie → 401, cookie ignored without the header, logout revokes and deletes). All 139 tests pass with LocalDB.
+- **Fix 2026-10-23:** for web clients `refresh` now answers 401 without throwing when there is no cookie (every signed-out page load), and deletes a rejected cookie. Before, the debugger stopped on `RefreshTokenException` on each page load, and a revoked cookie stayed in the browser for up to 14 days because the exception handler cleared the Set-Cookie header.
 - **Known limit:** Safari does not accept `Secure` cookies on `http://localhost`; develop with Chrome, Edge or Firefox, or use the API's https profile.
 
 **F1.1 Login page.** ✅ Done 2026-10-23. Built as below, with these details:
@@ -272,7 +273,13 @@ Original scope:
 
 **P1 Landing page.** ✅ Done 2026-10-23. `/` (`areas/public/LandingPage.tsx`, in the main bundle): sticky header (logo, section links, language, sign in, register; "my area" when signed in), hero with the two calls to action, features (lessons by level, mini-games, points and badges: PD-002 to PD-004), three steps (parent account, child profile, learn and follow), promises to parents (no child email or personal data, parent control, progress, content written by the team: PD-006/PD-007 privacy principles), closing call to action, footer. It makes no claim about price. `/register` explains that online registration opens soon (until F-R1). Tests: content and links, section anchors, signed-in variant, English, register page → sign-in.
 
-**F-R1 / F-R2 Registration.** Wait for backend S1.4 (PD-009: self-registration with email confirmation). Register form (email, password with the live rule checklist from F2.2, consent), "check your email" page, confirmation page for the emailed link, resend.
+**F-R1 / F-R2 Registration.** ✅ Done 2026-10-23, with backend S1.4 (PD-009).
+- `/register`: email, password with the live checklist, repeat, consent checkbox linking to `/terms` and `/privacy` (provisional pages until OQ-008). Sends the interface language for the emails. → `/register/check-email` (says the link went out *if* the email has no account yet, valid 24 h; resend button).
+- `/confirm-email?token=`: confirms (a query, not a mutation, so the page sends it once even under React StrictMode); success → sign in; unknown, expired or replaced → explanation and a resend form. Opening an already used link again shows success (fix 2026-10-23, after the owner reopened a used link and was told it was invalid). Every API request now gives up after 20 s (`AbortSignal.timeout` in `src/shared/api/client.ts`) and shows the retry state, so a page never shows "confirming…" forever when the backend does not answer (seen while the backend was paused in the Visual Studio debugger).
+- Sign-in: 403 `email-not-confirmed` shows its own message and a resend button for the typed email; link to registration. 429 everywhere → "too many attempts, wait a minute" (`ApiError` kind `rate-limited`; `ApiError.code` carries the ProblemDetails code).
+- Password rules and `PasswordChecklist` moved to `src/shared` (used by registration and admin user creation); their texts are now `password.*` in the shared translations.
+- Tests (16): registration body and redirect, consent links, validation, 429, English emails, resend, confirm success / invalid / missing token, unconfirmed sign-in with resend, link to registration, legal pages. 109 front-end tests pass.
+- **End to end** with the new API on a scratch LocalDB database through the Vite proxy: register 202 → sign-in 403 `email-not-confirmed` → email file with the link → confirm 204 → sign-in 200 with the cookie → registering the same email again only sends "you already have an account". Scratch database dropped afterwards.
 
 ### Phase F2: Admin area
 
@@ -312,7 +319,7 @@ Original scope:
 
 All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 
-- **F3.1 Child profiles:** list, create (nickname and avatar only, no email, PD-007 privacy rules), rename, archive.
+- **F3.1 Child profiles.** ✅ Done 2026-10-24 (`src/areas/parent/children`). `/parent/children` shows the active profiles as cards (avatar, nickname, edit, archive with confirmation), "n/3 in use", an "add" button disabled at the limit with an explanation, a friendly empty state, and an "archived" group with restore (and the reason when the limit or a nickname blocks it). A dialog creates and edits: nickname (1–50, the API's 409 shown on the field) and a radio grid of the 12 drawn avatars. Avatars are emoji on coloured circles in `src/shared/components/ChildAvatar.tsx` (shared, the kids area will use them); their names are translated for screen readers. The limit and avatar keys come from `GET options`. Tests (6) with a fake API applying the backend rules; `mockFamilyWithoutChildren()` for tests that only pass through the Parent area. 116 front-end tests pass.
 - **F3.2 Child session:** the Parent picks a profile and enters child mode; the app switches to `/kids` with the child token. Leaving child mode asks the Parent to sign in again (S2.2).
 - **F3.3 Progress and rewards:** per-child completions, scores, points and badges.
 
@@ -346,6 +353,8 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | 2026-10-23 | F1.1 done: login page with zod validation, in-memory session store, redirect by user type. `@hookform/resolvers` replaced by a local resolver. F1.2 Ready. |
 | 2026-10-23 | F1.2 and F1.3 done: session restore, single-flight refresh with cross-tab lock, 401 retry, sign-out with cache clearing; route guards by user type and permission, 403 page, permission-filtered menus. Phase F1 complete; F2.1 Ready. |
 | 2026-10-23 | F2.1 done: users list (search, paging in the URL) and user detail. F2.2 Ready. |
+| 2026-10-24 | F3.1 done with backend S2.1: child profiles page, create/edit dialog with avatar picker, archive and restore. |
+| 2026-10-23 | F-R1 and F-R2 done with backend S1.4: registration, check-email, confirm-email, resend, consent with provisional legal pages, unconfirmed sign-in handling. |
 | 2026-10-23 | R1 and P1 done (owner request): source split into `areas/{public,admin,parent,kids}` and `shared` with ESLint boundaries, `/play` renamed `/kids`, public landing page. OQ-010 decided (PD-009); registration steps F-R1, F-R2 added. |
 | 2026-10-23 | F5.0 done early: lazy routes per area and for sign-in; initial JavaScript 681 → 441 kB. |
 | 2026-10-23 | F2.2 done: create user with live password rules, deactivate/reactivate with confirmation, role editor for Admin users (system roles until S1.5). |

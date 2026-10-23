@@ -75,16 +75,6 @@
         "submit": "Create user",
         "submitting": "Creating…",
         "cancel": "Cancel",
-        "passwordRules": {
-          "title": "The password needs:",
-          "length": "At least 12 characters",
-          "upper": "An upper-case letter",
-          "lower": "A lower-case letter",
-          "digit": "A digit",
-          "symbol": "A symbol, such as ! @ # -",
-          "met": "met",
-          "notMet": "not met"
-        },
         "validation": {
           "emailRequired": "Enter an email.",
           "emailInvalid": "This email is not valid.",

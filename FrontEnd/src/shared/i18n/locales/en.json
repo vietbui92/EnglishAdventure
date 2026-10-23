@@ -32,5 +32,31 @@
       "title": "Something went wrong",
       "description": "Reload the page. If the problem persists, contact an administrator."
     }
+  },
+  "password": {
+    "title": "The password needs:",
+    "met": "met",
+    "notMet": "not met",
+    "rules": {
+      "length": "At least 12 characters",
+      "upper": "An upper-case letter",
+      "lower": "A lower-case letter",
+      "digit": "A digit",
+      "symbol": "A symbol, such as ! @ # -"
+    }
+  },
+  "avatars": {
+    "fox": "Fox",
+    "owl": "Owl",
+    "cat": "Cat",
+    "bear": "Bear",
+    "rabbit": "Rabbit",
+    "panda": "Panda",
+    "lion": "Lion",
+    "penguin": "Penguin",
+    "elephant": "Elephant",
+    "monkey": "Monkey",
+    "koala": "Koala",
+    "turtle": "Turtle"
   }
 }

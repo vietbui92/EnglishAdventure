@@ -22,6 +22,53 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Family.ChildProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AvatarKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Nickname")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<Guid>("ParentUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentUserId");
+
+                    b.HasIndex("ParentUserId", "Nickname")
+                        .IsUnique()
+                        .HasFilter("[Status] = 1");
+
+                    b.ToTable("family_child_profiles", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_family_child_profiles_Status", "[Status] IN (1, 2)");
+                        });
+                });
+
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -271,6 +318,15 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("auth_refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Family.ChildProfile", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("ParentUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.RolePermission", b =>

@@ -1,3 +1,4 @@
+using EnglishAdventure.Application.Family;
 using EnglishAdventure.Application.Users;
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authorization;
@@ -9,6 +10,7 @@ using EnglishAdventure.Infrastructure.Email;
 using EnglishAdventure.Infrastructure.Identity;
 using EnglishAdventure.Infrastructure.Persistence;
 using EnglishAdventure.Infrastructure.Persistence.Queries;
+using EnglishAdventure.Infrastructure.Persistence.Repositories.Family;
 using EnglishAdventure.Infrastructure.Persistence.Repositories.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -47,6 +49,9 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
+
+        services.AddScoped<IChildProfileRepository, ChildProfileRepository>();
+        services.AddScoped<IChildProfileQueries, ChildProfileQueries>();
 
         services.TryAddSingleton(TimeProvider.System);
 

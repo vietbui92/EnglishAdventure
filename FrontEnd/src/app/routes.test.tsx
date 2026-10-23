@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { routes } from '@/app/routes'
 import { sessionStore } from '@/shared/auth/session'
-import { mockApi } from '@/shared/test/api-mocks'
+import { mockApi, mockFamilyWithoutChildren } from '@/shared/test/api-mocks'
 import { renderRoutes } from '@/shared/test/render'
 import { server } from '@/shared/test/server'
 import { signInAs } from '@/shared/test/session'
@@ -25,12 +25,13 @@ describe('routes', () => {
   })
 
   it('sends /parent to the children page', async () => {
+    server.use(...mockFamilyWithoutChildren())
     signInAs('Parent')
 
     const { router } = await renderRoutes(routes, { route: '/parent' })
 
     expect(router.state.location.pathname).toBe('/parent/children')
-    expect(screen.getByRole('heading', { name: 'Con của tôi' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Con của tôi' })).toBeTruthy()
   })
 
   it('shows the kids area in its own theme', async () => {

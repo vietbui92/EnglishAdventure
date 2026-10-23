@@ -50,3 +50,27 @@ export function mockApi<M extends Method, P extends PathsWith<M>>(
 export function problem(status: number, details: Omit<ProblemDetails, 'status'> = {}) {
   return HttpResponse.json({ title: `HTTP ${status}`, ...details, status }, { status })
 }
+
+/** For tests that only pass through the Parent area: a family without child profiles. */
+export function mockFamilyWithoutChildren() {
+  return [
+    mockApi('get', '/api/v1/family/children', () => []),
+    mockApi('get', '/api/v1/family/children/options', () => ({
+      avatarKeys: [
+        'fox',
+        'owl',
+        'cat',
+        'bear',
+        'rabbit',
+        'panda',
+        'lion',
+        'penguin',
+        'elephant',
+        'monkey',
+        'koala',
+        'turtle',
+      ],
+      maxActive: 3,
+    })),
+  ]
+}

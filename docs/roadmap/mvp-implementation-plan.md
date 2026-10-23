@@ -47,11 +47,11 @@ Rules for every step:
 | S1.1 | Permission catalog and policy-based authorization | | ✅ Done 2026-10-23 |
 | S1.2 | Secure SuperAdmin bootstrap and role/permission sync | | ✅ Done 2026-10-23 |
 | S1.3 | Admin user management (create users, assign roles) | | ✅ Done 2026-10-23 |
-| S1.4 | Parent self-registration with email confirmation (PD-009) | owner approval of the draft below | 🟡 Needs decision |
+| S1.4 | Parent self-registration with email confirmation (PD-009) | | ✅ Done 2026-10-23 |
 | S1.5 | Role management (create roles, choose their permissions) | | 🟢 Ready |
 | **Phase 2: Family** | | | |
-| S2.1 | Child profiles for Parents | OQ-001, OQ-013, S1.4 | 🟡 Needs decision |
-| S2.2 | Child session | OQ-009, S2.1 | 🟡 Needs decision |
+| S2.1 | Child profiles for Parents (up to 3 active per Parent) | | ✅ Done 2026-10-24 |
+| S2.2 | Child session started by the Parent | | 🟢 Ready (to plan) |
 | **Phase 3: Content** | | | |
 | S3.1 | Levels and lessons: manage, order, publish | OQ-005, S1.1 | 🟡 Needs decision |
 | S3.2 | Quiz activities | S3.1, OQ-015 | ⚪ Waiting |
@@ -68,7 +68,7 @@ Rules for every step:
 | S5.3 | Rewards views for child and Parent | S5.2 | ⚪ Waiting |
 | **Phase 6: Release hardening** | | | |
 | S6.1 | Rate limiting on `login` and `refresh` | | ⚪ Waiting |
-| S6.2 | Cleanup job for expired refresh tokens | | ⚪ Waiting |
+| S6.2 | Cleanup job: expired tokens, unconfirmed accounts after 7 days | | ⚪ Waiting |
 | S6.3 | Fix the vulnerable `System.Security.Cryptography.Pkcs` package | owner approval | 🟢 Ready |
 | S6.4 | Privacy: retention, deletion, log review | OQ-008 | 🟡 Needs decision |
 | S6.5 | CI pipeline: build and test on every push | | ⚪ Waiting |
@@ -202,13 +202,17 @@ flowchart LR
   - SuperAdmin always keeps every non-family permission.
   - Changes apply within the 1-minute permission cache.
 
-**S1.4 Parent self-registration with email confirmation.** OQ-010 decided 2026-10-23 (PD-009). **Draft scope, waiting for approval:**
+**S1.4 Parent self-registration with email confirmation.** ✅ Done 2026-10-23. OQ-010 decided 2026-10-23 (PD-009). The owner approved the scope below and the four answers: production email provider later (development writes files); consent checkbox now, with provisional links to the terms and privacy pages until OQ-008; links valid 24 h; unconfirmed accounts deleted after 7 days by the S6.2 cleanup job.
+
+*As built:* commands `RegisterParent`, `ConfirmEmail`, `ResendEmailConfirmation` (Application/Authentication); `User.RegisterParent` / `ConfirmEmail`; `User.Create` (administrators, bootstrap) counts as confirmed; `Consent.CurrentVersion` = `2026-10-23`; `IEmailSender` → `PickupDirectoryEmailSender` (`Email:PickupDirectory`, default `App_Data/emails`, git-ignored); `IAppLinks` → `WebApp:BaseUrl` (required, validated at start; `http://localhost:5173` in Development); unconfirmed or inactive sign-in → 403 with ProblemDetails `code` `email-not-confirmed` / `user-inactive`; rate limiter policies `sign-in` (10/min per address) and `registration` (5/min) with 429 ProblemDetails and `Retry-After` (`RateLimiting` settings). Migration `AddParentRegistration`: three `auth_users` columns, table `auth_email_confirmation_tokens`, existing users backfilled as confirmed (checked with the idempotent script on a scratch database that had a user). Tests: 6 domain, 9 validator, 10 SQL integration (all listed below); 165 backend tests pass.
+
+**Scope as approved:**
 - **Endpoints** (anonymous, `api/v1/auth`):
   - `POST register` with email, password (the S1.2 rule) and consent. Always answers `202 Accepted` with the same body, also when the email already has an account, so the endpoint never reveals who is registered. A taken email gets a "you already have an account" email instead.
   - `POST confirm-email` with the token from the link: confirms the account (`204`). An expired or used token gives `400`.
   - `POST resend-confirmation` with an email: always `202`; sends a new link only to an unconfirmed account.
 - **Sign-in:** an unconfirmed Parent gets `403` with a distinct problem type (only after the correct password, like a deactivated account), so the web app can offer "resend the link". Users created by an Admin count as confirmed.
-- **Domain and database** (migration): `User.EmailConfirmedAtUtc` (existing users backfilled as confirmed); `User.ConsentAcceptedAtUtc` and `ConsentVersion`; table `auth_email_confirmation_tokens` (SHA-256 hash only, like refresh tokens; 24 h lifetime; single use).
+- **Domain and database** (migration): `User.EmailConfirmedAtUtc` (existing users backfilled as confirmed); `User.ConsentAcceptedAtUtc` and `ConsentVersion`; table `auth_email_confirmation_tokens` (SHA-256 hash only, like refresh tokens; 24 h lifetime; a new link voids the older unused ones; opening a used link again answers 204 without change).
 - **Email:** `IEmailSender` in Application. Development implementation writes each email as a file to a local folder and logs the link; no package. The production provider is a separate decision (SMTP, SendGrid, Azure Communication Services, ...).
 - **Abuse protection:** ASP.NET Core's built-in rate limiter on `register`, `resend-confirmation` and `login` (moves part of S6.1 forward).
 - **Tests:** no account enumeration (same answer for new and taken emails), token hashing, expiry, single use, unconfirmed sign-in refused, Admin-created users unaffected, rate limit.
@@ -217,15 +221,25 @@ flowchart LR
 
 ### Phase 2: Family
 
-**S2.1 Child profiles.** *Needs OQ-001, OQ-013.*
-- **Includes:** a Parent creates, lists, renames and archives their own child profiles (nickname and avatar only).
-- **Migration:** `family_child_profiles`.
-- *Done when:*
-  - A Parent sees only their own profiles.
-  - Another Parent's profile ID returns 404 (cross-family test).
-  - Validation rules have unit tests.
+**S2.1 Child profiles.** OQ-001 and OQ-013 decided 2026-10-24 (PD-010). **Owner answers 2026-10-24:** at most **3** active profiles per Parent (archived ones do not count); nicknames unique within a family; about 12 drawn animal avatars, never photos; archive and restore instead of delete.
 
-**S2.2 Child session.** *Needs OQ-009 (proposed: option B).*
+*As built (✅ 2026-10-24):* `ChildProfile` with `MaxActivePerParent = 3` and the 12 `AvatarKeys` in the entity; `Nickname` value object; commands `CreateChildProfile`, `UpdateChildProfile`, `ArchiveChildProfile`, `RestoreChildProfile` and queries `ListChildProfiles`, `GetChildProfile` (`Application/Family`); `ChildProfilesController` on `api/v1/family/children` plus `GET options` (avatars and limit) for the web app. Limit → 422, nickname taken → 409 (checked in the handler, backed by the filtered unique index), another family's profile → 404 everywhere. The Nickname column has collation `Latin1_General_100_CI_AS` ("An" = "an", "An" ≠ "Ân"). Migration `AddChildProfiles`. Tests: 13 domain, 7 validator, 8 SQL integration (several profiles, the limit on create and restore, unique nicknames per family, reuse after archiving, update and restore, cross-family 404, 401/403, invalid input and options); 194 backend tests pass. Checked end to end on a scratch database (register → confirm → sign in → three profiles → fourth refused → duplicate nickname 409 → archive). The SuperAdmin role does not hold `family.*`, so admins cannot see families (PD-008).
+
+Scope:
+- **Domain** (`Domain/Entities/Family`): `ChildProfile` (aggregate root) with `ParentUserId`, `Nickname` (value object: 1–50 characters, trimmed), `AvatarKey` (one of a fixed set of drawn avatars, no photos), `Status` (Active, Archived), `CreatedAtUtc`, `ArchivedAtUtc?`. Rules: rename and change the avatar only while active; `IsOwnedBy(userId)`. No real name, birth date, photo or email (privacy principles).
+- **Several profiles per Parent** (owner addition), with a cap on active profiles and a unique nickname within the family (questions below).
+- **Endpoints** (`api/v1/family/children`, permission `family.children.manage`, Parent users only):
+  - `GET /` (own profiles; archived ones on request) and `GET /{id}`.
+  - `POST /` (nickname, avatar) and `PUT /{id}` (nickname, avatar).
+  - `POST /{id}/archive` and `POST /{id}/restore`.
+- **Ownership on the server:** every query filters by the signed-in Parent. Another family's profile ID answers 404, never 403, so IDs reveal nothing. A client-sent ID is never trusted on its own (PD-008).
+- **Archive, not delete:** archiving hides the profile and stops learning but keeps the progress, and it can be restored. Permanent deletion of child data belongs to S6.4 (OQ-008).
+- **Migration:** table `family_child_profiles` (FK to `auth_users`, restrict delete), index on `ParentUserId`, filtered unique index on (`ParentUserId`, normalized nickname) for active profiles, row version for concurrent edits (409).
+- **Tests:** nickname and avatar rules (unit); the cap; unique nickname; archive and restore; cross-family 404 on every endpoint; an Admin, or a Parent without the permission, gets 403.
+- **Questions for the owner:** (1) cap on active profiles per Parent (proposed 10); (2) nickname unique within a family (proposed yes, so the child picker is unambiguous); (3) avatars: a fixed set of about 12 drawn animal avatars (proposed), never photos; (4) archive and restore instead of delete (proposed).
+- *Done when:* the tests above pass and the Parent area (F3.1) can create, edit, archive and restore profiles end to end.
+
+**S2.2 Child session.** OQ-009 decided 2026-10-24 (PD-010, option B). Planned in detail after S2.1.
 - **Includes:**
   - A Parent starts a child session for one profile.
   - The child token carries only `learning.play` and the `child_profile_id`.
@@ -320,7 +334,7 @@ flowchart LR
 Every Phase 6 step must be done before any public release.
 
 - **S6.1 Rate limiting:** ASP.NET Core's built-in rate limiter on `login` and `refresh`.
-- **S6.2 Refresh-token cleanup:** a background job deletes old expired and revoked rows.
+- **S6.2 Cleanup job:** deletes old expired and revoked refresh tokens, used or expired email confirmation tokens, and Parent accounts never confirmed within 7 days (owner decision 2026-10-23, S1.4).
 - **S6.3 Vulnerable package:** fix NU1903 for `System.Security.Cryptography.Pkcs` 9.0.11. Needs package approval.
 - **S6.4 Privacy:** retention and deletion of child data, log review, decided by OQ-008.
 - **S6.5 CI:** build and test on every push, including the SQL integration tests against a throwaway database.
@@ -335,6 +349,9 @@ Every Phase 6 step must be done before any public release.
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. |
+| 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |
+| 2026-10-24 | OQ-001, OQ-009, OQ-013 decided (PD-010): S2.1 drafted for approval (several profiles per Parent); S2.2 waits only for S2.1. |
+| 2026-10-23 | S1.4 done: Parent self-registration with email confirmation (PD-009), development email files, rate limiting on sign-in and registration. S6.2 now also removes unconfirmed accounts after 7 days. |
 | 2026-10-23 | OQ-014 decided. Front-end track moved to its own plan (`frontend-implementation-plan.md`), including backend step B-F1 (refresh-token cookie). |
 | 2026-10-23 | OQ-007 decided (PD-008). S1.1 no longer blocked by a decision; it waits for S0.4. Permission names updated in S1.1, S1.3 and S5.2. |
 | 2026-10-23 | S0.4 done (structure approved, recorded as ADR-1). S1.1 is now Ready. |

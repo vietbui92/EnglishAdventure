@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
+import { ResendConfirmation } from '@/areas/public/ResendConfirmation'
 import { ApiError } from '@/shared/api/problem-details'
 import { RestoringSession, type LoginLocationState } from '@/shared/auth/guards'
 import { useSessionState } from '@/shared/auth/session'
@@ -41,7 +42,11 @@ function formErrorKey(error: unknown): ParseKeys {
     case 'unauthorized':
       return 'public.login.errors.invalidCredentials'
     case 'forbidden':
-      return 'public.login.errors.inactive'
+      return error.code === 'email-not-confirmed'
+        ? 'public.login.errors.emailNotConfirmed'
+        : 'public.login.errors.inactive'
+    case 'rate-limited':
+      return 'public.tooManyAttempts'
     case 'validation':
       return 'public.login.errors.invalidInput'
     default:
@@ -83,6 +88,7 @@ export function LoginPage() {
     return <Navigate to={pathAfterSignIn(sessionState.session.user, from)} replace />
   }
   const expired = sessionState.status === 'signed-out' && sessionState.reason === 'expired'
+  const unconfirmed = login.error instanceof ApiError && login.error.code === 'email-not-confirmed'
 
   const fieldError = (field: keyof LoginForm) => {
     const message = errors[field]?.message
@@ -159,6 +165,20 @@ export function LoginPage() {
               {login.isPending ? t('public.login.submitting') : t('public.login.submit')}
             </Button>
           </form>
+
+          {/* Outside the sign-in form: forms cannot be nested. */}
+          {unconfirmed && login.variables && (
+            <div className="mt-4 border-t pt-4">
+              <ResendConfirmation email={login.variables.email} />
+            </div>
+          )}
+
+          <p className="mt-6 text-sm text-muted-foreground">
+            {t('public.login.noAccount')}{' '}
+            <Link to="/register" className="font-medium text-foreground underline underline-offset-4">
+              {t('public.login.register')}
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </main>

@@ -3,6 +3,48 @@
     "nav": {
       "children": "Con của tôi",
       "progress": "Tiến độ"
+    },
+    "children": {
+      "title": "Con của tôi",
+      "subtitle": "Mỗi con có một hồ sơ riêng để học và nhận phần thưởng.",
+      "count": "{{count}}/{{max}} hồ sơ đang dùng",
+      "add": "Thêm hồ sơ",
+      "limitReached": "Gia đình đã có đủ {{max}} hồ sơ. Lưu trữ một hồ sơ để thêm hồ sơ mới.",
+      "emptyTitle": "Chưa có hồ sơ nào",
+      "emptyDescription": "Tạo hồ sơ đầu tiên để con bắt đầu học.",
+      "loading": "Đang tải…",
+      "loadError": "Không tải được danh sách hồ sơ.",
+      "retry": "Thử lại",
+      "edit": "Sửa",
+      "archive": "Lưu trữ",
+      "archiveTitle": "Lưu trữ hồ sơ của {{nickname}}?",
+      "archiveDescription": "Hồ sơ sẽ được ẩn và con không học được bằng hồ sơ này. Tiến độ và phần thưởng vẫn được giữ, bạn có thể khôi phục bất cứ lúc nào.",
+      "cancel": "Hủy",
+      "archivedTitle": "Hồ sơ đã lưu trữ",
+      "restore": "Khôi phục",
+      "restoreLimit": "Không khôi phục được: gia đình đã có đủ {{max}} hồ sơ đang dùng.",
+      "restoreConflict": "Không khôi phục được: một hồ sơ đang dùng có cùng biệt danh. Hãy đổi biệt danh của hồ sơ đó trước.",
+      "failed": "Không thực hiện được. Hãy thử lại.",
+      "form": {
+        "createTitle": "Thêm hồ sơ cho con",
+        "editTitle": "Sửa hồ sơ",
+        "nickname": "Biệt danh",
+        "nicknameHint": "Tên gọi ở nhà của bé, ví dụ Bin hoặc Bông. Không cần tên thật.",
+        "avatar": "Hình đại diện",
+        "create": "Tạo hồ sơ",
+        "save": "Lưu",
+        "saving": "Đang lưu…",
+        "cancel": "Hủy",
+        "validation": {
+          "nicknameRequired": "Hãy nhập biệt danh.",
+          "nicknameTooLong": "Biệt danh tối đa 50 ký tự.",
+          "nicknameTaken": "Gia đình đã có một bé dùng biệt danh này."
+        },
+        "errors": {
+          "limit": "Gia đình đã có đủ {{max}} hồ sơ đang dùng.",
+          "failed": "Không lưu được hồ sơ. Hãy thử lại."
+        }
+      }
     }
   }
 }

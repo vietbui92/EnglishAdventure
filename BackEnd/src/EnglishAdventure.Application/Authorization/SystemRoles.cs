@@ -30,7 +30,7 @@ public static class SystemRoles
         new(
             Parent,
             "Manages own children's learning profiles and views their progress.",
-            [Family.ManageChildren, Family.ReadProgress])
+            [Permissions.Family.ManageChildren, Permissions.Family.ReadProgress])
     ];
 }
 

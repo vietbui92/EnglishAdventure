@@ -48,10 +48,14 @@ type MemoryRouter = ReturnType<typeof createMemoryRouter>
 // /parent/children) starts another navigation after the first render, so this repeats until the location holds.
 async function settle(router: MemoryRouter) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    await waitFor(() => {
-      const { initialized, navigation } = router.state
-      if (!initialized || navigation.state !== 'idle') throw new Error('The page is still loading.')
-    })
+    await waitFor(
+      () => {
+        const { initialized, navigation } = router.state
+        if (!initialized || navigation.state !== 'idle') throw new Error('The page is still loading.')
+        // The first lazy chunk of a test file is compiled on demand, which can take more than a second under load.
+      },
+      { timeout: 5000 },
+    )
     const location = router.state.location.key
     await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
     if (router.state.navigation.state === 'idle' && router.state.location.key === location) {

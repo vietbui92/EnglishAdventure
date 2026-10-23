@@ -39,6 +39,7 @@ The API host starts again. The **authentication foundation** is implemented and 
   - Emails: development writes them as text files to `App_Data/emails` (`Email:PickupDirectory`); the production provider is not chosen yet. Links use `WebApp:BaseUrl` (required outside Development).
   - Rate limiting (built-in ASP.NET Core): `sign-in` 10/min and `registration` 5/min per client address, 429 with `Retry-After`.
   - Migration `AddParentRegistration` (owner applies it with `POST /api/v1/database/migrate`).
+- **Child profiles (S2.1, PD-010)**: `api/v1/family/children` (`family.children.manage`, Parent users): list (`includeArchived`), get, create, update, archive, restore, and `options` (12 avatar keys, limit 3). At most 3 active profiles per Parent (422), nickname unique among a family's active profiles regardless of letter case (409), another family's profile answers 404. Table `family_child_profiles` (migration `AddChildProfiles`).
 - **User management (S1.3)**:
   - `GET /api/v1/admin/users` (search, paging) and `GET /{id}` need `users.read`.
   - `POST /` (Admin or Parent; Parent gets the Parent role), `POST /{id}/deactivate` and `/activate` (deactivation ends all sessions) need `users.manage`.
