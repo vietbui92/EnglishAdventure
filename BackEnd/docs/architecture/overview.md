@@ -90,7 +90,7 @@ sequenceDiagram
 
 The intended general flow for business features is **Controller → `IMediator.Send` → `ValidationBehavior` → handler → Domain entities (rules) → Application port → Infrastructure (EF Core) → SQL Server**. No handler touches persistence yet, so the Domain and persistence steps are 📋 not exercised anywhere.
 
-Middleware order in `Program.cs`: `MapOpenApi` and `MapScalarApiReference` (Development only), then `UseExceptionHandler`, `UseHttpsRedirection`, `UseAuthentication`, `UseAuthorization`, `MapControllers`, `MapHealthChecks("/health")`.
+Middleware order in `Program.cs`: `MapOpenApi` and `MapScalarApiReference` (Development only), then `UseExceptionHandler`, `UseHttpsRedirection` (not in Development, so the front-end dev proxy on the http port is not redirected to another origin), `UseAuthentication`, `UseAuthorization`, `MapControllers`, `MapHealthChecks("/health")`.
 
 ### Error mapping (`Api/ExceptionHandling/GlobalExceptionHandler.cs`)
 

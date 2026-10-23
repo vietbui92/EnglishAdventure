@@ -19,6 +19,18 @@ npm run preview      # serve dist/ locally
 npm run lint         # ESLint
 npm run format       # Prettier (write); format:check only checks
 npm test             # Vitest, single run; test:watch to watch
+npm run api:types    # regenerate src/api/schema.d.ts (the API must be running)
+```
+
+## Calling the API
+
+The dev server forwards `/api` to `http://localhost:5063` (set `API_PROXY_TARGET` to change it), so start the
+backend first. After a backend change to an endpoint, run `npm run api:types` and commit `src/api/schema.d.ts`.
+
+```ts
+import { api, unwrap } from '@/api/client'
+
+const status = await unwrap(api.GET('/api/v1/foundation/status')) // throws ApiError on failure
 ```
 
 ## Adding a UI component

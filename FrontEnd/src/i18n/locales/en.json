@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "English Adventure"
+  },
+  "common": {
+    "comingSoon": "Coming soon",
+    "comingSoonDescription": "This screen will be built in a later step.",
+    "backHome": "Back to home",
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "home": {
+    "title": "Choose an area",
+    "subtitle": "Temporary development page. Sign-in arrives in step F1.",
+    "api": {
+      "checking": "Connecting to the API…",
+      "ready": "The API is ready",
+      "error": "Cannot reach the API ({{kind}})"
+    }
+  },
+  "areas": {
+    "admin": {
+      "title": "Administration",
+      "description": "Users, roles and lesson content"
+    },
+    "parent": {
+      "title": "Parents",
+      "description": "Child profiles and learning progress"
+    },
+    "play": {
+      "title": "Learn and play",
+      "description": "The children's area"
+    }
+  },
+  "admin": {
+    "nav": {
+      "dashboard": "Overview",
+      "users": "Users",
+      "roles": "Roles",
+      "content": "Content"
+    },
+    "dashboard": {
+      "description": "Welcome to the administration area."
+    }
+  },
+  "parent": {
+    "nav": {
+      "children": "My children",
+      "progress": "Progress"
+    }
+  },
+  "play": {
+    "title": "Let's learn English!",
+    "subtitle": "The lesson map will appear here.",
+    "start": "Start",
+    "exit": "Exit"
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you are looking for does not exist or has moved."
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "description": "Reload the page. If the problem persists, contact an administrator."
+    }
+  }
+}

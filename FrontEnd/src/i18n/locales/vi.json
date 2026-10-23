@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "English Adventure"
+  },
+  "common": {
+    "comingSoon": "Sắp ra mắt",
+    "comingSoonDescription": "Màn hình này sẽ được làm ở một bước sau.",
+    "backHome": "Về trang chủ",
+    "language": "Ngôn ngữ",
+    "mainNavigation": "Điều hướng chính"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "home": {
+    "title": "Chọn khu vực",
+    "subtitle": "Trang tạm trong giai đoạn phát triển. Từ bước F1 sẽ có trang đăng nhập.",
+    "api": {
+      "checking": "Đang kết nối API…",
+      "ready": "API đã sẵn sàng",
+      "error": "Không kết nối được API ({{kind}})"
+    }
+  },
+  "areas": {
+    "admin": {
+      "title": "Quản trị",
+      "description": "Người dùng, vai trò và nội dung bài học"
+    },
+    "parent": {
+      "title": "Phụ huynh",
+      "description": "Hồ sơ của con và tiến độ học tập"
+    },
+    "play": {
+      "title": "Học và chơi",
+      "description": "Khu vực dành cho bé"
+    }
+  },
+  "admin": {
+    "nav": {
+      "dashboard": "Tổng quan",
+      "users": "Người dùng",
+      "roles": "Vai trò",
+      "content": "Nội dung"
+    },
+    "dashboard": {
+      "description": "Chào mừng đến khu vực quản trị."
+    }
+  },
+  "parent": {
+    "nav": {
+      "children": "Con của tôi",
+      "progress": "Tiến độ"
+    }
+  },
+  "play": {
+    "title": "Cùng học tiếng Anh nào!",
+    "subtitle": "Bản đồ bài học sẽ xuất hiện ở đây.",
+    "start": "Bắt đầu",
+    "exit": "Thoát"
+  },
+  "errors": {
+    "notFound": {
+      "title": "Không tìm thấy trang",
+      "description": "Trang bạn tìm không tồn tại hoặc đã được chuyển đi."
+    },
+    "unexpected": {
+      "title": "Đã có lỗi xảy ra",
+      "description": "Hãy tải lại trang. Nếu lỗi vẫn còn, hãy báo cho quản trị viên."
+    }
+  }
+}

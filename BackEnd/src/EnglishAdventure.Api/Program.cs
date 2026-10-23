@@ -32,7 +32,13 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 // Gives body-less error responses (e.g. the JWT bearer 401 challenge) a ProblemDetails body.
 app.UseStatusCodePages();
-app.UseHttpsRedirection();
+// Not in Development: the front-end dev proxy calls the http port, and a redirect to the https port would send the
+// browser to another origin (CORS error).
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

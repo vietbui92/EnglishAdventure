@@ -35,8 +35,8 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | **Phase F0: Foundation** | | | |
 | F0.1 | Approve the package list and folder structure | | ✅ Done 2026-10-23 |
 | F0.2 | Scaffold the Vite + React + TS project, lint, format, scripts | | ✅ Done 2026-10-23 |
-| F0.3 | API client: generated types, fetch wrapper, ProblemDetails, dev proxy | | 🟢 Ready |
-| F0.4 | i18n, design tokens, layout shells for the three areas | | 🟢 Ready |
+| F0.3 | API client: generated types, fetch wrapper, ProblemDetails, dev proxy | | ✅ Done 2026-10-23 |
+| F0.4 | i18n, design tokens, layout shells for the three areas | | ✅ Done 2026-10-23 |
 | F0.5 | Test setup (unit, component, API mocks) | | 🟢 Ready |
 | **Phase F1: Authentication** | | | |
 | B-F1 | **Backend:** refresh token in an httpOnly cookie | | ✅ Done 2026-10-23 |
@@ -155,14 +155,34 @@ Original scope:
 - `FrontEnd/README.md` (how to run) and `FrontEnd/CLAUDE.md` (conventions).
 - *Done when:* `npm run build`, `npm run lint` and `npm test` pass on an empty app.
 
-**F0.3 API client.**
+**F0.3 API client.** ✅ Done 2026-10-23. Built as below, with these details:
+- `openapi-fetch` 0.17.0 and `openapi-typescript` 7.13.0. `openapi-typescript` declares a peer of TypeScript 5; a `package.json` `overrides` entry makes it use our TypeScript 6, and generation works. Remove the override when it supports TS 6.
+- `src/api/schema.d.ts` is generated (945 lines, all current endpoints) and excluded from ESLint and Prettier.
+- `src/api/client.ts`: `api` client on `window.location.origin`, a bearer middleware fed by `setAccessTokenProvider` (wired by the session in F1.2), `webClientHeaders` for the cookie mode, and `unwrap()` that returns data or throws `ApiError`.
+- `src/api/problem-details.ts`: `ApiError` with `kind` (validation, unauthorized, forbidden, not-found, conflict, rule, server, network), the ProblemDetails body, and `fieldErrors` with camelCase keys (`Email` and `$.email` become `email`). 10 unit tests.
+- Changed from the plan: no `credentials: 'include'`. The app and API share one origin, so fetch's default `same-origin` already sends the cookie. The 401 → refresh → retry part moves to F1.2 with the session.
+- Proxy: `/api` → `http://localhost:5063` (override with `API_PROXY_TARGET`), port 5173 fixed (`strictPort`).
+- Backend fix: with the API's `https` profile, `UseHttpsRedirection` answered the proxy with `307 → https://localhost:7078`, the browser followed it to another origin, and the request failed with a CORS error. `Program.cs` now skips HTTPS redirection in Development only; production keeps it.
+- Verified through the proxy against the running API: `foundation/status` 200, web `refresh` without cookie 401 ProblemDetails, `/me` without token 401. The temporary `App.tsx` shows the API status; F0.4 replaces it.
+
+Original scope:
 - `npm run api:types` reads `http://localhost:5063/openapi/v1.json` and writes `src/api/schema.d.ts` (committed, so the build does not need the API running).
 - One `openapi-fetch` client with: base URL `/api`, the bearer token from the session store, `credentials: 'include'` for the auth endpoints.
 - ProblemDetails mapping: 400 → field errors for forms, 401 → refresh then retry once, 403 → "no permission", 404, 409 → "changed by someone else, reload", 422 → rule message, 500 → generic error.
 - **Dev proxy:** Vite proxies `/api` to `http://localhost:5063`, so the browser sees one origin and the backend needs no CORS in development.
 - *Done when:* a test page calls `GET /api/v1/foundation/status` through the proxy.
 
-**F0.4 i18n, tokens, shells.**
+**F0.4 i18n, tokens, shells.** ✅ Done 2026-10-23. Built as below, with these details:
+- Packages: `react-router` 8.5.0 (needs Node ≥ 22.22, so `engines` was raised), `i18next` 26.5.6, `react-i18next` 17.1.3.
+- **i18n** (`src/i18n`): `vi.json` and `en.json`, `vi` default, `en` fallback. Keys are type-checked against `vi.json` (`i18next.d.ts`), so a wrong key fails the build. The language choice is kept in `localStorage` (wrapped in try/catch) and sets `<html lang>`. Tests check that both files have the same keys and no empty text.
+- Raw strings: no ESLint plugin (not approved). Covered by the review checklist in `FrontEnd/CLAUDE.md` and by the typed keys.
+- **Tokens:** the shadcn CSS variables in `src/index.css` are the neutral tokens (Admin, Parent). `src/styles/play.css` overrides them under `.theme-play`: warm background, orange primary, sky secondary, larger radius and text. Dark mode is not in scope yet.
+- **Routes** (`src/app/router.tsx`): `/` temporary home with the three areas and the API status; `/admin` (Overview, Users, Roles, Content); `/parent` → `/parent/children` (Children, Progress); `/play`; a 404 page and a route error page. Pages are placeholders ("Coming soon").
+- **Shells** (`src/app/layouts`): `AdminLayout` (side nav, top bar on phones), `ParentLayout` (top nav), `PlayLayout` (full screen, play theme, 48px+ touch targets). A shared `AreaNav` and `LanguageSwitcher`.
+- Verified: type check, lint, 13 tests and build pass; the dev server serves every route.
+- Follow-up for F5: the bundle is 420 kB (136 kB gzip); split areas with lazy routes once real screens exist.
+
+Original scope:
 - `i18next` with `vi` as default and `en` as fallback. All UI text through `t()`; an ESLint rule or review checklist catches raw strings.
 - Design tokens (`tokens.css`): colors, spacing, radius, font sizes; light theme first. Two flavors: neutral for admin/parent, bright and large for play.
 - Layout shells: `AdminLayout` (side nav), `ParentLayout` (top nav), `PlayLayout` (full screen, big touch targets).
@@ -254,3 +274,5 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | 2026-10-23 | Owner chose shadcn/ui for the Admin and Parent areas (no admin dashboard template). F0.1 package list and structure updated. |
 | 2026-10-23 | F0.1 approved by the owner. B-F1 done (opt-in cookie via `X-EnglishAdventure-Client: web`). |
 | 2026-10-23 | Owner upgraded to Node 24 LTS. F0.2 done (Vite 8, React 19, TS 6, Tailwind 4, shadcn/ui, ESLint, Prettier, Vitest). F0.3–F0.5 Ready. |
+| 2026-10-23 | F0.3 done: generated API types, `openapi-fetch` client, `ApiError` mapping, Vite proxy. |
+| 2026-10-23 | F0.4 done: typed i18n (vi/en), play theme tokens, router with Admin/Parent/Play shells. |
