@@ -30,11 +30,11 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     private HttpClient Client => _fixture.Factory.CreateClient();
 
     [SqlServerFact]
-    public async Task Login_returns_tokens_with_subject_account_type_and_roles_but_no_email()
+    public async Task Login_returns_tokens_with_subject_user_type_and_roles_but_no_email()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent, roles: "Parent");
+        var user = await _fixture.CreateUserAsync(UserType.Parent, roles: "Parent");
 
-        var response = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, account.Password });
+        var response = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, user.Password });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("no-store", response.Headers.CacheControl?.ToString());
@@ -42,8 +42,8 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         Assert.Equal("Bearer", tokens.TokenType);
 
         var accessToken = new JsonWebToken(tokens.AccessToken);
-        Assert.Equal(account.Id.ToString(), accessToken.Subject);
-        Assert.Equal("Parent", accessToken.GetClaim(AuthClaimTypes.AccountType).Value);
+        Assert.Equal(user.Id.ToString(), accessToken.Subject);
+        Assert.Equal("Parent", accessToken.GetClaim(AuthClaimTypes.UserType).Value);
         Assert.Equal("Parent", accessToken.GetClaim(AuthClaimTypes.Role).Value);
         Assert.False(string.IsNullOrEmpty(accessToken.Id));
         Assert.False(accessToken.TryGetClaim("email", out _));
@@ -52,11 +52,11 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Refresh_tokens_are_stored_only_as_hashes()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Child);
-        var tokens = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Child);
+        var tokens = await LoginAsync(user);
 
         var storedHashes = await _fixture.WithDbContextAsync(db => db.RefreshTokens
-            .Where(token => token.AccountId == account.Id)
+            .Where(token => token.UserId == user.Id)
             .Select(token => token.TokenHash)
             .ToListAsync());
 
@@ -68,9 +68,9 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Login_failures_for_unknown_email_and_wrong_password_are_indistinguishable()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
 
-        var wrongPassword = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, Password = "Wrong-password-1" });
+        var wrongPassword = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, Password = "Wrong-password-1" });
         var unknownEmail = await Client.PostAsJsonAsync(LoginRoute, new { Email = "nobody@example.test", Password = "Wrong-password-1" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
@@ -85,32 +85,32 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Login_is_rejected_after_lockout_even_with_the_correct_password()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
-            var failed = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, Password = "Wrong-password-1" });
+            var failed = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, Password = "Wrong-password-1" });
             Assert.Equal(HttpStatusCode.Unauthorized, failed.StatusCode);
         }
 
-        var response = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, account.Password });
+        var response = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, user.Password });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        var lockoutEnd = await _fixture.WithDbContextAsync(db => db.Accounts
-            .Where(user => user.Id == account.Id)
-            .Select(user => user.LockoutEndUtc)
+        var lockoutEnd = await _fixture.WithDbContextAsync(db => db.Users
+            .Where(candidate => candidate.Id == user.Id)
+            .Select(candidate => candidate.LockoutEndUtc)
             .SingleAsync());
         Assert.NotNull(lockoutEnd);
         Assert.True(lockoutEnd > DateTime.UtcNow);
     }
 
     [SqlServerFact]
-    public async Task Inactive_account_gets_403_only_with_the_correct_password()
+    public async Task Inactive_user_gets_403_only_with_the_correct_password()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Child, isActive: false);
+        var user = await _fixture.CreateUserAsync(UserType.Child, isActive: false);
 
-        var correctPassword = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, account.Password });
-        var wrongPassword = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, Password = "Wrong-password-1" });
+        var correctPassword = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, user.Password });
+        var wrongPassword = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, Password = "Wrong-password-1" });
 
         Assert.Equal(HttpStatusCode.Forbidden, correctPassword.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
@@ -119,8 +119,8 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Me_returns_the_profile_for_a_logged_in_user()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Admin, roles: "Admin");
-        var tokens = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Admin, roles: "Admin");
+        var tokens = await LoginAsync(user);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, MeRoute);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
@@ -128,9 +128,9 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(account.Id, body.GetProperty("userId").GetGuid());
-        Assert.Equal(account.Email, body.GetProperty("email").GetString());
-        Assert.Equal("Admin", body.GetProperty("accountType").GetString());
+        Assert.Equal(user.Id, body.GetProperty("userId").GetGuid());
+        Assert.Equal(user.Email, body.GetProperty("email").GetString());
+        Assert.Equal("Admin", body.GetProperty("userType").GetString());
         Assert.Equal("Admin", body.GetProperty("roles")[0].GetString());
         Assert.False(body.TryGetProperty("passwordHash", out _));
     }
@@ -138,8 +138,8 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Refresh_rotates_the_token_pair()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
-        var login = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var login = await LoginAsync(user);
 
         var response = await RefreshAsync(login.RefreshToken);
 
@@ -147,9 +147,9 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         var rotated = await ReadTokensAsync(response);
         Assert.NotEqual(login.RefreshToken, rotated.RefreshToken);
         Assert.NotEqual(login.AccessToken, rotated.AccessToken);
-        Assert.Equal(account.Id.ToString(), new JsonWebToken(rotated.AccessToken).Subject);
+        Assert.Equal(user.Id.ToString(), new JsonWebToken(rotated.AccessToken).Subject);
 
-        var tokens = await LoadTokensAsync(account.Id);
+        var tokens = await LoadTokensAsync(user.Id);
         Assert.Equal(2, tokens.Count);
         Assert.Single(tokens, token => token.FamilyId == tokens[0].FamilyId && token.RevokedAtUtc is null);
         var consumed = Assert.Single(tokens, token => token.RevokedAtUtc is not null);
@@ -160,8 +160,8 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Reusing_a_rotated_token_is_rejected_and_revokes_the_whole_family()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
-        var login = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var login = await LoginAsync(user);
         var rotated = await ReadTokensAsync(await RefreshAsync(login.RefreshToken));
 
         var replay = await RefreshAsync(login.RefreshToken);
@@ -170,7 +170,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         Assert.Equal(HttpStatusCode.Unauthorized, replay.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, afterReplay.StatusCode);
 
-        var tokens = await LoadTokensAsync(account.Id);
+        var tokens = await LoadTokensAsync(user.Id);
         Assert.All(tokens, token => Assert.NotNull(token.RevokedAtUtc));
         Assert.Contains(tokens, token => token.RevocationReason == RefreshTokenRevocationReason.ReuseDetected);
     }
@@ -178,9 +178,9 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Reuse_detection_does_not_affect_other_sessions_of_the_same_user()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
-        var compromised = await LoginAsync(account);
-        var otherDevice = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var compromised = await LoginAsync(user);
+        var otherDevice = await LoginAsync(user);
         await RefreshAsync(compromised.RefreshToken);
 
         await RefreshAsync(compromised.RefreshToken);
@@ -192,8 +192,8 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Concurrent_refreshes_with_the_same_token_succeed_at_most_once()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
-        var login = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var login = await LoginAsync(user);
         var client = Client;
 
         var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ =>
@@ -209,7 +209,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         var winnerTokens = await ReadTokensAsync(winners[0]);
         Assert.Equal(HttpStatusCode.Unauthorized, (await RefreshAsync(winnerTokens.RefreshToken)).StatusCode);
 
-        var tokens = await LoadTokensAsync(account.Id);
+        var tokens = await LoadTokensAsync(user.Id);
         Assert.Equal(1, tokens.Count(token => token.RevocationReason == RefreshTokenRevocationReason.Rotated));
         Assert.All(tokens, token => Assert.NotNull(token.RevokedAtUtc));
     }
@@ -217,10 +217,10 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Expired_refresh_token_is_rejected()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Child);
-        var login = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Child);
+        var login = await LoginAsync(user);
         await _fixture.WithDbContextAsync(db => db.RefreshTokens
-            .Where(token => token.AccountId == account.Id)
+            .Where(token => token.UserId == user.Id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(token => token.ExpiresAtUtc, DateTime.UtcNow.AddMinutes(-1))));
 
         var response = await RefreshAsync(login.RefreshToken);
@@ -239,8 +239,8 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     [SqlServerFact]
     public async Task Logout_revokes_the_session_and_is_idempotent()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
-        var login = await LoginAsync(account);
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var login = await LoginAsync(user);
 
         var first = await Client.PostAsJsonAsync(LogoutRoute, new { login.RefreshToken });
         var second = await Client.PostAsJsonAsync(LogoutRoute, new { login.RefreshToken });
@@ -252,28 +252,28 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         Assert.Equal(HttpStatusCode.NoContent, unknown.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, refreshAfterLogout.StatusCode);
 
-        var token = Assert.Single(await LoadTokensAsync(account.Id));
+        var token = Assert.Single(await LoadTokensAsync(user.Id));
         Assert.Equal(RefreshTokenRevocationReason.Revoked, token.RevocationReason);
     }
 
     [SqlServerFact]
-    public async Task Refresh_after_the_account_is_deactivated_is_rejected_and_ends_the_session()
+    public async Task Refresh_after_the_user_is_deactivated_is_rejected_and_ends_the_session()
     {
-        var account = await _fixture.CreateAccountAsync(AccountType.Parent);
-        var login = await LoginAsync(account);
-        await _fixture.WithDbContextAsync(db => db.Accounts
-            .Where(user => user.Id == account.Id)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.IsActive, false)));
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var login = await LoginAsync(user);
+        await _fixture.WithDbContextAsync(db => db.Users
+            .Where(candidate => candidate.Id == user.Id)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(candidate => candidate.IsActive, false)));
 
         var response = await RefreshAsync(login.RefreshToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        Assert.All(await LoadTokensAsync(account.Id), token => Assert.NotNull(token.RevokedAtUtc));
+        Assert.All(await LoadTokensAsync(user.Id), token => Assert.NotNull(token.RevokedAtUtc));
     }
 
-    private async Task<TokensBody> LoginAsync(TestAccount account)
+    private async Task<TokensBody> LoginAsync(TestUser user)
     {
-        var response = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, account.Password });
+        var response = await Client.PostAsJsonAsync(LoginRoute, new { user.Email, user.Password });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return await ReadTokensAsync(response);
     }
@@ -284,7 +284,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     private Task<List<RefreshToken>> LoadTokensAsync(Guid userId) =>
         _fixture.WithDbContextAsync(db => db.RefreshTokens
             .AsNoTracking()
-            .Where(token => token.AccountId == userId)
+            .Where(token => token.UserId == userId)
             .OrderBy(token => token.CreatedAtUtc)
             .ToListAsync());
 

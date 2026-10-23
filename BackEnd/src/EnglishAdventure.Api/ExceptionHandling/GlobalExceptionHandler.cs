@@ -80,6 +80,12 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 exception.Message,
                 null),
 
+            ConflictException conflictException => (
+                StatusCodes.Status409Conflict,
+                "Conflict.",
+                conflictException.Message,
+                null),
+
             AuthenticationForbiddenException => (
                 StatusCodes.Status403Forbidden,
                 "Access denied.",

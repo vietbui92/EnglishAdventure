@@ -14,6 +14,11 @@ public interface IRefreshTokenService
     /// Revokes the session (token family) the token belongs to. Unknown or already revoked tokens are ignored.
     /// </summary>
     Task RevokeAsync(string rawRefreshToken, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Ends every session of the user (all token families). Used when a user is deactivated.
+    /// </summary>
+    Task RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken);
 }
 
 public abstract record RefreshTokenRotationResult;

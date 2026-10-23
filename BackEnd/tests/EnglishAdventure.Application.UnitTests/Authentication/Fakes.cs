@@ -1,5 +1,6 @@
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authentication.Models;
+using EnglishAdventure.Application.Authorization;
 using EnglishAdventure.Domain.Enums;
 
 namespace EnglishAdventure.Application.UnitTests.Authentication;
@@ -28,14 +29,14 @@ internal sealed class FakeAccessTokenIssuer : IAccessTokenIssuer
 {
     public static readonly DateTime ExpiresAtUtc = new(2026, 1, 1, 0, 15, 0, DateTimeKind.Utc);
 
-    public List<(Guid UserId, AccountType AccountType, IReadOnlyList<string> Roles)> Issued { get; } = new();
+    public List<(Guid UserId, UserType UserType, IReadOnlyList<string> Roles)> Issued { get; } = new();
 
     public (string AccessToken, DateTime ExpiresAtUtc) Issue(
         Guid userId,
-        AccountType accountType,
+        UserType userType,
         IReadOnlyList<string> roles)
     {
-        Issued.Add((userId, accountType, roles));
+        Issued.Add((userId, userType, roles));
         return ($"access-{userId}", ExpiresAtUtc);
     }
 }
@@ -64,9 +65,25 @@ internal sealed class FakeRefreshTokenService : IRefreshTokenService
         Revoked.Add(rawRefreshToken);
         return Task.CompletedTask;
     }
+
+    public List<Guid> RevokedUsers { get; } = new();
+
+    public Task RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        RevokedUsers.Add(userId);
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class FakeUserContext : IUserContext
 {
     public Guid? UserId { get; set; }
+}
+
+internal sealed class FakeUserPermissionReader : IUserPermissionReader
+{
+    public HashSet<string> Permissions { get; } = new(StringComparer.Ordinal);
+
+    public Task<IReadOnlySet<string>> GetPermissionsAsync(Guid userId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlySet<string>>(Permissions);
 }

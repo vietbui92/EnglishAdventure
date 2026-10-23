@@ -12,8 +12,8 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 | 4 | SQL Server and EF Core | 🟡 |
 | 5 | Own identity tables (replaced ASP.NET Core Identity on 2026-10-23) | ✅ |
 | 6 | JWT access tokens and refresh-token rotation/revocation | ✅ |
-| 7 | Admin, Parent, and Child account types | 🟡 |
-| 8 | RBAC combined with fine-grained permissions | 📋 |
+| 7 | Admin, Parent, and Child user types | 🟡 |
+| 8 | RBAC combined with fine-grained permissions | 🟡 (checks built in S1.1) |
 | 9 | Azure as the deployment platform | 📋 |
 
 ---
@@ -27,16 +27,16 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 2. **Modules are folders** in the four existing projects, not projects per module.
 3. **Domain layout:** `Common/`, `Entities/<Module>/`, `Enums/`, `ValueObjects/`, `Services/` (rules spanning several entities), `Exceptions/`.
 4. **One `EnglishAdventureDbContext`** for all modules, so one transaction can cover several modules.
-5. **All tables in `dbo`, grouped by a module prefix** in the table name: `auth_`, `family_`, `content_`, `learning_`, `rewards_`. Names are lower-case snake_case and plural (`auth_accounts`, `content_lessons`); columns stay PascalCase. *Changed 2026-10-23 by the owner; originally one SQL schema per module.*
+5. **All tables in `dbo`, grouped by a module prefix** in the table name: `auth_`, `family_`, `content_`, `learning_`, `rewards_`. Names are lower-case snake_case and plural (`auth_users`, `content_lessons`); columns stay PascalCase. *Changed 2026-10-23 by the owner; originally one SQL schema per module.*
 6. **Between modules, entities store IDs only.** No navigation properties, but database foreign keys are still used.
 7. **Every table has a single `Guid Id` primary key.** Business uniqueness uses unique indexes.
 8. **Application uses one repository interface per aggregate,** implemented with EF Core in Infrastructure. No generic repository, and no EF Core in Application.
-9. **No separate Parent or User business entity.** Other modules store the account ID. Since S0.5, accounts are the `Account` entity of the Identity module (`Domain/Entities/Identity`), not Infrastructure framework classes (see ADR-5).
+9. **No separate Parent or User business entity.** Other modules store the account ID. Since S0.5, accounts are the `User` entity of the Identity module (`Domain/Entities/Identity`), not Infrastructure framework classes (see ADR-5).
 10. **Reflection-based architecture tests** enforce the rules, with no extra package.
-11. **`AccountType` lives in `Domain/Enums/`.**
+11. **`UserType` lives in `Domain/Enums/`.**
 
 **Status: 🟡 Structure in place; no modules built yet.**
-- Done: `Domain/Common/Entity.cs` (Guid identity, equality by Id) and `AccountType` moved to `Domain/Enums/`.
+- Done: `Domain/Common/Entity.cs` (Guid identity, equality by Id) and `UserType` moved to `Domain/Enums/`.
 - Architecture tests:
   - `tests/EnglishAdventure.Domain.UnitTests/Architecture/DomainArchitectureTests.cs`: Domain references only the base class library; classes under `Entities` derive from `Entity`; no entity holds another module's entity.
   - `tests/EnglishAdventure.Application.UnitTests/Architecture/ApplicationArchitectureTests.cs`: Application references no Infrastructure, Api, EF Core or ASP.NET Core assembly.
@@ -47,7 +47,7 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Decision.** Four layers: Domain, Application, Infrastructure, and Api. Dependencies point inward. Use DDD tactical patterns (aggregates, value objects, domain exceptions) where the domain is rich, and avoid ceremony where it is not.
 
-**Status: 🟡** Project references follow the rule (see [overview.md](overview.md#2-project-references-and-dependency-rules)). Domain contains `Common/Entity`, `Enums/AccountType`, `Exceptions/DomainException` and the Identity module's entities (`Account`, `AccountRole`, `Role`, `RolePermission`, `Permission`; see ADR-5). Since 2026-10-23, architecture tests enforce the Domain and Application dependency rules (see ADR-1).
+**Status: 🟡** Project references follow the rule (see [overview.md](overview.md#2-project-references-and-dependency-rules)). Domain contains `Common/Entity`, `Enums/UserType`, `Exceptions/DomainException` and the Identity module's entities (`User`, `UserRole`, `Role`, `RolePermission`, `Permission`; see ADR-5). Since 2026-10-23, architecture tests enforce the Domain and Application dependency rules (see ADR-1).
 
 **Pragmatic choice already in code:** `RefreshToken` stays in Infrastructure as security machinery, not a domain entity. Application reaches login and sessions only through ports (`IIdentityUserService`, `IRefreshTokenService`, `IPasswordHasher`).
 
@@ -61,7 +61,7 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Decision.** SQL Server, accessed through EF Core 10. Migrations live in the Infrastructure assembly and are applied explicitly, never at app startup. In Development they are applied by calling `POST /api/v1/database/migrate` (decided 2026-10-23); the endpoint returns 404 in every other environment.
 
-**Status: 🟡** One `DbContext` (`EnglishAdventureDbContext`, a plain `DbContext`) with SQL Server. One standalone migration, `InitialCreate`, creates the identity tables in `dbo`. The owner reset the migration history on 2026-10-23: the old `InitialIdentity` (ASP.NET Identity tables) was deleted, and there is no drop-and-replace migration. `dotnet ef` is used only to create migrations; the migrate endpoint (`ApplyMigrationsCommand` → `IDatabaseMigrator` → `Database.MigrateAsync`) applies them. `dotnet ef` runs through the design-time factory in Infrastructure, with Infrastructure as the startup project. That avoids adding the EF Design package to Api. It has been verified on SQL Server LocalDB by the opt-in integration tests (each run migrates a throwaway database). Until 2026-10-23 those tests wrongly used the Development database `EnglishAdventure_Dev`; see project-status.
+**Status: 🟡** One `DbContext` (`EnglishAdventureDbContext`, a plain `DbContext`) with SQL Server. Migrations: `InitialCreate` creates the identity tables in `dbo`; `RenameAccountsToUsers` renames "account" to "user" (hand-written renames, data kept). `MigrationSchemaSqlServerTests` checks that the migrations produce exactly the model's schema. The owner reset the migration history on 2026-10-23: the old `InitialIdentity` (ASP.NET Identity tables) was deleted, and there is no drop-and-replace migration. `dotnet ef` is used only to create migrations; the migrate endpoint (`ApplyMigrationsCommand` → `IDatabaseMigrator` → `Database.MigrateAsync`) applies them. `dotnet ef` runs through the design-time factory in Infrastructure, with Infrastructure as the startup project. That avoids adding the EF Design package to Api. It has been verified on SQL Server LocalDB by the opt-in integration tests (each run migrates a throwaway database). Until 2026-10-23 those tests wrongly used the Development database `EnglishAdventure_Dev`; see project-status.
 
 ## ADR-5: Own identity tables (replaces ASP.NET Core Identity)
 
@@ -71,17 +71,17 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Status: ✅ (foundation).**
 - **Entities** (`Domain/Entities/Identity`):
-  - `Account`, which owns its `AccountRole`s.
+  - `User`, which owns its `UserRole`s.
   - `Role`, which owns its `RolePermission`s.
   - `Permission`.
 - **Tables:**
-  - `auth_accounts`: unique `NormalizedEmail`, check constraint `CK_auth_accounts_AccountType`, row version.
+  - `auth_users`: unique `NormalizedEmail`, check constraint `CK_auth_users_UserType`, row version.
   - `auth_roles`: unique `Name`.
   - `auth_permissions`: unique `Code`.
-  - `auth_account_roles`: unique (`AccountId`, `RoleId`).
+  - `auth_user_roles`: unique (`UserId`, `RoleId`).
   - `auth_role_permissions`: unique (`RoleId`, `PermissionId`).
   - `auth_refresh_tokens`.
-- **Lockout** is a rule of `Account`: the 5th failed login locks it for 15 minutes.
+- **Lockout** is a rule of `User`: the 5th failed login locks it for 15 minutes.
 - **Password hashing** sits behind `IPasswordHasher` (Application), implemented by `IdentityPasswordHasher` (Infrastructure).
 - **No password policy is enforced yet**, because no endpoint creates accounts. It is added with account creation (S1.2/S1.3).
 - **Dropped:** `AspNetUserClaims`, `AspNetUserLogins` and `AspNetUserTokens` (unused). Password reset and email confirmation will get their own tables when needed (OQ-010).
@@ -94,7 +94,7 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 - **Success:** the failure count is reset. If the stored hash uses outdated settings, it is replaced.
 - **Concurrent logins** to the same account: a row-version conflict re-applies the change to the reloaded account, so no failed attempt is lost.
 
-**Still open.** Password policy for children. Whether Child accounts sign in with email and password at all (see ADR-7). Email confirmation is not required, because no confirmation workflow exists.
+**Still open.** Password policy for children. Whether Child users sign in with email and password at all (see ADR-7). Email confirmation is not required, because no confirmation workflow exists.
 
 ## ADR-6: JWT access tokens + refresh-token rotation and revocation
 
@@ -102,7 +102,7 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Status: ✅ (foundation).**
 - **Access token:** HS256, issued by `JwtAccessTokenIssuer` in Infrastructure (`Microsoft.IdentityModel.JsonWebTokens`).
-  - Claims: `sub` (user id), `jti`, `iat`/`nbf`/`exp`, `iss`, `aud`, `account_type`, and `role` (only roles actually assigned).
+  - Claims: `sub` (user id), `jti`, `iat`/`nbf`/`exp`, `iss`, `aud`, `user_type`, and `role` (only roles actually assigned).
   - No email or other personal data, and no permission claims.
   - Lifetime is 15 min by default (1–60 allowed).
 - **Validation:** JwtBearer with `MapInboundClaims = false`. It checks issuer, audience, signature (HS256 only), lifetime (30 s clock skew), and requires `exp`. Claim names are shared through `AuthClaimTypes`.
@@ -129,26 +129,38 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 - No rate limiting on `login` or `refresh`.
 - Refresh tokens in the response body are readable by JavaScript in a browser client.
 
-## ADR-7: Admin, Parent, and Child account types
+## ADR-7: Admin, Parent, and Child user types
 
-**Decision.** There are three account types.
+**Decision.** There are three user types.
 
-**Status: 🟡** `Domain.Enums.AccountType` (`Admin=1, Parent=2, Child=3`) is stored on `Account` as an int. A database check constraint (`CK_auth_accounts_AccountType`) rejects other values. It is emitted as the `account_type` claim (enum name) and returned by `/me`.
-- The account type is **not** a role and grants nothing by itself. Authorization will use roles and permissions (ADR-8).
+**Status: 🟡** `Domain.Enums.UserType` (`Admin=1, Parent=2, Child=3`) is stored on `User` as an int. A database check constraint (`CK_auth_users_UserType`) rejects other values. It is emitted as the `user_type` claim (enum name) and returned by `/me`.
+- The user type is **not** a role and grants nothing by itself. Authorization will use roles and permissions (ADR-8).
 - Clients cannot choose or change it: there is no registration endpoint and no seeded admin.
 - There are no Parent–Child relationships, no child profiles, and no type-specific rules.
 
-**Needs validation.** How Child accounts authenticate, given children's privacy requirements (for example, sign-in managed by a parent rather than by email). How a Parent is linked to its Children.
+**Needs validation.** How Child users authenticate, given children's privacy requirements (for example, sign-in managed by a parent rather than by email). How a Parent is linked to its Children.
 
 ## ADR-8: RBAC + fine-grained permissions
 
 **Decision.** Authorize through roles plus granular permissions, enforced by policies.
 
-**Status: 📋 Not implemented.** Only role-name retrieval exists (`IIdentityUserService.GetRolesAsync`) and the token issuer contract takes roles. There is no permission model, no permission claims, and no authorization policies or handlers. `AddAuthorization()` is called with no configuration; only `[Authorize]` (authenticated user) is used, on `/me`.
+**Status: 🟡 Foundation built (S1.1, 2026-10-23).**
+- **Catalog in code:** `Application/Authorization/Permissions.cs` (9 permissions) and `SystemRoles.cs` (SuperAdmin, ContentAdmin, Parent with default permissions).
+- **Storage:** `auth_permissions`, `auth_roles`, `auth_role_permissions`, `auth_user_roles`.
+- **Policies:** the policy name is the permission code (`[Authorize(Policy = Permissions.Roles.Manage)]`). `PermissionPolicyProvider` builds it, so nothing is registered by hand.
+- **Resolution:** `PermissionAuthorizationHandler` → `IUserPermissionReader`. Permissions are read from the database on each request with a 1-minute cache; they are **not** in the JWT. A deactivated account has no permissions. Role names in the token grant nothing.
+- **Endpoints:** `/me` returns the permissions. First protected endpoint: `GET /api/v1/admin/permissions`.
+- **Roles at runtime:** roles can be created and edited at runtime (owner decision, S1.5). Permissions cannot; they exist only in code.
 
-**Storage decided (S0.5):** `auth_permissions` and `auth_role_permissions` (tables exist, empty).
+- **Seeding (S1.2):** `sync-roles` and `bootstrap-superadmin` command-line verbs create the permissions, the system roles and their defaults, and the first SuperAdmin.
 
-**Needs validation (S1.1).** Whether permissions go into the JWT or are resolved on each request. Policy naming conventions.
+- **User management (S1.3):** `api/v1/admin/users`, with `users.read`, `users.manage` and `roles.manage`.
+  - Nobody can change their own roles or deactivate themselves.
+  - The last active SuperAdmin is protected.
+  - Deactivation revokes all refresh tokens.
+  - A Parent user can only hold the Parent role, and an Admin user cannot hold it (`UserRoleRules`).
+
+**Not yet:** role management (S1.5).
 
 ## ADR-9: Azure hosting
 

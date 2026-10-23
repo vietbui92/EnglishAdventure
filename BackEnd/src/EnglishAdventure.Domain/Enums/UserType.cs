@@ -1,6 +1,6 @@
 namespace EnglishAdventure.Domain.Enums;
 
-public enum AccountType
+public enum UserType
 {
     Admin = 1,
     Parent = 2,

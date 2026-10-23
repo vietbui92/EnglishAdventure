@@ -63,7 +63,12 @@ Do not commit production credentials. The API does **not** run migrations or des
 
 ## EF Core migrations
 
-Migrations live in `src/EnglishAdventure.Infrastructure/Persistence/Migrations`. The single starting migration is `InitialCreate`: it creates the project's own tables in `dbo`: `auth_accounts`, `auth_roles`, `auth_permissions`, `auth_account_roles`, `auth_role_permissions`, `auth_refresh_tokens`. Table names use a module prefix (`auth_`, `family_`, `content_`, `learning_`, `rewards_`). The API **never** applies migrations at startup.
+Migrations live in `src/EnglishAdventure.Infrastructure/Persistence/Migrations`. The API **never** applies migrations at startup.
+
+- `InitialCreate` creates the identity tables in `dbo`.
+- `RenameAccountsToUsers` renames "account" to "user" without losing data: tables `auth_users` and `auth_user_roles`, columns `UserId` and `UserType`, permissions `users.*`.
+
+The result is `auth_users`, `auth_roles`, `auth_permissions`, `auth_user_roles`, `auth_role_permissions` and `auth_refresh_tokens`. Table names use a module prefix (`auth_`, `family_`, `content_`, `learning_`, `rewards_`). `MigrationSchemaSqlServerTests` checks that the migrations always produce exactly the schema of the current model.
 
 **Applying migrations in Development:** run the API and call `POST /api/v1/database/migrate` (in `EnglishAdventure.Api.http` or Scalar). It creates the database from `ConnectionStrings:EnglishAdventure` if needed, applies every pending migration, and returns the names it applied (an empty list when already up to date). The endpoint answers 404 in every other environment.
 
@@ -116,9 +121,33 @@ dotnet test tests/EnglishAdventure.Api.IntegrationTests/EnglishAdventure.Api.Int
 | `POST /api/v1/auth/login` `{ email, password }` | anonymous | 200 token pair · 400 validation · 401 generic failure (wrong email/password **or** locked) · 403 inactive account |
 | `POST /api/v1/auth/refresh` `{ refreshToken }` | anonymous | 200 new token pair (old refresh token is consumed) · 401 |
 | `POST /api/v1/auth/logout` `{ refreshToken }` | anonymous | 204, always (idempotent). Revokes the session; issued access tokens stay valid until expiry. |
-| `GET /api/v1/auth/me` | Bearer | 200 `{ userId, email, accountType, roles }` · 401 |
+| `GET /api/v1/auth/me` | Bearer | 200 `{ userId, email, userType, roles, permissions }` · 401 |
+| `GET /api/v1/admin/permissions` | Bearer + `roles.manage` | 200 permission catalog · 401 · 403 |
+| `GET /api/v1/admin/users?page=1&pageSize=20&search=` | Bearer + `users.read` | 200 paged accounts |
+| `GET /api/v1/admin/users/{id}` | Bearer + `users.read` | 200 · 404 |
+| `POST /api/v1/admin/users` `{ email, password, userType }` | Bearer + `users.manage` | 201 (`Admin` or `Parent`; Parent gets the Parent role) · 400 · 409 duplicate email |
+| `POST /api/v1/admin/users/{id}/deactivate` · `/activate` | Bearer + `users.manage` | 204 (deactivation ends all sessions) · 404 · 422 self / last SuperAdmin |
+| `PUT /api/v1/admin/users/{id}/roles` `{ roles: [...] }` | Bearer + `roles.manage` | 200 · 404 unknown role · 422 own roles / last SuperAdmin / role not allowed for the user type |
 
-There is no registration endpoint and no seeded administrator. Accounts are created by a separate provisioning workflow (not built yet).
+There is no registration endpoint. The first SuperAdmin is created once from the command line (below); after that, a SuperAdmin creates accounts through `POST /api/v1/admin/users`.
+
+### Create the first SuperAdmin
+
+Run this once per environment, after the migrations are applied (`POST /api/v1/database/migrate` in Development). The command also creates the permissions and the three system roles (SuperAdmin, ContentAdmin, Parent) with their default permissions.
+
+```powershell
+dotnet user-secrets set "Bootstrap:SuperAdmin:Email" "you@example.com" --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj
+dotnet user-secrets set "Bootstrap:SuperAdmin:Password" "<at least 12 chars: upper, lower, digit, symbol>" --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj
+
+dotnet run --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj -- bootstrap-superadmin
+
+# Afterwards, remove the password from user secrets
+dotnet user-secrets remove "Bootstrap:SuperAdmin:Password" --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj
+```
+
+- **Exit code 0** means the account was created. **Exit code 1** means it was refused: missing settings, weak password, existing email, or a SuperAdmin already exists. The reason is logged; the password never is.
+- **Other environments:** set `Bootstrap__SuperAdmin__Email` and `Bootstrap__SuperAdmin__Password` as environment variables instead.
+- **When the permission catalog changes in code,** run `dotnet run --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj -- sync-roles`. It only adds what is missing and never removes anything.
 
 ### Required configuration
 

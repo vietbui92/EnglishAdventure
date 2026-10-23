@@ -77,8 +77,8 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
         await _rootFactory.DisposeAsync();
     }
 
-    public async Task<TestAccount> CreateAccountAsync(
-        AccountType accountType,
+    public async Task<TestUser> CreateUserAsync(
+        UserType userType,
         bool isActive = true,
         params string[] roles)
     {
@@ -88,11 +88,11 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
 
         var email = $"{Guid.NewGuid():N}@example.test";
         var password = $"Aa1!{Guid.NewGuid():N}";
-        var account = Account.Create(email, passwordHasher.Hash(password), accountType, DateTime.UtcNow);
+        var user = User.Create(email, passwordHasher.Hash(password), userType, DateTime.UtcNow);
 
         if (!isActive)
         {
-            account.Deactivate();
+            user.Deactivate();
         }
 
         foreach (var roleName in roles)
@@ -104,13 +104,44 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
                 dbContext.Roles.Add(role);
             }
 
-            account.AssignRole(role.Id, DateTime.UtcNow);
+            user.AssignRole(role.Id, DateTime.UtcNow);
         }
 
-        dbContext.Accounts.Add(account);
+        dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync();
 
-        return new TestAccount(account.Id, email, password);
+        return new TestUser(user.Id, email, password);
+    }
+
+    /// <summary>
+    /// Grants permissions to a role, creating the role and permission rows when they do not exist yet.
+    /// </summary>
+    public async Task GrantPermissionsAsync(string roleName, params string[] permissionCodes)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<EnglishAdventureDbContext>();
+
+        var role = await dbContext.Roles.Include(candidate => candidate.Permissions)
+            .SingleOrDefaultAsync(candidate => candidate.Name == roleName);
+        if (role is null)
+        {
+            role = Role.Create(roleName);
+            dbContext.Roles.Add(role);
+        }
+
+        foreach (var code in permissionCodes)
+        {
+            var permission = await dbContext.Permissions.SingleOrDefaultAsync(candidate => candidate.Code == code);
+            if (permission is null)
+            {
+                permission = Permission.Create(code);
+                dbContext.Permissions.Add(permission);
+            }
+
+            role.GrantPermission(permission.Id);
+        }
+
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<T> WithDbContextAsync<T>(Func<EnglishAdventureDbContext, Task<T>> action)
@@ -120,4 +151,4 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
     }
 }
 
-public sealed record TestAccount(Guid Id, string Email, string Password);
+public sealed record TestUser(Guid Id, string Email, string Password);

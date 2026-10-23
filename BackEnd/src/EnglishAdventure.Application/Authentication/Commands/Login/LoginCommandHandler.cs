@@ -29,9 +29,9 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, TokenPai
 
         switch (validationResult)
         {
-            // Inactive is only reported after the password was verified, so it does not leak account existence.
+            // Inactive is only reported after the password was verified, so it does not leak user existence.
             case CredentialValidationInactive:
-                throw new AuthenticationForbiddenException("The account is not eligible to sign in.");
+                throw new AuthenticationForbiddenException("The user is not eligible to sign in.");
             // Lockout is checked before the password, so it shares the generic failure response.
             case CredentialValidationLockedOut:
             case CredentialValidationFailed:
@@ -41,7 +41,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, TokenPai
                 var roles = await _identityUserService.GetRolesAsync(succeeded.User.Id, cancellationToken);
                 var (accessToken, accessExpires) = _accessTokenIssuer.Issue(
                     succeeded.User.Id,
-                    succeeded.User.AccountType,
+                    succeeded.User.UserType,
                     roles);
 
                 var (refreshToken, refreshExpires) = await _refreshTokenService.IssueAsync(

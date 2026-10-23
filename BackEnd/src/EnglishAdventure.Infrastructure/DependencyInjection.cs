@@ -1,8 +1,13 @@
+using EnglishAdventure.Application.Users;
 using EnglishAdventure.Application.Authentication;
+using EnglishAdventure.Application.Authorization;
+using EnglishAdventure.Application.Common.Persistence;
 using EnglishAdventure.Application.Database;
 using EnglishAdventure.Infrastructure.Authentication;
 using EnglishAdventure.Infrastructure.Identity;
 using EnglishAdventure.Infrastructure.Persistence;
+using EnglishAdventure.Infrastructure.Persistence.Queries;
+using EnglishAdventure.Infrastructure.Persistence.Repositories.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +39,12 @@ public static class DependencyInjection
                 sqlOptions => sqlOptions.MigrationsAssembly(typeof(EnglishAdventureDbContext).Assembly.FullName)));
 
         services.AddScoped<IDatabaseMigrator, DatabaseMigrator>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserQueries, UserQueries>();
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
 
         services.TryAddSingleton(TimeProvider.System);
 
@@ -45,10 +56,13 @@ public static class DependencyInjection
 
     private static void AddIdentityInfrastructure(this IServiceCollection services)
     {
-        // Accounts, roles and permissions are our own identity-schema entities. Lockout rules live in the Account
+        // Users, roles and permissions are our own identity-schema entities. Lockout rules live in the User
         // entity; only the password hashing algorithm comes from Microsoft.Extensions.Identity.Core.
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddScoped<IIdentityUserService, IdentityUserService>();
+
+        services.AddMemoryCache();
+        services.AddScoped<IUserPermissionReader, UserPermissionReader>();
     }
 
     private static void AddTokenInfrastructure(this IServiceCollection services, IConfiguration configuration)

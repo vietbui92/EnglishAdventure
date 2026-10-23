@@ -44,11 +44,11 @@ Class names, file paths, table names and columns are suggestions. They become fi
 
 | Project | What is in it |
 |---|---|
-| `EnglishAdventure.Domain` | `Common/Entity.cs` (base class), `Enums/AccountType.cs` (enum Admin=1, Parent=2, Child=3; moved from `Users/` in S0.4) and `Exceptions/DomainException.cs`. **No business entities.** |
+| `EnglishAdventure.Domain` | `Common/Entity.cs` (base class), `Enums/UserType.cs` (enum Admin=1, Parent=2, Child=3; moved from `Users/` in S0.4) and `Exceptions/DomainException.cs`. **No business entities.** |
 | `EnglishAdventure.Application` | `Authentication/` (login, logout, refresh, current user; interfaces `IIdentityUserService`, `IRefreshTokenService`, `IAccessTokenIssuer`, `IUserContext`), `Common/Behaviors/ValidationBehavior.cs`, `Common/Exceptions/*`, `Database/` (migrate command, `IDatabaseMigrator`), `Foundation/` (example query). |
 | `EnglishAdventure.Infrastructure` | `Identity/` (`RefreshToken`, `IdentityUserService`, `IdentityPasswordHasher`, `RefreshTokenService`), `Authentication/` (JWT issuing), `Persistence/` (`EnglishAdventureDbContext`, `Configurations/Identity/*`, design-time factory, `DatabaseMigrator`, `Migrations/InitialCreate`). |
 | `EnglishAdventure.Api` | `Controllers/` (`AuthController`, `DatabaseController`, `FoundationController`), `Contracts/Authentication/`, `Authentication/` (JWT bearer setup), `ExceptionHandling/`, `Filters/DevelopmentOnlyAttribute.cs`, `Program.cs`. |
-| Database (migration `InitialCreate`, S0.5) | `auth_accounts`, `auth_roles`, `auth_permissions`, `auth_account_roles`, `auth_role_permissions`, `auth_refresh_tokens`. No ASP.NET `AspNet*` tables. |
+| Database (migrations `InitialCreate` + `RenameAccountsToUsers`) | `auth_users`, `auth_roles`, `auth_permissions`, `auth_user_roles`, `auth_role_permissions`, `auth_refresh_tokens`. No ASP.NET `AspNet*` tables. |
 
 Everything below this section is a proposal unless it is marked ✅.
 
@@ -119,9 +119,12 @@ EnglishAdventure.Application/
 │   ├── Behaviors/ValidationBehavior.cs          ✅ exists
 │   ├── Exceptions/                              ✅ exists (NotFound, Unauthorized, …)
 │   │   └── ConflictException.cs                 💡 for 409 (concurrent change)
-│   ├── Authorization/Permissions.cs             💡 S1.1: permission name constants
 │   └── Persistence/IUnitOfWork.cs               💡 SaveChangesAsync = one transaction
-├── Authentication/                              ✅ exists (login, refresh, logout, me)
+├── Authentication/                              ✅ exists (login, refresh, logout, me, IPasswordHasher)
+├── Authorization/                               ✅ exists (S1.1)
+│   ├── Permissions.cs  SystemRoles.cs           permission catalog, built-in roles and their defaults
+│   ├── IUserPermissionReader.cs              "which permissions does this account hold?"
+│   └── Queries/GetPermissionCatalog/
 ├── Database/                                    ✅ exists (Development migrate endpoint)
 ├── Foundation/                                  ✅ exists (example query)
 ├── Family/                                      💡
@@ -174,9 +177,9 @@ EnglishAdventure.Infrastructure/
     ├── EnglishAdventureDbContext.cs             ✅ exists (plain DbContext). 💡 add DbSets per module, implement IUnitOfWork
     ├── EnglishAdventureDbContextFactory.cs      ✅ exists
     ├── DatabaseMigrator.cs                      ✅ exists
-    ├── Migrations/                              ✅ exists (InitialCreate)
+    ├── Migrations/                              ✅ exists (InitialCreate, RenameAccountsToUsers)
     ├── Configurations/                          one file per entity
-    │   ├── Identity/                            ✅ Account, AccountRole, Role, RolePermission, Permission, RefreshToken
+    │   ├── Identity/                            ✅ Account, UserRole, Role, RolePermission, Permission, RefreshToken
     │   ├── Family/ChildProfileConfiguration.cs  💡
     │   ├── Content/LevelConfiguration.cs  LessonConfiguration.cs  LearningActivityConfiguration.cs
     │   │          QuizQuestionConfiguration.cs  QuizOptionConfiguration.cs  MatchingPairConfiguration.cs
@@ -198,7 +201,7 @@ EnglishAdventure.Infrastructure/
 EnglishAdventure.Api/
 ├── Program.cs  DependencyInjection.cs           ✅ exist
 ├── Authentication/                              ✅ exists (JWT bearer setup, IUserContext implementation)
-├── Authorization/PermissionPolicyProvider.cs    💡 S1.1: turns "content.manage" into a policy
+├── Authorization/                               ✅ exists (S1.1): PermissionPolicyProvider, PermissionAuthorizationHandler
 ├── Contracts/Authentication/                    ✅ exists
 ├── Contracts/Learning/SubmitActivityAnswersRequest.cs   💡
 ├── Controllers/                                 ✅ Auth, Database, Foundation
@@ -229,8 +232,8 @@ EnglishAdventure.Domain/
 │   └── Entity.cs                    ✅ base class: Guid Id + equality by Id. Nothing else.
 ├── Entities/
 │   ├── Identity/                    ✅ exists (S0.5)
-│   │   ├── Account.cs               aggregate root (sign-in account, lockout, roles)
-│   │   ├── AccountRole.cs           child entity
+│   │   ├── User.cs               aggregate root (sign-in account, lockout, roles)
+│   │   ├── UserRole.cs           child entity
 │   │   ├── Role.cs                  aggregate root (bundle of permissions)
 │   │   ├── RolePermission.cs        child entity
 │   │   └── Permission.cs            aggregate root (one authorizable action)
@@ -254,7 +257,7 @@ EnglishAdventure.Domain/
 │       ├── Badge.cs                 aggregate root (badge definition)
 │       └── BadgeAward.cs            aggregate root (a badge a child earned)
 ├── Enums/
-│   ├── AccountType.cs               ✅ exists (moved from Users/ in S0.4)
+│   ├── UserType.cs               ✅ exists (moved from Users/ in S0.4)
 │   ├── ChildProfileStatus.cs        Active, Archived
 │   ├── ContentStatus.cs             Draft, Published, Archived (levels and lessons)
 │   ├── ActivityType.cs              Quiz, Matching
@@ -293,7 +296,7 @@ EnglishAdventure.Domain/
 - Each entity has a private parameterless constructor for EF. That is the only concession to EF.
 - Concurrency tokens (`RowVersion`) are **shadow properties** configured in Infrastructure, so they never appear in Domain classes.
 
-✅ **Done in S0.4:** `AccountType` moved from `Domain/Users/` to `Domain/Enums/` (namespace `EnglishAdventure.Domain.Enums`). The database is unaffected. `Entities/Identity/` holds the five Identity entities. `Entities/{Family,Content,Learning,Rewards}/` stay empty until their plan step is approved (git does not track empty folders). `ValueObjects/` and `Services/` hold a `README.md` listing what will go there.
+✅ **Done in S0.4:** `UserType` moved from `Domain/Users/` to `Domain/Enums/` (namespace `EnglishAdventure.Domain.Enums`). The database is unaffected. `Entities/Identity/` holds the five Identity entities. `Entities/{Family,Content,Learning,Rewards}/` stay empty until their plan step is approved (git does not track empty folders). `ValueObjects/` and `Services/` hold a `README.md` listing what will go there.
 
 **What an entity looks like (sketch, not final code):**
 
@@ -304,17 +307,17 @@ public sealed class ChildProfile : Entity
 {
     private ChildProfile() { }                       // for EF Core only
 
-    public Guid ParentAccountId { get; private set; } // the Parent's account (auth_accounts.Id); no navigation property
+    public Guid ParentUserId { get; private set; } // the Parent's account (auth_users.Id); no navigation property
     public Nickname Nickname { get; private set; } = null!;
     public string? AvatarKey { get; private set; }
     public ChildProfileStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
     public static ChildProfile Create(Guid parentAccountId, Nickname nickname, string? avatarKey, DateTime nowUtc)
-        => new() { Id = Guid.NewGuid(), ParentAccountId = parentAccountId, Nickname = nickname,
+        => new() { Id = Guid.NewGuid(), ParentUserId = parentAccountId, Nickname = nickname,
                    AvatarKey = avatarKey, Status = ChildProfileStatus.Active, CreatedAtUtc = nowUtc };
 
-    public bool IsOwnedBy(Guid accountId) => ParentAccountId == accountId;
+    public bool IsOwnedBy(Guid accountId) => ParentUserId == accountId;
 
     public void Rename(Nickname nickname) { EnsureActive(); Nickname = nickname; }
 
@@ -340,8 +343,8 @@ These replace the ASP.NET Core Identity tables (ADR-5). They are real entities w
 
 | Entity | Kind | Table | Purpose | Main rules |
 |---|---|---|---|---|
-| `Account` | aggregate root | `auth_accounts` | A sign-in account: email, password **hash**, account type, active flag, lockout state | Valid email; unique `NormalizedEmail` (unique index); the 5th wrong password locks it for 15 minutes; an inactive account cannot sign in |
-| `AccountRole` | child of `Account` | `auth_account_roles` | One role given to an account, with when and by whom | One per account and role (unique index); a role still in use cannot be deleted |
+| `User` | aggregate root | `auth_users` | A sign-in account: email, password **hash**, user type, active flag, lockout state | Valid email; unique `NormalizedEmail` (unique index); the 5th wrong password locks it for 15 minutes; an inactive account cannot sign in |
+| `UserRole` | child of `User` | `auth_user_roles` | One role given to an account, with when and by whom | One per account and role (unique index); a role still in use cannot be deleted |
 | `Role` | aggregate root | `auth_roles` | A named bundle of permissions (SuperAdmin, ContentAdmin, Parent) | Name 1–64 characters, unique |
 | `RolePermission` | child of `Role` | `auth_role_permissions` | One permission granted to a role | One per role and permission (unique index) |
 | `Permission` | aggregate root | `auth_permissions` | One authorizable action, for example `content.manage` | Code like `<area>.<action>` in lower case, unique |
@@ -355,17 +358,17 @@ These replace the ASP.NET Core Identity tables (ADR-5). They are real entities w
 #### ChildProfile: aggregate root ❓ partly depends on OQ-001, OQ-009, OQ-013
 - **Purpose:** the child as a **learner**. It is the stable identity that owns all progress, attempts, points and badges (PD-001). It is **not** a login account. Whether children ever get login credentials is undecided (PD-007 / OQ-001 / OQ-009).
 - **Table:** `family_child_profiles` · **PK:** `Id`
-- **Properties:** `ParentAccountId`, `Nickname` (value object), `AvatarKey?` (chosen from a fixed set, no photos), `Status`, `CreatedAtUtc`
+- **Properties:** `ParentUserId`, `Nickname` (value object), `AvatarKey?` (chosen from a fixed set, no photos), `Status`, `CreatedAtUtc`
 - **Relationships:**
-  - Belongs to one Parent account: `ParentAccountId` → `auth_accounts.Id`, a database foreign key with no C# navigation property.
+  - Belongs to one Parent user: `ParentUserId` → `auth_users.Id`, a database foreign key with no C# navigation property.
   - Referenced by attempts, completions, points and badge awards.
 - **Rules:**
   - The nickname is valid (1–50 characters, trimmed).
   - Only an active profile can be renamed or start learning.
-  - Ownership test: `IsOwnedBy(accountId)`.
+  - Ownership test: `IsOwnedBy(userId)`.
 - **The parent–child relationship:**
-  - Today it is just the `ParentAccountId` column. One owning Parent per child.
-  - ❓ If OQ-013 allows two guardians, this becomes a child entity `ChildProfileGuardian (ChildProfileId, AccountId)` in table `family_child_profile_guardians`, and `IsOwnedBy` checks that list instead.
+  - Today it is just the `ParentUserId` column. One owning Parent per child.
+  - ❓ If OQ-013 allows two guardians, this becomes a child entity `ChildProfileGuardian (ChildProfileId, UserId)` in table `family_child_profile_guardians`, and `IsOwnedBy` checks that list instead.
 - **No real name, birth date or email** is stored (privacy principles), unless a later decision requires it.
 
 ### 5.2 Content module (tables `content_*`)
@@ -512,11 +515,11 @@ Since S0.5, accounts, roles and permissions are our own entities in the Identity
 
 | Concept | Where it lives | Notes |
 |---|---|---|
-| **Account** (login identity) | ✅ `Domain/Entities/Identity/Account.cs` → `auth_accounts` | Email, password hash, lockout. Other modules refer to an account only by its `Guid` (for example `ParentAccountId`). It is never copied into a "Parent" or "User" entity. |
-| **Account type** (Admin, Parent, Child) | ✅ `Domain/Enums/AccountType.cs`, stored on `auth_accounts` | It describes who the user is in the product. It **grants nothing**. |
-| **Role** | ✅ `Domain/Entities/Identity/Role.cs` → `auth_roles`; assignments in `auth_account_roles` | A role is only a named bundle of permissions. The three roles are decided in PD-008. |
-| **Permission** | ✅ `Domain/Entities/Identity/Permission.cs` → `auth_permissions`; grants in `auth_role_permissions`. 💡 Names as constants in `Application/Common/Authorization/Permissions.cs` (S1.1) | The catalog is defined in code and synced into these tables (S1.2). |
-| **Parent–child relationship** | `ChildProfile.ParentAccountId` (§5.1) | It is a property of the child profile, not a separate entity, unless OQ-013 needs more than one guardian. |
+| **Account** (login identity) | ✅ `Domain/Entities/Identity/User.cs` → `auth_users` | Email, password hash, lockout. Other modules refer to an account only by its `Guid` (for example `ParentUserId`). It is never copied into a "Parent" or "User" entity. |
+| **User type** (Admin, Parent, Child) | ✅ `Domain/Enums/UserType.cs`, stored on `auth_users` | It describes who the user is in the product. It **grants nothing**. |
+| **Role** | ✅ `Domain/Entities/Identity/Role.cs` → `auth_roles`; assignments in `auth_user_roles` | A role is only a named bundle of permissions. The three roles are decided in PD-008. |
+| **Permission** | ✅ `Domain/Entities/Identity/Permission.cs` → `auth_permissions`; grants in `auth_role_permissions`. ✅ Names as constants in `Application/Authorization/Permissions.cs` (S1.1) | The catalog is defined in code and synced into these tables (S1.2). |
+| **Parent–child relationship** | `ChildProfile.ParentUserId` (§5.1) | It is a property of the child profile, not a separate entity, unless OQ-013 needs more than one guardian. |
 | **Child learning profile** | `Domain/Entities/Family/ChildProfile.cs` | The learner. It is **not** an account. |
 | **Refresh token / session** | ✅ `Infrastructure/Identity/RefreshToken.cs` → `auth_refresh_tokens` | Security machinery, not business, so it is not a Domain entity. |
 | **"Parent" entity** | None | A Parent is an account plus the Parent role. If parent-specific business data appears later (for example a consent record for OQ-008), a `ParentProfile` entity can be added then. |
@@ -531,12 +534,12 @@ The identity tables (in `dbo`) exist today (S0.5). Everything else is proposed. 
 
 ```mermaid
 erDiagram
-    auth_accounts ||--o{ auth_account_roles : "has roles"
-    auth_roles ||--o{ auth_account_roles : "assigned to"
+    auth_users ||--o{ auth_user_roles : "has roles"
+    auth_roles ||--o{ auth_user_roles : "assigned to"
     auth_roles ||--o{ auth_role_permissions : "grants"
     auth_permissions ||--o{ auth_role_permissions : "granted by"
-    auth_accounts ||--o{ auth_refresh_tokens : "sessions"
-    auth_accounts ||--o{ family_child_profiles : "parent owns"
+    auth_users ||--o{ auth_refresh_tokens : "sessions"
+    auth_users ||--o{ family_child_profiles : "parent owns"
 
     content_levels ||--o{ content_lessons : contains
     content_lessons ||--o{ content_activities : contains
@@ -556,7 +559,7 @@ erDiagram
 
     family_child_profiles {
         uuid Id PK
-        uuid ParentAccountId FK
+        uuid ParentUserId FK
         string Nickname
         int Status
     }
@@ -610,13 +613,13 @@ erDiagram
 
 | Entity | Database schema | Table | Primary key | Relationships |
 |---|---|---|---|---|
-| `Account` ✅ | `dbo` | `auth_accounts` | `Id` | owns `auth_account_roles`; has refresh tokens; owns child profiles (by `ParentAccountId`); unique `NormalizedEmail` |
-| `AccountRole` ✅ | `dbo` | `auth_account_roles` | `Id` | → `auth_accounts` (cascade), → `auth_roles` (restrict), → `auth_accounts` via `AssignedByAccountId`; unique (`AccountId`, `RoleId`) |
+| `User` ✅ | `dbo` | `auth_users` | `Id` | owns `auth_user_roles`; has refresh tokens; owns child profiles (by `ParentUserId`); unique `NormalizedEmail` |
+| `UserRole` ✅ | `dbo` | `auth_user_roles` | `Id` | → `auth_users` (cascade), → `auth_roles` (restrict), → `auth_users` via `AssignedByUserId`; unique (`UserId`, `RoleId`) |
 | `Role` ✅ | `dbo` | `auth_roles` | `Id` | owns `auth_role_permissions`; unique `Name` |
 | `RolePermission` ✅ | `dbo` | `auth_role_permissions` | `Id` | → `auth_roles` (cascade), → `auth_permissions` (restrict); unique (`RoleId`, `PermissionId`) |
 | `Permission` ✅ | `dbo` | `auth_permissions` | `Id` | ← `auth_role_permissions`; unique `Code` |
-| *(Infrastructure)* `RefreshToken` ✅ | `dbo` | `auth_refresh_tokens` | `Id` | → `auth_accounts` (cascade); unique `TokenHash` |
-| `ChildProfile` | `dbo` | `family_child_profiles` | `Id` | → `auth_accounts` via `ParentAccountId` (no cascade) |
+| *(Infrastructure)* `RefreshToken` ✅ | `dbo` | `auth_refresh_tokens` | `Id` | → `auth_users` (cascade); unique `TokenHash` |
+| `ChildProfile` | `dbo` | `family_child_profiles` | `Id` | → `auth_users` via `ParentUserId` (no cascade) |
 | `Level` | `dbo` | `content_levels` | `Id` | ← `content_lessons` |
 | `Lesson` | `dbo` | `content_lessons` | `Id` | → `content_levels`; owns `content_activities` (cascade) |
 | `QuizActivity`, `MatchingActivity` | `dbo` | `content_activities` (one table, `Type` column) | `Id` | → `content_lessons`; owns questions or pairs (cascade) |
@@ -730,7 +733,7 @@ Handle(command):
 |---|---|---|
 | Valid, unexpired token | Api | JWT bearer middleware (✅ exists) |
 | Holds the `learning.play` permission | Api | `[Authorize(Policy = …)]` with the permission policy provider (💡 S1.1) |
-| May act for **this** child (parent–child ownership, or this child session) | Application | `ILearnerAccessGuard`. The `childProfileId` from the URL is **never** trusted alone: the guard loads the profile and compares `ParentAccountId` (or the child-session claim) with the token. A failure returns 404. |
+| May act for **this** child (parent–child ownership, or this child session) | Application | `ILearnerAccessGuard`. The `childProfileId` from the URL is **never** trusted alone: the guard loads the profile and compares `ParentUserId` (or the child-session claim) with the token. A failure returns 404. |
 | The attempt belongs to that child | Application (handler) | `attempt.ChildProfileId == child.Id`, otherwise 404 |
 | Archived profile, locked lesson, attempt already finished, activity not in lesson | Domain | entity methods and `LessonUnlockPolicy` throw `DomainException` (422) |
 
@@ -751,9 +754,9 @@ Handle(command):
 
 | Permission | What it allows | SuperAdmin | ContentAdmin | Parent |
 |---|---|:-:|:-:|:-:|
-| `accounts.read` | List and view accounts | ✔ | | |
-| `accounts.manage` | Create Admin and Parent accounts; deactivate and reactivate accounts | ✔ | | |
-| `roles.manage` | Assign roles to accounts or remove them; view the role/permission catalog | ✔ | | |
+| `users.read` | List and view accounts | ✔ | | |
+| `users.manage` | Create Admin and Parent users; deactivate and reactivate accounts | ✔ | | |
+| `roles.manage` | Create and edit roles, choose their permissions, assign roles to accounts; view the catalog | ✔ | | |
 | `content.read-drafts` | View unpublished levels, lessons and activities | ✔ | ✔ | |
 | `content.manage` | Create, edit and order levels, lessons, quiz activities and matching activities | ✔ | ✔ | |
 | `content.publish` | Publish, unpublish and archive content | ✔ | ✔ | |
@@ -766,23 +769,27 @@ Handle(command):
 **Rules for the catalog:**
 - **Roles only bundle permissions.** Code checks permissions, never role names (`[Authorize(Policy = Permissions.Content.Manage)]`, not `Roles = "ContentAdmin"`).
 - **Least privilege.**
-  - ContentAdmin has no `accounts.*`, `roles.*` or `rewards.*`.
+  - ContentAdmin has no `users.*`, `roles.*` or `rewards.*`.
   - SuperAdmin has no `family.*` and therefore no access to children's data. Full administration does not include reading families' learning records.
 - **Only `roles.manage` can grant a role,** and only SuperAdmin holds it. So only a SuperAdmin can create another SuperAdmin. Safeguards (enforced in S1.3):
   - Nobody can change their own roles.
   - The last active SuperAdmin cannot be demoted or deactivated.
-- **Permission management in the MVP:** the role-to-permission mapping is defined in code and changes only with a deploy, which keeps the framework simple. `roles.manage` covers assigning roles and viewing the catalog. Editing a role's permissions at runtime can be added later under the same permission name, without changing the model.
-- **Extending the catalog:** add a constant, add it to the role mapping, use it in a policy. Names follow `<area>.<action>`.
+- **Permission management (changed 2026-10-23, owner decision):**
+  - **Permissions** are defined only in code (`Application/Authorization/Permissions.cs`), because each one is checked by code.
+  - **Roles** can be created and edited at runtime by holders of `roles.manage`, picking permissions from the catalog (S1.5).
+  - The 3 system roles and their default permissions live in `Application/Authorization/SystemRoles.cs` and are synced by `sync-roles` (S1.2).
+- **Extending the catalog:** add a constant to `Permissions` and to `Permissions.All`, use it in a policy, and grant it to roles. Names follow `<area>.<action>`.
 - **Ownership is checked in addition to the permission.**
-  - A `ChildProfileId` in the route or body is **never trusted alone**. Every Family, Learning and Rewards request checks on the server that the profile's `ParentAccountId` equals the account in the token. A child session's profile is taken from its token, never from the request.
+  - A `ChildProfileId` in the route or body is **never trusted alone**. Every Family, Learning and Rewards request checks on the server that the profile's `ParentUserId` equals the account in the token. A child session's profile is taken from its token, never from the request.
   - These checks live in Application (`ILearnerAccessGuard`) and are covered by cross-family integration tests.
   - A failed ownership check returns **404, not 403**, so it doesn't reveal that another family's profile exists.
-- **Account type ≠ role.** A Parent account gets the Parent role when it is created (S1.3 / S1.4). The `account_type` claim itself never grants anything.
+- **User type ≠ role.** A Parent user gets the Parent role when it is created (S1.3 / S1.4). The `user_type` claim itself never grants anything.
 
-**Permissions in the access token:**
-- 💡 Proposed: `permission` claims are added to the access token. Because the role-to-permission mapping only changes on deploy, the remaining delay is a changed role assignment taking up to one token lifetime (15 minutes). Deactivated accounts are already caught at `refresh` and `/me`.
-- Alternative: look permissions up on every request, with a cache.
-- Decided in S1.1.
+**How permissions are checked (✅ built in S1.1):**
+- Permissions are **not** in the access token. On each request, `PermissionAuthorizationHandler` asks `IUserPermissionReader` for the account's permissions (account → roles → role permissions).
+- The result is cached for 1 minute. A deactivated account gets no permissions.
+- Role changes, permission changes and deactivation therefore apply within about a minute, without waiting for the 15-minute token to expire.
+- `/me` returns the same permission list, so the front end can show or hide features.
 
 **Child session** (💡 only if option B is chosen for OQ-001 / OQ-009):
 1. The Parent calls `POST /api/v1/family/children/{id}/session`.
@@ -794,11 +801,12 @@ Handle(command):
 3. Child refresh tokens reuse `auth_refresh_tokens` with a new nullable `ChildProfileId` column.
 4. Leaving child mode requires the Parent to sign in again. A PIN can come later.
 
-**Secure SuperAdmin bootstrap** (💡 S1.2):
-- A one-time command-line verb on the API, for example `dotnet run -- bootstrap-superadmin`.
-- It reads the email and password from environment variables or user secrets, never from code.
-- It refuses to run if a SuperAdmin already exists.
-- It also creates the three roles and syncs their permissions.
+**Secure SuperAdmin bootstrap** (✅ built in S1.2):
+- Command-line verbs on the API (`Api/CommandLine/CommandLineTasks.cs`), not HTTP endpoints:
+  - `dotnet run --project src/EnglishAdventure.Api -- bootstrap-superadmin`
+  - `dotnet run --project src/EnglishAdventure.Api -- sync-roles`
+- Email and password come from `Bootstrap:SuperAdmin:Email` / `Bootstrap:SuperAdmin:Password` (user secrets or environment variables), never from code. The password is validated by `PasswordRules` and never logged.
+- `BootstrapSuperAdminCommand` first runs `SyncSystemRolesCommand`, which adds missing permissions and system roles and grants their defaults, never removing anything. It then refuses (409 / exit code 1) if an active SuperAdmin already exists.
 - There is no public registration endpoint for Admins.
 
 ---
@@ -811,7 +819,7 @@ Handle(command):
 |---|---|
 | Modules are **folders** inside the four existing projects (`Domain/Entities/Content`, `Application/Content`, `Infrastructure/Persistence/Configurations/Content`, …), not separate projects | Simple for a small team. It can be split later if the modules grow. |
 | One `EnglishAdventureDbContext` for all modules | A completion and its rewards are saved in **one transaction**. No messaging is needed. |
-| All tables in `dbo`. Each table name starts with its module prefix (`auth_`, `family_`, `content_`, `learning_`, `rewards_`), lower-case snake_case, plural (`auth_accounts`, `content_lessons`). Columns stay PascalCase, like the C# properties | Owner's choice (replaces one schema per module): tables group together in Navicat, and queries need no schema names. |
+| All tables in `dbo`. Each table name starts with its module prefix (`auth_`, `family_`, `content_`, `learning_`, `rewards_`), lower-case snake_case, plural (`auth_users`, `content_lessons`). Columns stay PascalCase, like the C# properties | Owner's choice (replaces one schema per module): tables group together in Navicat, and queries need no schema names. |
 | Entities never have navigation properties to another module's entities; they hold the **ID** | Modules stay independent. A database foreign key still protects integrity. |
 | A Domain **method** may take another module's entity as a **parameter** (for example `attempt.SubmitActivity(lesson, …)`) | The rule is about stored references, not about using another module's logic. |
 | Application code reaches another module through a small interface (`IRewardGranter`, `IContentQueries`) | One clear doorway between modules. |
@@ -837,7 +845,7 @@ Handle(command):
 | Question | Affects |
 |---|---|
 | OQ-001, OQ-009 (PD-007 conflict) | Whether `learning.play` goes to the Parent role or a child session; child-session tokens |
-| OQ-013 | `ParentAccountId` column vs `ChildProfileGuardian` entity |
+| OQ-013 | `ParentUserId` column vs `ChildProfileGuardian` entity |
 | OQ-002 | `LessonAttempt.Passed` rule (minimum score?) |
 | OQ-003 | Replays: new completion rewards? best score only? |
 | OQ-004 | Points per reason, the badge criteria list |
@@ -847,7 +855,7 @@ Handle(command):
 | OQ-012 | Can an unfinished attempt be continued later? |
 | OQ-015 | Exactly one correct option per quiz question |
 | OQ-016 | Level-to-level unlock rule |
-| S1.1 | Permissions in the token or looked up per request; whether ContentAdmin gets `rewards.manage`; whether SuperAdmin ever reads child data |
+| S1.1 | ✅ Decided: permissions are looked up per request (1-minute cache); ContentAdmin does not get `rewards.manage`; SuperAdmin does not get `family.*` |
 
 ---
 
@@ -856,9 +864,10 @@ Handle(command):
 | Date | Change |
 |---|---|
 | 2026-10-23 | First proposal. |
-| 2026-10-23 | Permission catalog aligned with PD-008 (roles decided). `accounts.manage` narrowed: role assignment moved to a new `roles.manage`. Added `rewards.manage` (SuperAdmin) for badge definitions. Clarified the scope of `family.progress.read`. `learning.play` marked as a child-session scope, not a role. Made the server-side ownership rule explicit. |
-| 2026-10-23 | **Rewritten for developer clarity:**<br/>• Added an explicit `Domain/Entities/<Module>` structure, an entity catalog with 13 entities, and full layer trees (Domain, Application, Infrastructure, Api, tests).<br/>• Added a glossary, the "table ≠ entity" explanation, an ER diagram with a mapping table, and the end-to-end code flow.<br/>• Changes: single `Id` keys with unique indexes; `PointsLedger` → `PointsTransactions`; per-activity answer submission; `QuizActivity`/`MatchingActivity` in one table; a `Services/` folder; recommended move of `AccountType` to `Enums/`.<br/>• Found: under option A, the Parent role would need `learning.play`.<br/>• Decisions and open questions unchanged. |
-| 2026-10-23 | S0.4 approved by the owner (all 11 structure decisions) and recorded as ADR-1. `Common/Entity.cs` added, `AccountType` moved to `Enums/`, architecture tests added. §5 to §9 remain proposals. |
-| 2026-10-23 | S0.5 approved and built: ASP.NET Core Identity tables replaced by our own `identity` schema (`Accounts`, `Roles`, `Permissions`, `AccountRoles`, `RolePermissions`, `RefreshTokens`). Identity module entities added to `Domain/Entities/Identity` (§5.0). §1, §3.3, §4, §6, §7 and §10 updated. |
+| 2026-10-23 | Permission catalog aligned with PD-008 (roles decided). `users.manage` narrowed: role assignment moved to a new `roles.manage`. Added `rewards.manage` (SuperAdmin) for badge definitions. Clarified the scope of `family.progress.read`. `learning.play` marked as a child-session scope, not a role. Made the server-side ownership rule explicit. |
+| 2026-10-23 | **Rewritten for developer clarity:**<br/>• Added an explicit `Domain/Entities/<Module>` structure, an entity catalog with 13 entities, and full layer trees (Domain, Application, Infrastructure, Api, tests).<br/>• Added a glossary, the "table ≠ entity" explanation, an ER diagram with a mapping table, and the end-to-end code flow.<br/>• Changes: single `Id` keys with unique indexes; `PointsLedger` → `PointsTransactions`; per-activity answer submission; `QuizActivity`/`MatchingActivity` in one table; a `Services/` folder; recommended move of `UserType` to `Enums/`.<br/>• Found: under option A, the Parent role would need `learning.play`.<br/>• Decisions and open questions unchanged. |
+| 2026-10-23 | S0.4 approved by the owner (all 11 structure decisions) and recorded as ADR-1. `Common/Entity.cs` added, `UserType` moved to `Enums/`, architecture tests added. §5 to §9 remain proposals. |
+| 2026-10-23 | S0.5 approved and built: ASP.NET Core Identity tables replaced by our own `identity` schema (`Accounts`, `Roles`, `Permissions`, `UserRoles`, `RolePermissions`, `RefreshTokens`). Identity module entities added to `Domain/Entities/Identity` (§5.0). §1, §3.3, §4, §6, §7 and §10 updated. |
 | 2026-10-23 | Owner request: the six identity tables moved from schema `identity` to `dbo`. `InitialCreate` regenerated. |
-| 2026-10-23 | Owner decision: no SQL schemas. All tables in `dbo` with a module prefix, lower-case snake_case, plural (`auth_accounts`, `content_lessons`, …); columns stay PascalCase. Diagram, mapping table, §5 headings and §10 updated; `InitialCreate` regenerated. |
+| 2026-10-23 | Owner decision: no SQL schemas. All tables in `dbo` with a module prefix, lower-case snake_case, plural (`auth_users`, `content_lessons`, …); columns stay PascalCase. Diagram, mapping table, §5 headings and §10 updated; `InitialCreate` regenerated. |
+| 2026-10-23 | Owner request: "account" renamed to "user" everywhere: `User`, `UserRole`, `UserType`, tables `auth_users` / `auth_user_roles`, `ParentUserId`, permissions `users.read` / `users.manage`, API `api/v1/admin/users`. |

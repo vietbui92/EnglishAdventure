@@ -14,7 +14,7 @@ internal sealed class IdentityUserService : IIdentityUserService
     private readonly IPasswordHasher _passwordHasher;
     private readonly TimeProvider _timeProvider;
 
-    // Hash verified when the email is unknown, so that response time does not reveal whether an account exists.
+    // Hash verified when the email is unknown, so that response time does not reveal whether a user exists.
     private readonly Lazy<string> _dummyPasswordHash;
 
     public IdentityUserService(
@@ -33,36 +33,36 @@ internal sealed class IdentityUserService : IIdentityUserService
         string password,
         CancellationToken cancellationToken)
     {
-        var normalizedEmail = Account.NormalizeEmail(email);
-        var account = await _dbContext.Accounts
+        var normalizedEmail = User.NormalizeEmail(email);
+        var user = await _dbContext.Users
             .SingleOrDefaultAsync(candidate => candidate.NormalizedEmail == normalizedEmail, cancellationToken);
 
-        if (account is null)
+        if (user is null)
         {
             _passwordHasher.Verify(_dummyPasswordHash.Value, password);
             return new CredentialValidationFailed();
         }
 
-        // Checked before the password so that a locked account cannot be used as a password oracle.
-        if (account.IsLockedOut(UtcNow()))
+        // Checked before the password so that a locked user cannot be used as a password oracle.
+        if (user.IsLockedOut(UtcNow()))
         {
             return new CredentialValidationLockedOut();
         }
 
-        var verification = _passwordHasher.Verify(account.PasswordHash, password);
+        var verification = _passwordHasher.Verify(user.PasswordHash, password);
         if (verification == PasswordVerification.Failed)
         {
-            await SaveAsync(account, current => current.RecordFailedLogin(UtcNow()), cancellationToken);
+            await SaveAsync(user, current => current.RecordFailedLogin(UtcNow()), cancellationToken);
             return new CredentialValidationFailed();
         }
 
-        if (!account.IsActive)
+        if (!user.IsActive)
         {
             return new CredentialValidationInactive();
         }
 
         await SaveAsync(
-            account,
+            user,
             current =>
             {
                 if (verification == PasswordVerification.SucceededRehashNeeded)
@@ -74,37 +74,37 @@ internal sealed class IdentityUserService : IIdentityUserService
             },
             cancellationToken);
 
-        return new CredentialValidationSucceeded(ToAuthenticatedUser(account, isLockedOut: false));
+        return new CredentialValidationSucceeded(ToAuthenticatedUser(user, isLockedOut: false));
     }
 
     public async Task<AuthenticatedUser?> GetByIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var account = await _dbContext.Accounts
+        var user = await _dbContext.Users
             .AsNoTracking()
             .SingleOrDefaultAsync(candidate => candidate.Id == userId, cancellationToken);
 
-        return account is null ? null : ToAuthenticatedUser(account, account.IsLockedOut(UtcNow()));
+        return user is null ? null : ToAuthenticatedUser(user, user.IsLockedOut(UtcNow()));
     }
 
     public async Task<IReadOnlyList<string>> GetRolesAsync(Guid userId, CancellationToken cancellationToken)
     {
-        return await _dbContext.Accounts
-            .Where(account => account.Id == userId)
-            .SelectMany(account => account.Roles)
-            .Join(_dbContext.Roles, accountRole => accountRole.RoleId, role => role.Id, (_, role) => role.Name)
+        return await _dbContext.Users
+            .Where(user => user.Id == userId)
+            .SelectMany(user => user.Roles)
+            .Join(_dbContext.Roles, userRole => userRole.RoleId, role => role.Id, (_, role) => role.Name)
             .OrderBy(name => name)
             .ToListAsync(cancellationToken);
     }
 
     /// <summary>
-    /// Applies a login-state change and saves it. Concurrent logins to the same account can collide on the row
-    /// version; the change is then re-applied to the freshly loaded account so that no failed attempt is lost.
+    /// Applies a login-state change and saves it. Concurrent logins to the same user can collide on the row
+    /// version; the change is then re-applied to the freshly loaded user so that no failed attempt is lost.
     /// </summary>
-    private async Task SaveAsync(Account account, Action<Account> change, CancellationToken cancellationToken)
+    private async Task SaveAsync(User user, Action<User> change, CancellationToken cancellationToken)
     {
         for (var attempt = 1; ; attempt++)
         {
-            change(account);
+            change(user);
 
             try
             {
@@ -113,18 +113,18 @@ internal sealed class IdentityUserService : IIdentityUserService
             }
             catch (DbUpdateConcurrencyException) when (attempt < MaxSaveAttempts)
             {
-                await _dbContext.Entry(account).ReloadAsync(cancellationToken);
+                await _dbContext.Entry(user).ReloadAsync(cancellationToken);
             }
         }
     }
 
-    private static AuthenticatedUser ToAuthenticatedUser(Account account, bool isLockedOut)
+    private static AuthenticatedUser ToAuthenticatedUser(User user, bool isLockedOut)
     {
         return new AuthenticatedUser(
-            account.Id,
-            account.Email,
-            account.AccountType,
-            account.IsActive,
+            user.Id,
+            user.Email,
+            user.UserType,
+            user.IsActive,
             isLockedOut);
     }
 

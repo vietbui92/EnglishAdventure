@@ -34,7 +34,7 @@ public sealed class RefreshSessionCommandHandler : IRequestHandler<RefreshSessio
                 var user = await _identityUserService.GetByIdAsync(succeeded.UserId, cancellationToken);
                 if (user is null || !user.IsActive || user.IsLockedOut)
                 {
-                    // The account became ineligible during the session: end the session instead of leaving
+                    // The user became ineligible during the session: end the session instead of leaving
                     // the freshly rotated token usable.
                     await _refreshTokenService.RevokeAsync(succeeded.NewRefreshToken, cancellationToken);
                     throw new RefreshTokenException();
@@ -43,7 +43,7 @@ public sealed class RefreshSessionCommandHandler : IRequestHandler<RefreshSessio
                 var roles = await _identityUserService.GetRolesAsync(user.Id, cancellationToken);
                 var (accessToken, accessExpires) = _accessTokenIssuer.Issue(
                     user.Id,
-                    user.AccountType,
+                    user.UserType,
                     roles);
 
                 return new TokenPair(

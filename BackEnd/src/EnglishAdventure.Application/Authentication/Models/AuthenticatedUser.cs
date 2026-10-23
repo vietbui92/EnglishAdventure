@@ -5,6 +5,6 @@ namespace EnglishAdventure.Application.Authentication.Models;
 public sealed record AuthenticatedUser(
     Guid Id,
     string Email,
-    AccountType AccountType,
+    UserType UserType,
     bool IsActive,
     bool IsLockedOut);

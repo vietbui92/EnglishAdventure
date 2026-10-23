@@ -3,8 +3,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using EnglishAdventure.Api.IntegrationTests.Authorization;
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authentication.Models;
+using EnglishAdventure.Application.Authorization;
 using EnglishAdventure.Domain.Enums;
 using EnglishAdventure.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -25,7 +27,7 @@ public sealed class AccessTokenAuthenticationTests : IClassFixture<EnglishAdvent
     private const string MeRoute = "/api/v1/auth/me";
 
     private static readonly AuthenticatedUser KnownUser =
-        new(Guid.NewGuid(), "parent@example.test", AccountType.Parent, IsActive: true, IsLockedOut: false);
+        new(Guid.NewGuid(), "parent@example.test", UserType.Parent, IsActive: true, IsLockedOut: false);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly JwtOptions _jwtOptions;
@@ -36,6 +38,9 @@ public sealed class AccessTokenAuthenticationTests : IClassFixture<EnglishAdvent
         {
             services.RemoveAll<IIdentityUserService>();
             services.AddSingleton<IIdentityUserService>(new SingleUserIdentityService(KnownUser, "Parent"));
+            services.RemoveAll<IUserPermissionReader>();
+            services.AddSingleton<IUserPermissionReader>(
+                new FixedPermissionReader().Grant(KnownUser.Id, "family.progress.read", "family.children.manage"));
         }));
         _jwtOptions = _factory.Services.GetRequiredService<IOptions<JwtOptions>>().Value;
     }
@@ -53,7 +58,7 @@ public sealed class AccessTokenAuthenticationTests : IClassFixture<EnglishAdvent
     public async Task Me_returns_the_current_user_for_an_issued_access_token()
     {
         var issuer = _factory.Services.GetRequiredService<IAccessTokenIssuer>();
-        var (accessToken, _) = issuer.Issue(KnownUser.Id, KnownUser.AccountType, new[] { "Parent" });
+        var (accessToken, _) = issuer.Issue(KnownUser.Id, KnownUser.UserType, new[] { "Parent" });
 
         var response = await SendMeAsync(accessToken);
 
@@ -61,20 +66,23 @@ public sealed class AccessTokenAuthenticationTests : IClassFixture<EnglishAdvent
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(KnownUser.Id, body.GetProperty("userId").GetGuid());
         Assert.Equal(KnownUser.Email, body.GetProperty("email").GetString());
-        Assert.Equal("Parent", body.GetProperty("accountType").GetString());
+        Assert.Equal("Parent", body.GetProperty("userType").GetString());
         Assert.Equal("Parent", body.GetProperty("roles")[0].GetString());
+        Assert.Equal(
+            ["family.children.manage", "family.progress.read"],
+            body.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()));
     }
 
     [Fact]
     public void Issued_access_token_contains_only_the_expected_claims()
     {
         var issuer = _factory.Services.GetRequiredService<IAccessTokenIssuer>();
-        var (accessToken, expiresAtUtc) = issuer.Issue(KnownUser.Id, AccountType.Child, Array.Empty<string>());
+        var (accessToken, expiresAtUtc) = issuer.Issue(KnownUser.Id, UserType.Child, Array.Empty<string>());
 
         var token = new JsonWebToken(accessToken);
 
         Assert.Equal(KnownUser.Id.ToString(), token.Subject);
-        Assert.Equal("Child", token.GetClaim(AuthClaimTypes.AccountType).Value);
+        Assert.Equal("Child", token.GetClaim(AuthClaimTypes.UserType).Value);
         Assert.False(string.IsNullOrEmpty(token.Id));
         Assert.Equal(_jwtOptions.Issuer, token.Issuer);
         Assert.Equal(_jwtOptions.Audience, Assert.Single(token.Audiences));
@@ -183,7 +191,7 @@ public sealed class AccessTokenAuthenticationTests : IClassFixture<EnglishAdvent
             Subject = new ClaimsIdentity(new[]
             {
                 new Claim(AuthClaimTypes.Subject, KnownUser.Id.ToString()),
-                new Claim(AuthClaimTypes.AccountType, KnownUser.AccountType.ToString())
+                new Claim(AuthClaimTypes.UserType, KnownUser.UserType.ToString())
             }),
             IssuedAt = issuedAt ?? now,
             NotBefore = issuedAt ?? now,

@@ -41,3 +41,48 @@ Authorization: Bearer <access token>
 POST {{EnglishAdventure.Api_HostAddress}}/api/v1/database/migrate
 
 ###
+
+# Requires the roles.manage permission (SuperAdmin).
+GET {{EnglishAdventure.Api_HostAddress}}/api/v1/admin/permissions
+Authorization: Bearer <access token>
+
+###
+
+# ---- User management (sign in as SuperAdmin first) ----
+
+GET {{EnglishAdventure.Api_HostAddress}}/api/v1/admin/users?page=1&pageSize=20&search=
+Authorization: Bearer <access token>
+
+###
+
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/admin/users
+Authorization: Bearer <access token>
+Content-Type: application/json
+
+{
+  "email": "content.admin@example.com",
+  "password": "<at least 12 chars: upper, lower, digit, symbol>",
+  "userType": "Admin"
+}
+
+###
+
+PUT {{EnglishAdventure.Api_HostAddress}}/api/v1/admin/users/<user id>/roles
+Authorization: Bearer <access token>
+Content-Type: application/json
+
+{
+  "roles": ["ContentAdmin"]
+}
+
+###
+
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/admin/users/<user id>/deactivate
+Authorization: Bearer <access token>
+
+###
+
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/admin/users/<user id>/activate
+Authorization: Bearer <access token>
+
+###

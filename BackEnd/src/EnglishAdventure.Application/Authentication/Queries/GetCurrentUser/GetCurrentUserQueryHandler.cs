@@ -1,4 +1,5 @@
 using EnglishAdventure.Application.Authentication.Models;
+using EnglishAdventure.Application.Authorization;
 using EnglishAdventure.Application.Common.Exceptions;
 using MediatR;
 
@@ -8,13 +9,16 @@ public sealed class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQ
 {
     private readonly IUserContext _userContext;
     private readonly IIdentityUserService _identityUserService;
+    private readonly IUserPermissionReader _permissionReader;
 
     public GetCurrentUserQueryHandler(
         IUserContext userContext,
-        IIdentityUserService identityUserService)
+        IIdentityUserService identityUserService,
+        IUserPermissionReader permissionReader)
     {
         _userContext = userContext;
         _identityUserService = identityUserService;
+        _permissionReader = permissionReader;
     }
 
     public async Task<CurrentUserProfile> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
@@ -31,7 +35,13 @@ public sealed class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQ
         }
 
         var roles = await _identityUserService.GetRolesAsync(userId, cancellationToken);
+        var permissions = await _permissionReader.GetPermissionsAsync(userId, cancellationToken);
 
-        return new CurrentUserProfile(user.Id, user.Email, user.AccountType, roles);
+        return new CurrentUserProfile(
+            user.Id,
+            user.Email,
+            user.UserType,
+            roles,
+            permissions.Order(StringComparer.Ordinal).ToArray());
     }
 }

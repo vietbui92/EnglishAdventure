@@ -1,4 +1,5 @@
 using EnglishAdventure.Api;
+using EnglishAdventure.Api.CommandLine;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,12 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 var app = builder.Build();
+
+// Administration tasks such as `bootstrap-superadmin` run instead of the web server.
+if (CommandLineTasks.IsTask(args))
+{
+    return await CommandLineTasks.RunAsync(app, args);
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -32,5 +39,6 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+return 0;
 
 public partial class Program;

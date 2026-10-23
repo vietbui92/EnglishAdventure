@@ -29,15 +29,17 @@ public sealed record AuthTokensResponse(
 public sealed record CurrentUserResponse(
     Guid UserId,
     string Email,
-    string AccountType,
-    IReadOnlyList<string> Roles)
+    string UserType,
+    IReadOnlyList<string> Roles,
+    IReadOnlyList<string> Permissions)
 {
     public static CurrentUserResponse From(CurrentUserProfile profile)
     {
         return new CurrentUserResponse(
             profile.UserId,
             profile.Email,
-            profile.AccountType.ToString(),
-            profile.Roles);
+            profile.UserType.ToString(),
+            profile.Roles,
+            profile.Permissions);
     }
 }

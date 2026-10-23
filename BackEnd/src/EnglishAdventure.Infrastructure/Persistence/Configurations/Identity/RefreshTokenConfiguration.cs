@@ -24,19 +24,19 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
             .HasConversion<string>()
             .HasMaxLength(32);
 
-        // Family revocation filters by FamilyId; the FK index on AccountId supports per-account queries and cascade.
+        // Family revocation filters by FamilyId; the FK index on UserId supports per-user queries and cascade.
         builder.HasIndex(token => token.FamilyId);
 
-        builder.HasIndex(token => token.AccountId);
+        builder.HasIndex(token => token.UserId);
 
         builder.HasIndex(token => token.ExpiresAtUtc);
 
         builder.Property(token => token.RowVersion)
             .IsRowVersion();
 
-        builder.HasOne<Account>()
+        builder.HasOne<User>()
             .WithMany()
-            .HasForeignKey(token => token.AccountId)
+            .HasForeignKey(token => token.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

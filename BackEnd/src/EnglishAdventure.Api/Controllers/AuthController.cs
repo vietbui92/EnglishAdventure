@@ -72,7 +72,7 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Returns the account behind the presented access token.
+    /// Returns the user behind the presented access token.
     /// </summary>
     [HttpGet("me")]
     [Authorize]

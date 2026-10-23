@@ -22,14 +22,14 @@ public sealed class RefreshSessionCommandHandlerTests
     public async Task Handle_returns_rotated_refresh_token_and_new_access_token()
     {
         _refreshTokenService.RotationResult = new RefreshTokenRotationSucceeded(UserId, "rotated", NewRefreshExpiresAtUtc);
-        _identityUserService.User = new AuthenticatedUser(UserId, "child@example.test", AccountType.Child, true, false);
+        _identityUserService.User = new AuthenticatedUser(UserId, "child@example.test", UserType.Child, true, false);
 
         var tokens = await CreateHandler().Handle(new RefreshSessionCommand("old"), CancellationToken.None);
 
         Assert.Equal("rotated", tokens.RefreshToken);
         Assert.Equal(NewRefreshExpiresAtUtc, tokens.RefreshTokenExpiresAtUtc);
         Assert.Equal($"access-{UserId}", tokens.AccessToken);
-        Assert.Equal(AccountType.Child, Assert.Single(_accessTokenIssuer.Issued).AccountType);
+        Assert.Equal(UserType.Child, Assert.Single(_accessTokenIssuer.Issued).UserType);
     }
 
     [Fact]
@@ -57,10 +57,10 @@ public sealed class RefreshSessionCommandHandlerTests
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, true)]
-    public async Task Handle_revokes_the_new_session_when_the_account_is_no_longer_eligible(bool isActive, bool isLockedOut)
+    public async Task Handle_revokes_the_new_session_when_the_user_is_no_longer_eligible(bool isActive, bool isLockedOut)
     {
         _refreshTokenService.RotationResult = new RefreshTokenRotationSucceeded(UserId, "rotated", NewRefreshExpiresAtUtc);
-        _identityUserService.User = new AuthenticatedUser(UserId, "p@example.test", AccountType.Parent, isActive, isLockedOut);
+        _identityUserService.User = new AuthenticatedUser(UserId, "p@example.test", UserType.Parent, isActive, isLockedOut);
 
         await Assert.ThrowsAsync<RefreshTokenException>(
             () => CreateHandler().Handle(new RefreshSessionCommand("old"), CancellationToken.None));

@@ -23,12 +23,12 @@ internal sealed class JwtAccessTokenIssuer : IAccessTokenIssuer
 
     public (string AccessToken, DateTime ExpiresAtUtc) Issue(
         Guid userId,
-        AccountType accountType,
+        UserType userType,
         IReadOnlyList<string> roles)
     {
-        if (!Enum.IsDefined(accountType))
+        if (!Enum.IsDefined(userType))
         {
-            throw new ArgumentOutOfRangeException(nameof(accountType), accountType, "Unknown account type.");
+            throw new ArgumentOutOfRangeException(nameof(userType), userType, "Unknown user type.");
         }
 
         var now = _timeProvider.GetUtcNow().UtcDateTime;
@@ -38,7 +38,7 @@ internal sealed class JwtAccessTokenIssuer : IAccessTokenIssuer
         {
             new(AuthClaimTypes.Subject, userId.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(AuthClaimTypes.AccountType, accountType.ToString())
+            new(AuthClaimTypes.UserType, userType.ToString())
         };
         claims.AddRange(roles.Select(role => new Claim(AuthClaimTypes.Role, role)));
 

@@ -2,7 +2,7 @@
 
 ## Product
 
-English Adventure is a web platform where children learn English through structured lessons, levels, and mini-games. Planned account types: **Admin**, **Parent**, **Child**. This repository is the ASP.NET Core Web API backend.
+English Adventure is a web platform where children learn English through structured lessons, levels, and mini-games. Planned user types: **Admin**, **Parent**, **Child**. This repository is the ASP.NET Core Web API backend.
 
 Current state: foundation + a **partial, non-functional** authentication slice. The API host does not start yet (see [docs/project-status.md](docs/project-status.md)).
 
@@ -39,10 +39,14 @@ Product decisions: [../docs/product/mvp-product-decisions.md](../docs/product/mv
   - Domain layout: `Common/Entity.cs`, `Entities/<Module>/`, `Enums/`, `ValueObjects/`, `Services/`, `Exceptions/`.
   - Every entity derives from `Entity` (single `Guid Id`); business uniqueness uses unique indexes.
   - Between modules, store IDs only (no navigation properties), but keep database foreign keys.
-  - One `DbContext`. No SQL schemas: every table is in `dbo` and named `<module>_<plural_snake_case>` (`auth_accounts`, `content_lessons`); prefixes `auth_`, `family_`, `content_`, `learning_`, `rewards_`. Columns stay PascalCase. Set the name explicitly with `ToTable(...)` in each configuration.
+  - One `DbContext`. No SQL schemas: every table is in `dbo` and named `<module>_<plural_snake_case>` (`auth_users`, `content_lessons`); prefixes `auth_`, `family_`, `content_`, `learning_`, `rewards_`. Columns stay PascalCase. Set the name explicitly with `ToTable(...)` in each configuration.
   - Application uses one repository interface per aggregate (no generic repository, no EF Core in Application).
   - Accounts, roles and permissions are our own Identity-module entities (`Domain/Entities/Identity`, ADR-5). ASP.NET Core Identity tables, stores and `UserManager` are not used. Other modules store the account ID; there is no separate Parent or User entity.
   - Passwords are hashed only through `IPasswordHasher` (Microsoft's PBKDF2 implementation). Never write custom password cryptography.
+- **Authorization (ADR-8):**
+  - Protect endpoints with `[Authorize(Policy = Permissions.X.Y)]` (`Application/Authorization/Permissions.cs`). Never authorize by role name.
+  - A new permission must be added to `Permissions.All`, and to `SystemRoles` if a system role should hold it.
+  - Permissions are read per request through `IUserPermissionReader` (1-minute cache), never from the token.
   - `DomainArchitectureTests` and `ApplicationArchitectureTests` enforce these rules.
   - Add entities only from approved plan steps ([domain model proposal](docs/architecture/domain-model-proposal.md)).
 - Integration tests override the connection string with `UseSetting`, never `ConfigureAppConfiguration`: `AddInfrastructure` reads it while `Program.cs` builds the host, before `ConfigureAppConfiguration` overrides apply.
@@ -62,7 +66,11 @@ dotnet restore EnglishAdventure.sln
 dotnet build EnglishAdventure.sln --no-restore
 dotnet test EnglishAdventure.sln --no-build
 dotnet run --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj
+dotnet run --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj -- sync-roles            # sync permissions + system roles
+dotnet run --project src/EnglishAdventure.Api/EnglishAdventure.Api.csproj -- bootstrap-superadmin  # first SuperAdmin (Bootstrap:SuperAdmin:* settings)
 ```
+
+Administration tasks are command-line verbs (`Api/CommandLine/CommandLineTasks.cs`), never HTTP endpoints.
 
 Optional SQL test: set `ENGLISH_ADVENTURE_TEST_SQL_CONNECTION`. Without it, the test returns early and verifies nothing.
 

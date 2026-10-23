@@ -22,89 +22,6 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.Account", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("AccountType")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<int>("FailedLoginCount")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastLoginAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("LockoutEndUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("NormalizedEmail")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .IsUnique();
-
-                    b.ToTable("auth_accounts", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_auth_accounts_AccountType", "[AccountType] IN (1, 2, 3)");
-                        });
-                });
-
-            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.AccountRole", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("AssignedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("AssignedByAccountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssignedByAccountId");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("AccountId", "RoleId")
-                        .IsUnique();
-
-                    b.ToTable("auth_account_roles", (string)null);
-                });
-
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -175,13 +92,93 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.ToTable("auth_role_permissions", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastLoginAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LockoutEndUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("UserType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .IsUnique();
+
+                    b.ToTable("auth_users", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_auth_users_UserType", "[UserType] IN (1, 2, 3)");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.UserRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("AssignedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedByUserId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId", "RoleId")
+                        .IsUnique();
+
+                    b.ToTable("auth_user_roles", (string)null);
+                });
+
             modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -214,9 +211,10 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.HasKey("Id");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.HasIndex("AccountId");
+                    b.HasKey("Id");
 
                     b.HasIndex("ExpiresAtUtc");
 
@@ -225,27 +223,9 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("auth_refresh_tokens", (string)null);
-                });
-
-            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.AccountRole", b =>
-                {
-                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.Account", null)
-                        .WithMany("Roles")
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.Account", null)
-                        .WithMany()
-                        .HasForeignKey("AssignedByAccountId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.RolePermission", b =>
@@ -263,23 +243,43 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.RefreshToken", b =>
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.UserRole", b =>
                 {
-                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.Account", null)
+                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
                         .WithMany()
-                        .HasForeignKey("AccountId")
+                        .HasForeignKey("AssignedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
+                        .WithMany("Roles")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.Account", b =>
+            modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.RefreshToken", b =>
                 {
-                    b.Navigation("Roles");
+                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.Role", b =>
                 {
                     b.Navigation("Permissions");
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.User", b =>
+                {
+                    b.Navigation("Roles");
                 });
 #pragma warning restore 612, 618
         }

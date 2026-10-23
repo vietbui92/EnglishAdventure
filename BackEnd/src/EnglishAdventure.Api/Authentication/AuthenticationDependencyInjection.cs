@@ -40,8 +40,6 @@ public static class AuthenticationDependencyInjection
                 };
             });
 
-        services.AddAuthorization();
-
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpContextUserContext>();
 

@@ -9,7 +9,7 @@ namespace EnglishAdventure.Application.UnitTests.Authentication;
 public sealed class LoginCommandHandlerTests
 {
     private static readonly AuthenticatedUser ActiveParent =
-        new(Guid.NewGuid(), "parent@example.test", AccountType.Parent, IsActive: true, IsLockedOut: false);
+        new(Guid.NewGuid(), "parent@example.test", UserType.Parent, IsActive: true, IsLockedOut: false);
 
     private readonly FakeIdentityUserService _identityUserService = new();
     private readonly FakeAccessTokenIssuer _accessTokenIssuer = new();
@@ -33,7 +33,7 @@ public sealed class LoginCommandHandlerTests
 
         var issued = Assert.Single(_accessTokenIssuer.Issued);
         Assert.Equal(ActiveParent.Id, issued.UserId);
-        Assert.Equal(AccountType.Parent, issued.AccountType);
+        Assert.Equal(UserType.Parent, issued.UserType);
         Assert.Equal(new[] { "Parent" }, issued.Roles);
     }
 
@@ -49,7 +49,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_throws_the_same_generic_failure_for_a_locked_out_account()
+    public async Task Handle_throws_the_same_generic_failure_for_a_locked_out_user()
     {
         _identityUserService.CredentialResult = new CredentialValidationLockedOut();
 
@@ -60,7 +60,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_throws_forbidden_for_an_inactive_account()
+    public async Task Handle_throws_forbidden_for_an_inactive_user()
     {
         _identityUserService.CredentialResult = new CredentialValidationInactive();
 

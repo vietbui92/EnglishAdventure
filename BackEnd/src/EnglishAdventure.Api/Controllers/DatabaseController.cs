@@ -23,7 +23,7 @@ public sealed class DatabaseController : ControllerBase
 
     /// <summary>
     /// Creates the database if needed and applies every pending EF Core migration. Anonymous, because on a fresh
-    /// database there are no accounts to sign in with.
+    /// database there are no users to sign in with.
     /// </summary>
     [HttpPost("migrate")]
     [AllowAnonymous]

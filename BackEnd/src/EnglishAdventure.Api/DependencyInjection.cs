@@ -1,4 +1,5 @@
 using EnglishAdventure.Api.Authentication;
+using EnglishAdventure.Api.Authorization;
 using EnglishAdventure.Api.ExceptionHandling;
 using EnglishAdventure.Application;
 using EnglishAdventure.Infrastructure;
@@ -15,6 +16,7 @@ public static class DependencyInjection
         services.AddInfrastructure(configuration);
         services.AddApiExceptionHandling();
         services.AddApiAuthentication();
+        services.AddApiAuthorization();
 
         services.AddControllers();
         services.AddOpenApi(options =>

@@ -5,18 +5,18 @@ using EnglishAdventure.Domain.Exceptions;
 namespace EnglishAdventure.Domain.Entities.Identity;
 
 /// <summary>
-/// A sign-in account (Admin, Parent or Child account type). Owns its password hash, its lockout state and the roles
-/// assigned to it. Business entities of other modules refer to an account by <see cref="Entity.Id"/> only.
+/// A sign-in user (Admin, Parent or Child user type). Owns its password hash, its lockout state and the roles
+/// assigned to it. Business entities of other modules refer to a user by <see cref="Entity.Id"/> only.
 /// </summary>
-public sealed class Account : Entity
+public sealed class User : Entity
 {
     public const int EmailMaxLength = 256;
     public const int MaxFailedLoginAttempts = 5;
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
-    private readonly List<AccountRole> _roles = [];
+    private readonly List<UserRole> _roles = [];
 
-    private Account()
+    private User()
     {
     }
 
@@ -27,7 +27,7 @@ public sealed class Account : Entity
 
     public string PasswordHash { get; private set; } = string.Empty;
 
-    public AccountType AccountType { get; private set; }
+    public UserType UserType { get; private set; }
 
     public bool IsActive { get; private set; }
 
@@ -39,9 +39,9 @@ public sealed class Account : Entity
 
     public DateTime? LastLoginAtUtc { get; private set; }
 
-    public IReadOnlyCollection<AccountRole> Roles => _roles;
+    public IReadOnlyCollection<UserRole> Roles => _roles;
 
-    public static Account Create(string email, string passwordHash, AccountType accountType, DateTime nowUtc)
+    public static User Create(string email, string passwordHash, UserType userType, DateTime nowUtc)
     {
         var trimmedEmail = email?.Trim() ?? string.Empty;
         if (trimmedEmail.Length == 0 || trimmedEmail.Length > EmailMaxLength || !trimmedEmail.Contains('@'))
@@ -54,18 +54,18 @@ public sealed class Account : Entity
             throw new DomainException("A password hash is required.");
         }
 
-        if (!Enum.IsDefined(accountType))
+        if (!Enum.IsDefined(userType))
         {
-            throw new DomainException($"Unknown account type '{accountType}'.");
+            throw new DomainException($"Unknown user type '{userType}'.");
         }
 
-        return new Account
+        return new User
         {
             Id = Guid.NewGuid(),
             Email = trimmedEmail,
             NormalizedEmail = NormalizeEmail(trimmedEmail),
             PasswordHash = passwordHash,
-            AccountType = accountType,
+            UserType = userType,
             IsActive = true,
             CreatedAtUtc = nowUtc
         };
@@ -76,7 +76,7 @@ public sealed class Account : Entity
     public bool IsLockedOut(DateTime nowUtc) => LockoutEndUtc > nowUtc;
 
     /// <summary>
-    /// Counts a wrong password. The <see cref="MaxFailedLoginAttempts"/>-th failure locks the account for
+    /// Counts a wrong password. The <see cref="MaxFailedLoginAttempts"/>-th failure locks the user for
     /// <see cref="LockoutDuration"/> and starts a new count.
     /// </summary>
     public void RecordFailedLogin(DateTime nowUtc)
@@ -94,7 +94,7 @@ public sealed class Account : Entity
     {
         if (!IsActive)
         {
-            throw new DomainException("An inactive account cannot sign in.");
+            throw new DomainException("An inactive user cannot sign in.");
         }
 
         FailedLoginCount = 0;
@@ -118,15 +118,15 @@ public sealed class Account : Entity
 
     public bool HasRole(Guid roleId) => _roles.Any(role => role.RoleId == roleId);
 
-    /// <summary>Assigning a role the account already has changes nothing.</summary>
-    public void AssignRole(Guid roleId, DateTime nowUtc, Guid? assignedByAccountId = null)
+    /// <summary>Assigning a role the user already has changes nothing.</summary>
+    public void AssignRole(Guid roleId, DateTime nowUtc, Guid? assignedByUserId = null)
     {
         if (HasRole(roleId))
         {
             return;
         }
 
-        _roles.Add(new AccountRole(Id, roleId, nowUtc, assignedByAccountId));
+        _roles.Add(new UserRole(Id, roleId, nowUtc, assignedByUserId));
     }
 
     public void RemoveRole(Guid roleId) => _roles.RemoveAll(role => role.RoleId == roleId);

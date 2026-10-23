@@ -7,7 +7,7 @@ namespace EnglishAdventure.Infrastructure.Persistence;
 
 /// <summary>
 /// The application's single EF Core context for every module (ADR-1). It currently holds the <c>identity</c> schema:
-/// accounts, roles, permissions and refresh tokens. Each entity is mapped by its own configuration class in
+/// users, roles, permissions and refresh tokens. Each entity is mapped by its own configuration class in
 /// <c>Persistence/Configurations/&lt;Module&gt;</c>.
 /// </summary>
 public sealed class EnglishAdventureDbContext : DbContext
@@ -17,7 +17,7 @@ public sealed class EnglishAdventureDbContext : DbContext
     {
     }
 
-    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<User> Users => Set<User>();
 
     public DbSet<Role> Roles => Set<Role>();
 
@@ -30,7 +30,7 @@ public sealed class EnglishAdventureDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EnglishAdventureDbContext).Assembly);
 
         // Domain entities create their own Ids. Without this, EF would treat a new child entity with an Id already set
-        // (for example a role added to an existing account) as an existing row and try to update it.
+        // (for example a role added to an existing user) as an existing row and try to update it.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()
                      .Where(entityType => typeof(Entity).IsAssignableFrom(entityType.ClrType)))
         {

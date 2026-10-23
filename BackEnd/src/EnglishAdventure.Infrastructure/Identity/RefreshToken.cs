@@ -8,7 +8,7 @@ public sealed class RefreshToken
 {
     public Guid Id { get; set; }
 
-    public Guid AccountId { get; set; }
+    public Guid UserId { get; set; }
 
     public Guid FamilyId { get; set; }
 
