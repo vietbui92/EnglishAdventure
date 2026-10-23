@@ -1,16 +1,18 @@
 import { BookOpen, LayoutDashboard, ShieldCheck, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet } from 'react-router'
-import { AreaNav } from '@/app/layouts/AreaNav'
+import { AccountMenu } from '@/app/layouts/AccountMenu'
+import { AreaNav, type AreaNavItem } from '@/app/layouts/AreaNav'
+import { Permissions } from '@/auth/permissions'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export function AdminLayout() {
   const { t } = useTranslation()
-  const items = [
+  const items: AreaNavItem[] = [
     { to: '/admin', label: t('admin.nav.dashboard'), icon: LayoutDashboard, end: true },
-    { to: '/admin/users', label: t('admin.nav.users'), icon: Users },
-    { to: '/admin/roles', label: t('admin.nav.roles'), icon: ShieldCheck },
-    { to: '/admin/content', label: t('admin.nav.content'), icon: BookOpen },
+    { to: '/admin/users', label: t('admin.nav.users'), icon: Users, permission: Permissions.usersRead },
+    { to: '/admin/roles', label: t('admin.nav.roles'), icon: ShieldCheck, permission: Permissions.rolesManage },
+    { to: '/admin/content', label: t('admin.nav.content'), icon: BookOpen, permission: Permissions.contentManage },
   ]
 
   return (
@@ -29,8 +31,9 @@ export function AdminLayout() {
         />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex justify-end border-b px-4 py-2">
+        <header className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 border-b px-4 py-2">
           <LanguageSwitcher />
+          <AccountMenu />
         </header>
         <main className="flex-1 p-4 md:p-6">
           <Outlet />

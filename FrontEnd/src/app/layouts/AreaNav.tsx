@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router'
+import { hasPermission, type Permission } from '@/auth/permissions'
+import { useSession } from '@/auth/session'
 import { cn } from '@/lib/utils'
 
 export interface AreaNavItem {
@@ -8,12 +10,17 @@ export interface AreaNavItem {
   icon: LucideIcon
   /** Match the path exactly, for an area's index route. */
   end?: boolean
+  /** Shown only to users with this permission (the route checks it too). */
+  permission?: Permission
 }
 
 export function AreaNav({ items, label, className }: { items: AreaNavItem[]; label: string; className?: string }) {
+  const session = useSession()
+  const visible = items.filter((item) => !item.permission || (session && hasPermission(session.user, item.permission)))
+
   return (
     <nav aria-label={label} className={cn('flex gap-1', className)}>
-      {items.map(({ to, label: itemLabel, icon: Icon, end }) => (
+      {visible.map(({ to, label: itemLabel, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}

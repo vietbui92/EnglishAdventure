@@ -7,7 +7,8 @@
     "comingSoonDescription": "Màn hình này sẽ được làm ở một bước sau.",
     "backHome": "Về trang chủ",
     "language": "Ngôn ngữ",
-    "mainNavigation": "Điều hướng chính"
+    "mainNavigation": "Điều hướng chính",
+    "signIn": "Đăng nhập"
   },
   "language": {
     "vi": "Tiếng Việt",
@@ -59,10 +60,41 @@
     "start": "Bắt đầu",
     "exit": "Thoát"
   },
+  "auth": {
+    "login": {
+      "title": "Đăng nhập",
+      "description": "Dành cho quản trị viên và phụ huynh.",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập…",
+      "validation": {
+        "emailRequired": "Hãy nhập email.",
+        "emailInvalid": "Email không hợp lệ.",
+        "emailTooLong": "Email quá dài.",
+        "passwordRequired": "Hãy nhập mật khẩu.",
+        "passwordTooLong": "Mật khẩu quá dài.",
+        "serverInvalid": "Giá trị này chưa hợp lệ."
+      },
+      "errors": {
+        "invalidCredentials": "Email hoặc mật khẩu không đúng. Nếu nhập sai nhiều lần, tài khoản sẽ bị tạm khóa 15 phút.",
+        "inactive": "Tài khoản này đã bị vô hiệu hóa. Hãy liên hệ quản trị viên.",
+        "invalidInput": "Thông tin đăng nhập chưa hợp lệ.",
+        "unavailable": "Không kết nối được máy chủ. Hãy thử lại sau."
+      },
+      "expired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
+    },
+    "restoring": "Đang kiểm tra phiên đăng nhập…",
+    "signOut": "Đăng xuất"
+  },
   "errors": {
     "notFound": {
       "title": "Không tìm thấy trang",
       "description": "Trang bạn tìm không tồn tại hoặc đã được chuyển đi."
+    },
+    "forbidden": {
+      "title": "Không có quyền truy cập",
+      "description": "Tài khoản của bạn không được dùng trang này. Nếu cần quyền, hãy liên hệ quản trị viên."
     },
     "unexpected": {
       "title": "Đã có lỗi xảy ra",

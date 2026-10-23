@@ -1,25 +1,15 @@
 import { Gamepad2, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { api, unwrap } from '@/api/client'
 import { ApiError } from '@/api/problem-details'
+import { useApiStatus } from '@/app/pages/useApiStatus'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
-
-type ApiState = { state: 'checking' } | { state: 'ready' } | { state: 'error'; kind: string }
+import { Button } from '@/components/ui/button'
 
 // Temporary development entry page. F1 replaces it with sign-in and a redirect by user type.
 export function HomePage() {
   const { t } = useTranslation()
-  const [apiState, setApiState] = useState<ApiState>({ state: 'checking' })
-
-  useEffect(() => {
-    unwrap(api.GET('/api/v1/foundation/status'))
-      .then(() => setApiState({ state: 'ready' }))
-      .catch((error: unknown) =>
-        setApiState({ state: 'error', kind: error instanceof ApiError ? error.kind : 'network' }),
-      )
-  }, [])
+  const apiStatus = useApiStatus()
 
   const areas: { to: string; icon: LucideIcon; title: string; description: string }[] = [
     { to: '/admin', icon: ShieldCheck, title: t('areas.admin.title'), description: t('areas.admin.description') },
@@ -34,7 +24,12 @@ export function HomePage() {
           <h1 className="font-heading text-3xl font-bold">{t('app.name')}</h1>
           <p className="mt-1 text-muted-foreground">{t('home.subtitle')}</p>
         </div>
-        <LanguageSwitcher />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <Button asChild>
+            <Link to="/login">{t('common.signIn')}</Link>
+          </Button>
+        </div>
       </header>
 
       <section aria-labelledby="areas-title">
@@ -58,9 +53,10 @@ export function HomePage() {
       </section>
 
       <p role="status" className="text-sm text-muted-foreground">
-        {apiState.state === 'checking' && t('home.api.checking')}
-        {apiState.state === 'ready' && t('home.api.ready')}
-        {apiState.state === 'error' && t('home.api.error', { kind: apiState.kind })}
+        {apiStatus.isPending && t('home.api.checking')}
+        {apiStatus.isSuccess && t('home.api.ready')}
+        {apiStatus.isError &&
+          t('home.api.error', { kind: apiStatus.error instanceof ApiError ? apiStatus.error.kind : 'network' })}
       </p>
     </main>
   )
