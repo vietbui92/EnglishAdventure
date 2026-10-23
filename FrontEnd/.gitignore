@@ -1,15 +1,22 @@
-## .NET
-bin/
-obj/
-*.user
-*.suo
-.vs/
-.cursor/
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local env files and secrets
+*.local
+.env.local
+.env.*.local
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
 .idea/
-
-## Secrets and local config
-appsettings.*.local.json
-secrets.json
-
-## Tools
-*.DotSettings.user
+.cursor/
+.DS_Store
+*.sw?

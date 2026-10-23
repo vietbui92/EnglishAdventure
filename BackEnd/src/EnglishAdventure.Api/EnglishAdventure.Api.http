@@ -37,6 +37,19 @@ Authorization: Bearer <access token>
 
 ###
 
+# Web client mode (B-F1): the refresh token goes into the httpOnly cookie "ea_refresh" and the body's
+# refreshToken is null. Refresh and logout then send no body, only this header and the cookie.
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+X-EnglishAdventure-Client: web
+
+{
+  "email": "parent@example.com",
+  "password": "<password>"
+}
+
+###
+
 # Development only: creates the database if needed and applies pending migrations.
 POST {{EnglishAdventure.Api_HostAddress}}/api/v1/database/migrate
 

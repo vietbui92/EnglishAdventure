@@ -44,10 +44,11 @@ Rules for every step:
 | S0.4 | Approve the module structure (ADR-1) and add an architecture test | | ✅ Done 2026-10-23 |
 | S0.5 | Replace ASP.NET Core Identity tables with our own tables in `dbo` (ADR-5) | | ✅ Done 2026-10-23 (owner applies the migration) |
 | **Phase 1: Identity & Access** | | | |
-| S1.1 | Permission catalog and policy-based authorization | (roles decided: PD-008) | 🟢 Ready |
-| S1.2 | Secure SuperAdmin bootstrap and role/permission sync | S1.1 | ⚪ Waiting |
-| S1.3 | Admin account management | S1.2 | ⚪ Waiting |
-| S1.4 | Parent account creation | OQ-010, OQ-008 | 🟡 Needs decision |
+| S1.1 | Permission catalog and policy-based authorization | | ✅ Done 2026-10-23 |
+| S1.2 | Secure SuperAdmin bootstrap and role/permission sync | | ✅ Done 2026-10-23 |
+| S1.3 | Admin user management (create users, assign roles) | | ✅ Done 2026-10-23 |
+| S1.4 | Parent user creation (self-registration?) | OQ-010, OQ-008 | 🟡 Needs decision |
+| S1.5 | Role management (create roles, choose their permissions) | | 🟢 Ready |
 | **Phase 2: Family** | | | |
 | S2.1 | Child profiles for Parents | OQ-001, OQ-013, S1.4 | 🟡 Needs decision |
 | S2.2 | Child session | OQ-009, S2.1 | 🟡 Needs decision |
@@ -73,7 +74,7 @@ Rules for every step:
 | S6.5 | CI pipeline: build and test on every push | | ⚪ Waiting |
 | **Later** | | | |
 | S7.x | Azure hosting, Key Vault, Application Insights | stable MVP | 💤 Later |
-| F.x | Front-end track | OQ-014 | 🟡 Needs decision |
+| F.x | Front-end track, see the [front-end plan](frontend-implementation-plan.md) | | 🟢 Ready (F0.1, B-F1) |
 
 ## Suggested order
 
@@ -83,11 +84,11 @@ Admin content does **not** depend on the child-identity decision. So we can buil
 flowchart LR
     S0[S0.1–S0.4<br/>Baseline] --> S11[S1.1<br/>Permissions]
     S11 --> S12[S1.2<br/>SuperAdmin]
-    S12 --> S13[S1.3<br/>Admin accounts]
+    S12 --> S13[S1.3<br/>Admin users]
     S11 --> S31[S3.1<br/>Levels & lessons]
     S31 --> S32[S3.2 Quiz] & S33[S3.3 Matching]
     S32 & S33 --> S34[S3.4<br/>Lesson map]
-    S14[S1.4<br/>Parent accounts] --> S21[S2.1<br/>Child profiles] --> S22[S2.2<br/>Child session]
+    S14[S1.4<br/>Parent users] --> S21[S2.1<br/>Child profiles] --> S22[S2.2<br/>Child session]
     S22 & S34 --> S41[S4.1<br/>Attempts] --> S42[S4.2<br/>Completion & unlock]
     S42 --> S51[S5.1 Points] --> S52[S5.2 Badges] --> S53[S5.3 Reward views]
     S42 --> S43[S4.3<br/>Parent progress]
@@ -121,16 +122,16 @@ flowchart LR
 - *Done when:* `AspNetUsers` contains no `@example.test` rows.
 - **Superseded by S0.5:** the `AspNet*` tables and their test accounts no longer exist.
 
-**S0.4 Module structure (ADR-1).** ✅ Done 2026-10-23. The owner approved all 11 decisions (see ADR-1). Added `Domain/Common/Entity.cs`, moved `AccountType` to `Domain/Enums/`, added `DomainArchitectureTests` and `ApplicationArchitectureTests`. No entities, tables or migrations.
+**S0.4 Module structure (ADR-1).** ✅ Done 2026-10-23. The owner approved all 11 decisions (see ADR-1). Added `Domain/Common/Entity.cs`, moved `UserType` to `Domain/Enums/`, added `DomainArchitectureTests` and `ApplicationArchitectureTests`. No entities, tables or migrations.
 - Approve or change the structure in the [domain model proposal](../../BackEnd/docs/architecture/domain-model-proposal.md):
   - The layer trees (§3) and the `Domain/Entities/<Module>` layout (§4).
   - The module rules (§10): one `DbContext`, one table prefix per module, references by ID only.
-- If approved, move `Domain/Users/AccountType.cs` to `Domain/Enums/` (a namespace change only; the database is unaffected).
+- If approved, move `Domain/Users/UserType.cs` to `Domain/Enums/` (a namespace change only; the database is unaffected).
 - Add a reflection-based architecture test for the layer rules and the module rules (no new package).
 - *Done when:* ADR-1 is marked decided and the test passes.
 
 **S0.5 Own identity tables (ADR-5).** ✅ Done 2026-10-23. All six decisions approved by the owner.
-- **Domain entities:** `Account`, `AccountRole`, `Role`, `RolePermission`, `Permission` in `Domain/Entities/Identity`.
+- **Domain entities:** `User`, `UserRole`, `Role`, `RolePermission`, `Permission` in `Domain/Entities/Identity`.
 - **Database:** tables in `dbo` with the `auth_` prefix (owner's choice). The migration history was reset by the owner: one standalone migration, `InitialCreate`, creates everything. The old `InitialIdentity` migration was deleted.
 - **Package:** `Microsoft.AspNetCore.Identity.EntityFrameworkCore` replaced by `Microsoft.Extensions.Identity.Core` (password hashing only).
 - **Behavior:** login, refresh, logout and `/me` are unchanged and covered by the existing tests.
@@ -138,41 +139,50 @@ flowchart LR
 
 ### Phase 1: Identity & Access
 
-**S1.1 Permission catalog and policy authorization.** *Roles decided in PD-008 (OQ-007).*
-- **Includes:**
-  - Confirm and finalize the permission catalog in [domain model proposal §9](../../BackEnd/docs/architecture/domain-model-proposal.md). This includes the S1.1 points listed in its §12.
-  - `Permissions` constants in code.
-  - The role-to-permission mapping in code, for exactly the three PD-008 roles.
-  - Code checks permissions, never role names.
-  - Permission claims in the access token (or looked up per request; decided in this step).
-  - A permission policy provider.
-  - `[Authorize(Policy = …)]` usage.
-  - A 403 ProblemDetails response.
-- **Not included:** an admin screen for editing roles.
-- **Migration:** none expected (`auth_permissions` and `auth_role_permissions` exist since S0.5).
-- *Done when:*
-  - A token without the permission gets 403 and a token with it gets 200 (integration tests).
-  - Permission names are covered by unit tests.
+> **Owner decision 2026-10-23:** build user and role management in four steps, each reviewed separately:
+> S1.1 permission checks → S1.2 first SuperAdmin → S1.3 user management → S1.5 role management.
+> Approved choices:
+> - Passwords need at least 12 characters with upper case, lower case, a digit and a symbol.
+> - The first SuperAdmin comes from user secrets or environment variables.
+> - Permissions are looked up per request, with a 1-minute cache.
 
-**S1.2 Secure SuperAdmin bootstrap.**
+**S1.1 Permission catalog and policy authorization.** ✅ Done 2026-10-23.
+- **Catalog:** `Application/Authorization/Permissions.cs` holds the 9 permissions and `SystemRoles.cs` the 3 PD-008 roles with their defaults:
+  - SuperAdmin gets every permission except `family.*`.
+  - ContentAdmin gets `content.*`.
+  - Parent gets `family.*`.
+- **Checking:**
+  - `[Authorize(Policy = Permissions.X.Y)]`. `PermissionPolicyProvider` builds each policy from the permission code, so nothing is registered by hand.
+  - `PermissionAuthorizationHandler` reads the account's permissions through `IUserPermissionReader`: database lookup on each request, 1-minute cache, and empty for a deactivated account.
+  - Role names in the token grant nothing.
+- **Responses:** `/me` now returns `permissions`. The first protected endpoint is `GET /api/v1/admin/permissions` (`roles.manage`). 401 and 403 are ProblemDetails.
+- **Migration:** none.
+- **Tests:** catalog and system-role rules (unit); 401/403/200 through the real middleware (no database); real role → permission lookup and deactivation on SQL Server.
+
+**S1.2 Secure SuperAdmin bootstrap.** ✅ Done 2026-10-23. Built as planned below. The command-line verbs are in `Api/CommandLine/CommandLineTasks.cs`, and the commands are `SyncSystemRolesCommand` and `BootstrapSuperAdminCommand` (`Application/Authorization/Commands`). Repositories (`IUserRepository`, `IRoleRepository`, `IPermissionRepository`) and `IUnitOfWork` were introduced. Verified by unit tests, a SQL integration test, and a CLI smoke test.
 - **Includes:**
-  - A `bootstrap-superadmin` command-line verb.
-  - Credentials from environment variables or user secrets only.
-  - Refuses to run if a SuperAdmin exists.
-  - Creates the roles and syncs their permissions.
-  - Validates the password with Identity rules.
-- **Not included:** any HTTP endpoint for this.
+  - Command-line verbs on the API, not HTTP endpoints:
+    - `sync-roles`: creates the catalog permissions and the 3 system roles, and gives the system roles their default permissions.
+    - `bootstrap-superadmin`: runs `sync-roles`, then creates the first SuperAdmin.
+  - Credentials from `Bootstrap:SuperAdmin:Email` / `Bootstrap:SuperAdmin:Password` (user secrets locally, environment variables elsewhere). Never in code, config files or logs.
+  - Refuses (non-zero exit) when a SuperAdmin already exists.
+  - Password rule: at least 12 characters with upper, lower, digit and symbol. It is reused by S1.3.
+- **Replaces** the hand-written seed SQL for roles and permissions.
 - *Done when:*
   - The first run creates the SuperAdmin, and a second run refuses.
-  - No password appears in code, config files or logs.
+  - That account can sign in and call `GET /api/v1/admin/permissions`.
   - Tests use a throwaway database.
 
-**S1.3 Admin account management.**
-- **Includes:**
-  - List accounts (`accounts.read`).
-  - Create Admin and Parent accounts; deactivate or reactivate (`accounts.manage`).
-  - Assign or remove roles (`roles.manage`).
-  - A new Parent account gets the Parent role.
+**S1.3 Admin user management.** ✅ Done 2026-10-23. Built as listed below.
+- `AdminUsersController` sends commands and queries from `Application/Users`.
+- **Added rule** (`UserRoleRules`): a Parent user can only hold the Parent role, and an Admin user cannot hold it. A family account can never become an administrator.
+- Rule violations return 422, unknown accounts or roles 404, duplicates and concurrent edits 409 (via `UnitOfWork`).
+- Tests: validators (unit); 8 SQL end-to-end tests including last-SuperAdmin protection and session revocation.
+- **Endpoints** (`api/v1/admin/users`):
+  - `GET /` and `GET /{id}` (`users.read`).
+  - `POST /` creates an Admin or Parent user (`users.manage`). A new Parent user gets the Parent role. No Child users until OQ-001 is decided.
+  - `POST /{id}/deactivate` and `/activate` (`users.manage`).
+  - `PUT /{id}/roles` (`roles.manage`).
 - **Rules:**
   - Nobody can deactivate themselves or change their own roles.
   - The last active SuperAdmin cannot be deactivated or demoted.
@@ -180,7 +190,19 @@ flowchart LR
   - ContentAdmin can reach none of these endpoints.
 - *Done when:* each rule has a test, and an unauthorized call returns 403.
 
-**S1.4 Parent account creation.** *Needs OQ-010 and the relevant parts of OQ-008.*
+**S1.5 Role management.** 🟢 Ready
+- **Endpoints** (`api/v1/admin/roles`), all `roles.manage`:
+  - `GET /` lists roles with their permissions.
+  - `POST /` creates a role with a chosen set of catalog permissions.
+  - `PUT /{id}` renames a role and changes its description and permissions.
+  - `DELETE /{id}` deletes a role, only when no account has it.
+- **Rules:**
+  - Permissions come only from the catalog; they are never created through the API.
+  - The 3 system roles cannot be deleted or renamed.
+  - SuperAdmin always keeps every non-family permission.
+  - Changes apply within the 1-minute permission cache.
+
+**S1.4 Parent user creation.** *Needs OQ-010 and the relevant parts of OQ-008.*
 - Either public self-registration (needs email confirmation, abuse protection and consent) or creation by an Admin (S1.3 already covers that).
 - *Done when:* defined after the decision.
 
@@ -297,16 +319,21 @@ Every Phase 6 step must be done before any public release.
 ### Later
 
 - **S7.x Azure:** App Service or Container Apps, Azure SQL, Key Vault, Application Insights, and migration bundles in the deploy pipeline.
-- **F.x Front end:** starts once OQ-014 is decided. The API contract for each step is ready when that step is Done.
+- **F.x Front end:** OQ-014 decided 2026-10-23. Planned step by step in the [front-end plan](frontend-implementation-plan.md); each screen starts when its backend step is Done.
 
 ## Change log
 
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. |
+| 2026-10-23 | OQ-014 decided. Front-end track moved to its own plan (`frontend-implementation-plan.md`), including backend step B-F1 (refresh-token cookie). |
 | 2026-10-23 | OQ-007 decided (PD-008). S1.1 no longer blocked by a decision; it waits for S0.4. Permission names updated in S1.1, S1.3 and S5.2. |
 | 2026-10-23 | S0.4 done (structure approved, recorded as ADR-1). S1.1 is now Ready. |
+| 2026-10-23 | Owner request: "account" renamed to "user" in code, database (migration `RenameAccountsToUsers`, data kept) and API (`api/v1/admin/users`, permissions `users.*`). |
+| 2026-10-23 | S1.3 done: user management API (list, get, create Admin/Parent, activate/deactivate, set roles) with the safety rules. S1.5 is Ready. |
+| 2026-10-23 | S1.2 done: `sync-roles` and `bootstrap-superadmin` command-line verbs, password rule, repositories and unit of work. S1.3 is Ready. |
+| 2026-10-23 | Owner approved user and role management in four steps (S1.1 → S1.2 → S1.3 → new S1.5). S1.1 done: permission catalog, per-request permission checks with a 1-minute cache, `/me` permissions, first protected endpoint. |
 | 2026-10-23 | S0.5 added and done: own `identity` schema replaces ASP.NET Core Identity tables (ADR-5). S0.3 superseded. |
 | 2026-10-23 | S0.5 follow-up: the owner reset the migration history (single `InitialCreate`) and moved the identity tables to `dbo`. |
 | 2026-10-23 | Owner decision: no SQL schemas; tables use module prefixes (`auth_`, `family_`, `content_`, `learning_`, `rewards_`). Migration lines in S2–S5 renamed. |
-| 2026-10-23 | Aligned with the rewritten domain model proposal: S0.4 scope (layer trees, `Entities` folder, `AccountType` move), section references, per-activity submission (S4.1), unique index instead of composite key (S4.2), `PointsTransactions` (S5.1). |
+| 2026-10-23 | Aligned with the rewritten domain model proposal: S0.4 scope (layer trees, `Entities` folder, `UserType` move), section references, per-activity submission (S4.1), unique index instead of composite key (S4.2), `PointsTransactions` (S5.1). |

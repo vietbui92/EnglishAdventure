@@ -8,20 +8,21 @@ public sealed record RefreshSessionRequest(string RefreshToken);
 
 public sealed record LogoutRequest(string RefreshToken);
 
+/// <param name="RefreshToken">Null for web clients: their refresh token is in the httpOnly cookie instead.</param>
 public sealed record AuthTokensResponse(
     string AccessToken,
     string TokenType,
     DateTime AccessTokenExpiresAtUtc,
-    string RefreshToken,
+    string? RefreshToken,
     DateTime RefreshTokenExpiresAtUtc)
 {
-    public static AuthTokensResponse From(TokenPair tokens)
+    public static AuthTokensResponse From(TokenPair tokens, bool includeRefreshToken = true)
     {
         return new AuthTokensResponse(
             tokens.AccessToken,
             "Bearer",
             tokens.AccessTokenExpiresAtUtc,
-            tokens.RefreshToken,
+            includeRefreshToken ? tokens.RefreshToken : null,
             tokens.RefreshTokenExpiresAtUtc);
     }
 }

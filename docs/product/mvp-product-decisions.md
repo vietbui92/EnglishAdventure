@@ -31,9 +31,9 @@ The MVP should give children a usable learning experience and give Admins a work
 | **Parent** | Signs in. Manages the learning profiles of their own children. Sees each child's progress, results, points and badges. |
 | **Child** | Uses the learning experience (how a child gets access is open: PD-007 / OQ-009). Sees available lessons, plays quiz and matching activities, gets results and rewards, and continues where they stopped. |
 
-Account type, role and permission are three different things:
+User type, role and permission are three different things:
 
-- **Account type** (Admin, Parent, Child) describes who the user is in the product.
+- **User type** (Admin, Parent, Child) describes who the user is in the product.
 - **Role** groups responsibilities.
 - **Permission** allows one specific operation.
 
@@ -41,7 +41,7 @@ Account type, role and permission are three different things:
 
 | ID | Topic | Choice | Status |
 |---|---|---|---|
-| PD-001 | Child account model | `parent-profile`: a Parent manages child learning profiles under the Parent's account | ✅ Decided, but conflicts with PD-007 |
+| PD-001 | Child user model | `parent-profile`: a Parent manages child learning profiles under the Parent's account | ✅ Decided, but conflicts with PD-007 |
 | PD-002 | Learning progression | `sequential-unlock`: lessons are ordered; completing one unlocks the next | ✅ Decided |
 | PD-003 | First mini-games | `quiz-match`: Quiz and Matching | ✅ Decided |
 | PD-004 | Rewards | `points-badges`: points and badges | ✅ Decided |
@@ -103,6 +103,7 @@ A distinct child identity does not have to mean a separate email or password. It
 - **Server-side ownership.** A Parent can access only the child profiles and learning records they are authorized for. A `ChildProfileId` sent by the client is never trusted on its own; ownership and access are checked on the server.
 - **Secure SuperAdmin provisioning.** No default SuperAdmin with a hard-coded password, and no public SuperAdmin registration endpoint.
 - **No extra roles** in the MVP unless an existing requirement makes one necessary.
+  - *Changed by the owner on 2026-10-23:* holders of `roles.manage` may create roles at runtime and choose their permissions from the catalog (plan step S1.5). The three roles above remain the built-in system roles. Permissions themselves are still defined only in code.
 - **Extensible, but simple.** The permission catalog can grow without adding a complex authorization framework.
 
 **Not decided by PD-008:**
@@ -188,11 +189,11 @@ Rows marked _(added)_ were raised while preparing the plan. They are not in the 
 | OQ-007 | Which roles and permissions does the first release need? | Authorization policies | ✅ **DECIDED** 2026-10-23 → PD-008. Roles: SuperAdmin, ContentAdmin, Parent. The permission catalog is finalized in S1.1 |
 | OQ-008 | Which markets, and what child-consent, retention and deletion rules apply? | Privacy controls, production readiness | S1.4, S6.4 |
 | OQ-009 | If independent identity is kept: how does a child start a session? | Credentials, or parent-authorized access | S2.2 |
-| OQ-010 _(added)_ | How are Parent accounts created: self-registration, or created by an Admin? Is email confirmation required? | Public endpoints, consent, abuse protection | S1.4 |
+| OQ-010 _(added)_ | How are Parent users created: self-registration, or created by an Admin? Is email confirmation required? | Public endpoints, consent, abuse protection | S1.4 |
 | OQ-011 _(added)_ | Where do Matching pictures come from: a URL entered by the Admin, or uploaded files? | Media storage (uploads need Blob Storage) | S3.3 |
 | OQ-012 _(added)_ | Does "resume" mean continuing from the next lesson, or from the middle of a lesson? | Saving answers per activity or per lesson | S4.1 |
 | OQ-013 _(added)_ | Can a child profile belong to more than one Parent (for example two guardians)? | Family data model | S2.1 |
-| OQ-014 _(added)_ | Which front-end technology? (`FrontEnd/` is empty) | Front-end track, API contract style, refresh-token transport | Front-end track |
+| OQ-014 _(added)_ | Which front-end technology? (`FrontEnd/` is empty) | Front-end track, API contract style, refresh-token transport | ✅ **DECIDED** 2026-10-23: React + Vite + TS, one app with Admin/Parent/Play areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. See the [front-end plan](../roadmap/frontend-implementation-plan.md) |
 | OQ-015 _(added)_ | Does a quiz question always have exactly one correct answer? | Quiz validation and scoring | S3.2 |
 | OQ-016 _(added)_ | How do levels unlock: when every lesson of the previous level is complete, or does the lesson order simply continue across levels? | Unlock rule | S4.2 |
 
@@ -229,3 +230,6 @@ The conflict goes away if we separate three things:
 |---|---|
 | 2026-10-23 | Baseline recorded from the owner's "MVP Product Decisions" document. Added OQ-010 to OQ-016 and the proposed resolution in Section 8, both waiting for review. |
 | 2026-10-23 | OQ-007 decided by the owner: recorded as PD-008 (three roles and the authorization principles). |
+| 2026-10-23 | Naming: "account" renamed to "user" (permissions `users.read` / `users.manage`, "user type"). |
+| 2026-10-23 | OQ-014 decided by the owner: front-end technology and session transport (see the front-end plan). |
+| 2026-10-23 | PD-008 amended by the owner: roles can be created at runtime (role management, S1.5). Password rule for Admin/Parent users: at least 12 characters with upper case, lower case, a digit and a symbol. |
