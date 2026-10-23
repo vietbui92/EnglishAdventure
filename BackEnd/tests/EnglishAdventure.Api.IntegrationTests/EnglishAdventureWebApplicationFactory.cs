@@ -7,6 +7,8 @@ namespace EnglishAdventure.Api.IntegrationTests;
 
 public sealed class EnglishAdventureWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public const string ConnectionStringKey = "ConnectionStrings:EnglishAdventure";
+
     /// <summary>
     /// Random per test run; never a real secret.
     /// </summary>
@@ -16,12 +18,16 @@ public sealed class EnglishAdventureWebApplicationFactory : WebApplicationFactor
     {
         builder.UseEnvironment("Development");
 
+        // UseSetting, not ConfigureAppConfiguration: AddInfrastructure reads the connection string while Program.cs
+        // builds the host, before ConfigureAppConfiguration overrides are applied.
+        builder.UseSetting(
+            ConnectionStringKey,
+            "Server=(localdb)\\mssqllocaldb;Database=EnglishAdventure_IntegrationTests;Trusted_Connection=True;TrustServerCertificate=True;");
+
         builder.ConfigureAppConfiguration((_, configurationBuilder) =>
         {
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:EnglishAdventure"] =
-                    "Server=(localdb)\\mssqllocaldb;Database=EnglishAdventure_IntegrationTests;Trusted_Connection=True;TrustServerCertificate=True;",
                 ["Authentication:Jwt:SigningKey"] = SigningKey
             });
         });

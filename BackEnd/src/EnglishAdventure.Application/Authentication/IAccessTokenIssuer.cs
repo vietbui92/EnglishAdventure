@@ -1,4 +1,4 @@
-using EnglishAdventure.Domain.Users;
+using EnglishAdventure.Domain.Enums;
 
 namespace EnglishAdventure.Application.Authentication;
 

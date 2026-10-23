@@ -44,7 +44,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
         var current = await _dbContext.RefreshTokens
             .AsNoTracking()
             .Where(token => token.TokenHash == tokenHash)
-            .Select(token => new { token.Id, token.UserId, token.FamilyId, token.ExpiresAtUtc, token.RevokedAtUtc })
+            .Select(token => new { token.Id, token.AccountId, token.FamilyId, token.ExpiresAtUtc, token.RevokedAtUtc })
             .SingleOrDefaultAsync(cancellationToken);
 
         if (current is null)
@@ -54,7 +54,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
 
         if (current.RevokedAtUtc is not null)
         {
-            await RevokeReusedFamilyAsync(current.UserId, current.FamilyId, now, cancellationToken);
+            await RevokeReusedFamilyAsync(current.AccountId, current.FamilyId, now, cancellationToken);
             return new RefreshTokenRotationReuseDetected();
         }
 
@@ -63,7 +63,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
             return new RefreshTokenRotationInvalid();
         }
 
-        var (newRawToken, replacement) = CreateToken(current.UserId, current.FamilyId, now);
+        var (newRawToken, replacement) = CreateToken(current.AccountId, current.FamilyId, now);
 
         await using (var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken))
         {
@@ -81,7 +81,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
             if (consumed == 0)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                await RevokeReusedFamilyAsync(current.UserId, current.FamilyId, now, cancellationToken);
+                await RevokeReusedFamilyAsync(current.AccountId, current.FamilyId, now, cancellationToken);
                 return new RefreshTokenRotationReuseDetected();
             }
 
@@ -90,7 +90,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
             await transaction.CommitAsync(cancellationToken);
         }
 
-        return new RefreshTokenRotationSucceeded(current.UserId, newRawToken, replacement.ExpiresAtUtc);
+        return new RefreshTokenRotationSucceeded(current.AccountId, newRawToken, replacement.ExpiresAtUtc);
     }
 
     public async Task RevokeAsync(string rawRefreshToken, CancellationToken cancellationToken)
@@ -144,7 +144,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
         var token = new RefreshToken
         {
             Id = Guid.NewGuid(),
-            UserId = userId,
+            AccountId = userId,
             FamilyId = familyId,
             TokenHash = RefreshTokenHasher.Hash(rawToken),
             CreatedAtUtc = now,

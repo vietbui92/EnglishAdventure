@@ -2,7 +2,7 @@
 
 Clean Architecture foundation for the **English Adventure** platform (.NET 10, ASP.NET Core Web API, CQRS with MediatR, EF Core + SQL Server).
 
-This repository contains the project structure, validation pipeline, API baseline, and the **authentication foundation** (ASP.NET Core Identity, JWT access tokens, rotating refresh tokens). Account provisioning, authorization policies, and learning, lesson, game, and child-profile features are not implemented yet.
+This repository contains the project structure, validation pipeline, API baseline, and the **authentication foundation** (own tables for accounts, roles and permissions; PBKDF2 password hashing; JWT access tokens; rotating refresh tokens). Account provisioning, authorization policies, and learning, lesson, game, and child-profile features are not implemented yet.
 
 ## Prerequisites
 
@@ -63,7 +63,9 @@ Do not commit production credentials. The API does **not** run migrations or des
 
 ## EF Core migrations
 
-Migrations live in `src/EnglishAdventure.Infrastructure/Persistence/Migrations`. The first one is `InitialIdentity` (Identity tables + `RefreshTokens`). The API **never** applies migrations at startup.
+Migrations live in `src/EnglishAdventure.Infrastructure/Persistence/Migrations`. The single starting migration is `InitialCreate`: it creates the project's own tables in `dbo`: `auth_accounts`, `auth_roles`, `auth_permissions`, `auth_account_roles`, `auth_role_permissions`, `auth_refresh_tokens`. Table names use a module prefix (`auth_`, `family_`, `content_`, `learning_`, `rewards_`). The API **never** applies migrations at startup.
+
+**Applying migrations in Development:** run the API and call `POST /api/v1/database/migrate` (in `EnglishAdventure.Api.http` or Scalar). It creates the database from `ConnectionStrings:EnglishAdventure` if needed, applies every pending migration, and returns the names it applied (an empty list when already up to date). The endpoint answers 404 in every other environment.
 
 The `dotnet ef` tools use Infrastructure as both project and startup project, through `EnglishAdventureDbContextFactory`. It reads `ConnectionStrings__EnglishAdventure` from the environment and otherwise targets the LocalDB database `EnglishAdventure`.
 
@@ -79,7 +81,7 @@ dotnet ef migrations script --idempotent `
   --project src/EnglishAdventure.Infrastructure/EnglishAdventure.Infrastructure.csproj `
   --startup-project src/EnglishAdventure.Infrastructure/EnglishAdventure.Infrastructure.csproj
 
-# Apply to YOUR local development database only
+# Alternative to the migrate endpoint: apply to YOUR local development database only
 $env:ConnectionStrings__EnglishAdventure = "Server=(localdb)\mssqllocaldb;Database=EnglishAdventure;Trusted_Connection=True;TrustServerCertificate=True;"
 dotnet ef database update `
   --project src/EnglishAdventure.Infrastructure/EnglishAdventure.Infrastructure.csproj `

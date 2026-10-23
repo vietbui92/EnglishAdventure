@@ -4,6 +4,7 @@ obj/
 *.user
 *.suo
 .vs/
+.cursor/
 .idea/
 
 ## Secrets and local config

@@ -1,20 +1,31 @@
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authentication.Models;
-using Microsoft.AspNetCore.Identity;
+using EnglishAdventure.Domain.Entities.Identity;
+using EnglishAdventure.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace EnglishAdventure.Infrastructure.Identity;
 
 internal sealed class IdentityUserService : IIdentityUserService
 {
+    private const int MaxSaveAttempts = 3;
+
+    private readonly EnglishAdventureDbContext _dbContext;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly TimeProvider _timeProvider;
+
     // Hash verified when the email is unknown, so that response time does not reveal whether an account exists.
-    private static readonly string DummyPasswordHash =
-        new PasswordHasher<ApplicationUser>().HashPassword(new ApplicationUser(), Guid.NewGuid().ToString());
+    private readonly Lazy<string> _dummyPasswordHash;
 
-    private readonly UserManager<ApplicationUser> _userManager;
-
-    public IdentityUserService(UserManager<ApplicationUser> userManager)
+    public IdentityUserService(
+        EnglishAdventureDbContext dbContext,
+        IPasswordHasher passwordHasher,
+        TimeProvider timeProvider)
     {
-        _userManager = userManager;
+        _dbContext = dbContext;
+        _passwordHasher = passwordHasher;
+        _timeProvider = timeProvider;
+        _dummyPasswordHash = new Lazy<string>(() => passwordHasher.Hash(Guid.NewGuid().ToString()));
     }
 
     public async Task<CredentialValidationResult> ValidateCredentialsAsync(
@@ -22,71 +33,100 @@ internal sealed class IdentityUserService : IIdentityUserService
         string password,
         CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        var normalizedEmail = Account.NormalizeEmail(email);
+        var account = await _dbContext.Accounts
+            .SingleOrDefaultAsync(candidate => candidate.NormalizedEmail == normalizedEmail, cancellationToken);
 
-        var user = await _userManager.FindByEmailAsync(email);
-        if (user is null)
+        if (account is null)
         {
-            _userManager.PasswordHasher.VerifyHashedPassword(new ApplicationUser(), DummyPasswordHash, password);
+            _passwordHasher.Verify(_dummyPasswordHash.Value, password);
             return new CredentialValidationFailed();
         }
 
         // Checked before the password so that a locked account cannot be used as a password oracle.
-        if (await _userManager.IsLockedOutAsync(user))
+        if (account.IsLockedOut(UtcNow()))
         {
             return new CredentialValidationLockedOut();
         }
 
-        if (!await _userManager.CheckPasswordAsync(user, password))
+        var verification = _passwordHasher.Verify(account.PasswordHash, password);
+        if (verification == PasswordVerification.Failed)
         {
-            await _userManager.AccessFailedAsync(user);
+            await SaveAsync(account, current => current.RecordFailedLogin(UtcNow()), cancellationToken);
             return new CredentialValidationFailed();
         }
 
-        if (!user.IsActive)
+        if (!account.IsActive)
         {
             return new CredentialValidationInactive();
         }
 
-        await _userManager.ResetAccessFailedCountAsync(user);
+        await SaveAsync(
+            account,
+            current =>
+            {
+                if (verification == PasswordVerification.SucceededRehashNeeded)
+                {
+                    current.ChangePasswordHash(_passwordHasher.Hash(password));
+                }
 
-        return new CredentialValidationSucceeded(ToAuthenticatedUser(user, isLockedOut: false));
+                current.RecordSuccessfulLogin(UtcNow());
+            },
+            cancellationToken);
+
+        return new CredentialValidationSucceeded(ToAuthenticatedUser(account, isLockedOut: false));
     }
 
     public async Task<AuthenticatedUser?> GetByIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        var account = await _dbContext.Accounts
+            .AsNoTracking()
+            .SingleOrDefaultAsync(candidate => candidate.Id == userId, cancellationToken);
 
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return null;
-        }
-
-        return ToAuthenticatedUser(user, await _userManager.IsLockedOutAsync(user));
+        return account is null ? null : ToAuthenticatedUser(account, account.IsLockedOut(UtcNow()));
     }
 
     public async Task<IReadOnlyList<string>> GetRolesAsync(Guid userId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return Array.Empty<string>();
-        }
-
-        var roles = await _userManager.GetRolesAsync(user);
-        return roles.ToArray();
+        return await _dbContext.Accounts
+            .Where(account => account.Id == userId)
+            .SelectMany(account => account.Roles)
+            .Join(_dbContext.Roles, accountRole => accountRole.RoleId, role => role.Id, (_, role) => role.Name)
+            .OrderBy(name => name)
+            .ToListAsync(cancellationToken);
     }
 
-    private static AuthenticatedUser ToAuthenticatedUser(ApplicationUser user, bool isLockedOut)
+    /// <summary>
+    /// Applies a login-state change and saves it. Concurrent logins to the same account can collide on the row
+    /// version; the change is then re-applied to the freshly loaded account so that no failed attempt is lost.
+    /// </summary>
+    private async Task SaveAsync(Account account, Action<Account> change, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            change(account);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < MaxSaveAttempts)
+            {
+                await _dbContext.Entry(account).ReloadAsync(cancellationToken);
+            }
+        }
+    }
+
+    private static AuthenticatedUser ToAuthenticatedUser(Account account, bool isLockedOut)
     {
         return new AuthenticatedUser(
-            user.Id,
-            user.Email ?? string.Empty,
-            user.AccountType,
-            user.IsActive,
+            account.Id,
+            account.Email,
+            account.AccountType,
+            account.IsActive,
             isLockedOut);
     }
+
+    private DateTime UtcNow() => _timeProvider.GetUtcNow().UtcDateTime;
 }

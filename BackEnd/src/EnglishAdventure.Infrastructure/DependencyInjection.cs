@@ -1,4 +1,5 @@
 using EnglishAdventure.Application.Authentication;
+using EnglishAdventure.Application.Database;
 using EnglishAdventure.Infrastructure.Authentication;
 using EnglishAdventure.Infrastructure.Identity;
 using EnglishAdventure.Infrastructure.Persistence;
@@ -32,6 +33,8 @@ public static class DependencyInjection
                 connectionString,
                 sqlOptions => sqlOptions.MigrationsAssembly(typeof(EnglishAdventureDbContext).Assembly.FullName)));
 
+        services.AddScoped<IDatabaseMigrator, DatabaseMigrator>();
+
         services.TryAddSingleton(TimeProvider.System);
 
         services.AddIdentityInfrastructure();
@@ -42,19 +45,9 @@ public static class DependencyInjection
 
     private static void AddIdentityInfrastructure(this IServiceCollection services)
     {
-        // Identity core only: the API authenticates with JWT bearer tokens, not Identity cookies.
-        services
-            .AddIdentityCore<ApplicationUser>(options =>
-            {
-                options.User.RequireUniqueEmail = true;
-
-                options.Lockout.AllowedForNewUsers = true;
-                options.Lockout.MaxFailedAccessAttempts = 5;
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-            })
-            .AddRoles<ApplicationRole>()
-            .AddEntityFrameworkStores<EnglishAdventureDbContext>();
-
+        // Accounts, roles and permissions are our own identity-schema entities. Lockout rules live in the Account
+        // entity; only the password hashing algorithm comes from Microsoft.Extensions.Identity.Core.
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddScoped<IIdentityUserService, IdentityUserService>();
     }
 

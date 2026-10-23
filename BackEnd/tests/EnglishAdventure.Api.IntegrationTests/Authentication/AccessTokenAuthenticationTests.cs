@@ -5,7 +5,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authentication.Models;
-using EnglishAdventure.Domain.Users;
+using EnglishAdventure.Domain.Enums;
 using EnglishAdventure.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;

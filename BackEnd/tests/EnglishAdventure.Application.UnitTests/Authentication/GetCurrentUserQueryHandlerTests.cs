@@ -1,7 +1,7 @@
 using EnglishAdventure.Application.Authentication.Models;
 using EnglishAdventure.Application.Authentication.Queries.GetCurrentUser;
 using EnglishAdventure.Application.Common.Exceptions;
-using EnglishAdventure.Domain.Users;
+using EnglishAdventure.Domain.Enums;
 
 namespace EnglishAdventure.Application.UnitTests.Authentication;
 

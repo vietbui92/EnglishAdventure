@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using EnglishAdventure.Application.Authentication;
-using EnglishAdventure.Domain.Users;
+using EnglishAdventure.Domain.Enums;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;

@@ -36,3 +36,8 @@ GET {{EnglishAdventure.Api_HostAddress}}/api/v1/auth/me
 Authorization: Bearer <access token>
 
 ###
+
+# Development only: creates the database if needed and applies pending migrations.
+POST {{EnglishAdventure.Api_HostAddress}}/api/v1/database/migrate
+
+###

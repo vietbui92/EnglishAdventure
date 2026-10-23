@@ -11,16 +11,16 @@ Current state: foundation + a **partial, non-functional** authentication slice. 
 .NET 10 (`net10.0`, SDK 10.0.402), Clean Architecture, CQRS via MediatR, FluentValidation, EF Core 10 + SQL Server.
 
 ```
-src/EnglishAdventure.Domain          // no project/package references
+src/EnglishAdventure.Domain          // no project/package references; Common/, Entities/<Module>/, Enums/, ValueObjects/, Services/, Exceptions/
 src/EnglishAdventure.Application     // -> Domain; MediatR, FluentValidation
-src/EnglishAdventure.Infrastructure  // -> Application, Domain; EF Core SqlServer, Identity EF stores
+src/EnglishAdventure.Infrastructure  // -> Application, Domain; EF Core SqlServer; Microsoft.Extensions.Identity.Core (password hashing only)
 src/EnglishAdventure.Api             // -> Application, Infrastructure; composition root, controllers
 tests/EnglishAdventure.Domain.UnitTests
 tests/EnglishAdventure.Application.UnitTests
 tests/EnglishAdventure.Api.IntegrationTests   // WebApplicationFactory<Program>
 ```
 
-Details: [docs/architecture/overview.md](docs/architecture/overview.md). Decisions: [docs/architecture/decisions.md](docs/architecture/decisions.md). Status: [docs/project-status.md](docs/project-status.md).
+Product decisions: [../docs/product/mvp-product-decisions.md](../docs/product/mvp-product-decisions.md). Step-by-step plan (one approved step at a time): [../docs/roadmap/mvp-implementation-plan.md](../docs/roadmap/mvp-implementation-plan.md). Proposed domain model: [docs/architecture/domain-model-proposal.md](docs/architecture/domain-model-proposal.md). Details: [docs/architecture/overview.md](docs/architecture/overview.md). Decisions: [docs/architecture/decisions.md](docs/architecture/decisions.md). Status: [docs/project-status.md](docs/project-status.md).
 
 ## Architectural constraints
 
@@ -32,6 +32,20 @@ Details: [docs/architecture/overview.md](docs/architecture/overview.md). Decisio
 - Errors: throw the typed exceptions in `Application/Common/Exceptions` or `DomainException`. `GlobalExceptionHandler` maps them to ProblemDetails. When you add an exception type, add its mapping too.
 - `Program.cs` sets `ValidateOnBuild = true`. Every MediatR handler's dependencies must be registered, or the host will not start.
 - The API never runs migrations at startup. Migrations live in the Infrastructure assembly (`Persistence/Migrations`).
+- In Development, migrations are applied by calling `POST /api/v1/database/migrate` (`DatabaseController`, `[DevelopmentOnly]`: 404 in every other environment). Shared and production databases get a reviewed idempotent script.
+- **Whenever you change an entity or its EF configuration, run `dotnet ef migrations add <Name>` yourself** (command in README) and review the generated migration. The owner does not run `dotnet ef` by hand. Do not run `dotnet ef database update`; the owner applies migrations through the endpoint.
+- **Module structure (ADR-1, decided):**
+  - Modules: Family, Content, Learning, Rewards, plus Identity. They are folders in each project, not separate projects.
+  - Domain layout: `Common/Entity.cs`, `Entities/<Module>/`, `Enums/`, `ValueObjects/`, `Services/`, `Exceptions/`.
+  - Every entity derives from `Entity` (single `Guid Id`); business uniqueness uses unique indexes.
+  - Between modules, store IDs only (no navigation properties), but keep database foreign keys.
+  - One `DbContext`. No SQL schemas: every table is in `dbo` and named `<module>_<plural_snake_case>` (`auth_accounts`, `content_lessons`); prefixes `auth_`, `family_`, `content_`, `learning_`, `rewards_`. Columns stay PascalCase. Set the name explicitly with `ToTable(...)` in each configuration.
+  - Application uses one repository interface per aggregate (no generic repository, no EF Core in Application).
+  - Accounts, roles and permissions are our own Identity-module entities (`Domain/Entities/Identity`, ADR-5). ASP.NET Core Identity tables, stores and `UserManager` are not used. Other modules store the account ID; there is no separate Parent or User entity.
+  - Passwords are hashed only through `IPasswordHasher` (Microsoft's PBKDF2 implementation). Never write custom password cryptography.
+  - `DomainArchitectureTests` and `ApplicationArchitectureTests` enforce these rules.
+  - Add entities only from approved plan steps ([domain model proposal](docs/architecture/domain-model-proposal.md)).
+- Integration tests override the connection string with `UseSetting`, never `ConfigureAppConfiguration`: `AddInfrastructure` reads it while `Program.cs` builds the host, before `ConfigureAppConfiguration` overrides apply.
 
 ## Coding conventions (observed)
 

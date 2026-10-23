@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EnglishAdventure.Application.Authentication;
-using EnglishAdventure.Domain.Users;
+using EnglishAdventure.Domain.Enums;
 using EnglishAdventure.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -56,7 +56,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         var tokens = await LoginAsync(account);
 
         var storedHashes = await _fixture.WithDbContextAsync(db => db.RefreshTokens
-            .Where(token => token.UserId == account.Id)
+            .Where(token => token.AccountId == account.Id)
             .Select(token => token.TokenHash)
             .ToListAsync());
 
@@ -96,12 +96,12 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         var response = await Client.PostAsJsonAsync(LoginRoute, new { account.Email, account.Password });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        var lockoutEnd = await _fixture.WithDbContextAsync(db => db.Users
+        var lockoutEnd = await _fixture.WithDbContextAsync(db => db.Accounts
             .Where(user => user.Id == account.Id)
-            .Select(user => user.LockoutEnd)
+            .Select(user => user.LockoutEndUtc)
             .SingleAsync());
         Assert.NotNull(lockoutEnd);
-        Assert.True(lockoutEnd > DateTimeOffset.UtcNow);
+        Assert.True(lockoutEnd > DateTime.UtcNow);
     }
 
     [SqlServerFact]
@@ -220,7 +220,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
         var account = await _fixture.CreateAccountAsync(AccountType.Child);
         var login = await LoginAsync(account);
         await _fixture.WithDbContextAsync(db => db.RefreshTokens
-            .Where(token => token.UserId == account.Id)
+            .Where(token => token.AccountId == account.Id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(token => token.ExpiresAtUtc, DateTime.UtcNow.AddMinutes(-1))));
 
         var response = await RefreshAsync(login.RefreshToken);
@@ -261,7 +261,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     {
         var account = await _fixture.CreateAccountAsync(AccountType.Parent);
         var login = await LoginAsync(account);
-        await _fixture.WithDbContextAsync(db => db.Users
+        await _fixture.WithDbContextAsync(db => db.Accounts
             .Where(user => user.Id == account.Id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.IsActive, false)));
 
@@ -284,7 +284,7 @@ public sealed class AuthEndpointsSqlServerTests : IClassFixture<SqlServerAuthDat
     private Task<List<RefreshToken>> LoadTokensAsync(Guid userId) =>
         _fixture.WithDbContextAsync(db => db.RefreshTokens
             .AsNoTracking()
-            .Where(token => token.UserId == userId)
+            .Where(token => token.AccountId == userId)
             .OrderBy(token => token.CreatedAtUtc)
             .ToListAsync());
 

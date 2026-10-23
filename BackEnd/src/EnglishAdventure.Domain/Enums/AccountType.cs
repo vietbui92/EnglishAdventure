@@ -1,4 +1,4 @@
-namespace EnglishAdventure.Domain.Users;
+namespace EnglishAdventure.Domain.Enums;
 
 public enum AccountType
 {

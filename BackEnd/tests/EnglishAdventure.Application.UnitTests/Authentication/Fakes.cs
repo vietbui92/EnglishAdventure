@@ -1,6 +1,6 @@
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authentication.Models;
-using EnglishAdventure.Domain.Users;
+using EnglishAdventure.Domain.Enums;
 
 namespace EnglishAdventure.Application.UnitTests.Authentication;
 

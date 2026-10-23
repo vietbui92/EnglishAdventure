@@ -1,26 +1,42 @@
+using EnglishAdventure.Domain.Common;
+using EnglishAdventure.Domain.Entities.Identity;
 using EnglishAdventure.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishAdventure.Infrastructure.Persistence;
 
 /// <summary>
-/// The application's single EF Core context. It holds the ASP.NET Core Identity schema (users, roles and their
-/// relationships) and the refresh-token store. Add domain DbSets and configurations here as modules are introduced.
+/// The application's single EF Core context for every module (ADR-1). It currently holds the <c>identity</c> schema:
+/// accounts, roles, permissions and refresh tokens. Each entity is mapped by its own configuration class in
+/// <c>Persistence/Configurations/&lt;Module&gt;</c>.
 /// </summary>
-public sealed class EnglishAdventureDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
+public sealed class EnglishAdventureDbContext : DbContext
 {
     public EnglishAdventureDbContext(DbContextOptions<EnglishAdventureDbContext> options)
         : base(options)
     {
     }
 
+    public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<Role> Roles => Set<Role>();
+
+    public DbSet<Permission> Permissions => Set<Permission>();
+
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Identity's base mapping must run first so the configurations below can refine it.
-        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EnglishAdventureDbContext).Assembly);
+
+        // Domain entities create their own Ids. Without this, EF would treat a new child entity with an Id already set
+        // (for example a role added to an existing account) as an existing row and try to update it.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
+                     .Where(entityType => typeof(Entity).IsAssignableFrom(entityType.ClrType)))
+        {
+            modelBuilder.Entity(entityType.ClrType)
+                .Property(nameof(Entity.Id))
+                .ValueGeneratedNever();
+        }
     }
 }

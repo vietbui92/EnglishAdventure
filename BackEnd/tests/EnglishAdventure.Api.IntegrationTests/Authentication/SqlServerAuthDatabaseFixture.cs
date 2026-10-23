@@ -1,12 +1,11 @@
-using EnglishAdventure.Domain.Users;
-using EnglishAdventure.Infrastructure.Identity;
+using EnglishAdventure.Application.Authentication;
+using EnglishAdventure.Domain.Entities.Identity;
+using EnglishAdventure.Domain.Enums;
 using EnglishAdventure.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EnglishAdventure.Api.IntegrationTests.Authentication;
@@ -41,14 +40,20 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
 
         _rootFactory = new EnglishAdventureWebApplicationFactory();
         _factory = _rootFactory.WithWebHostBuilder(builder =>
-            builder.ConfigureAppConfiguration((_, configuration) =>
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:EnglishAdventure"] = connectionString
-                })));
+            builder.UseSetting(EnglishAdventureWebApplicationFactory.ConnectionStringKey, connectionString));
 
         await using var scope = _factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<EnglishAdventureDbContext>().Database.MigrateAsync();
+        var database = scope.ServiceProvider.GetRequiredService<EnglishAdventureDbContext>().Database;
+
+        // Guard: never run the tests against a database other than the throwaway one.
+        var expectedName = new SqlConnectionStringBuilder(connectionString).InitialCatalog;
+        if (database.GetDbConnection().Database != expectedName)
+        {
+            throw new InvalidOperationException(
+                $"Expected the throwaway database '{expectedName}' but the host uses '{database.GetDbConnection().Database}'.");
+        }
+
+        await database.MigrateAsync();
     }
 
     public async Task DisposeAsync()
@@ -78,44 +83,40 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
         params string[] roles)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<EnglishAdventureDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
         var email = $"{Guid.NewGuid():N}@example.test";
         var password = $"Aa1!{Guid.NewGuid():N}";
-        var user = new ApplicationUser
+        var account = Account.Create(email, passwordHasher.Hash(password), accountType, DateTime.UtcNow);
+
+        if (!isActive)
         {
-            Id = Guid.NewGuid(),
-            UserName = email,
-            Email = email,
-            AccountType = accountType,
-            IsActive = isActive
-        };
-
-        AssertSucceeded(await userManager.CreateAsync(user, password));
-
-        foreach (var role in roles)
-        {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                AssertSucceeded(await roleManager.CreateAsync(new ApplicationRole { Name = role }));
-            }
-
-            AssertSucceeded(await userManager.AddToRoleAsync(user, role));
+            account.Deactivate();
         }
 
-        return new TestAccount(user.Id, email, password);
+        foreach (var roleName in roles)
+        {
+            var role = await dbContext.Roles.SingleOrDefaultAsync(candidate => candidate.Name == roleName);
+            if (role is null)
+            {
+                role = Role.Create(roleName);
+                dbContext.Roles.Add(role);
+            }
+
+            account.AssignRole(role.Id, DateTime.UtcNow);
+        }
+
+        dbContext.Accounts.Add(account);
+        await dbContext.SaveChangesAsync();
+
+        return new TestAccount(account.Id, email, password);
     }
 
     public async Task<T> WithDbContextAsync<T>(Func<EnglishAdventureDbContext, Task<T>> action)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         return await action(scope.ServiceProvider.GetRequiredService<EnglishAdventureDbContext>());
-    }
-
-    private static void AssertSucceeded(IdentityResult result)
-    {
-        Assert.True(result.Succeeded, string.Join("; ", result.Errors.Select(error => error.Description)));
     }
 }
 

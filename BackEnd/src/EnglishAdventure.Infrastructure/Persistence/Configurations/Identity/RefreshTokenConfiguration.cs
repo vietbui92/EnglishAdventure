@@ -1,13 +1,15 @@
+using EnglishAdventure.Domain.Entities.Identity;
+using EnglishAdventure.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace EnglishAdventure.Infrastructure.Identity.Configurations;
+namespace EnglishAdventure.Infrastructure.Persistence.Configurations.Identity;
 
 internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {
     public void Configure(EntityTypeBuilder<RefreshToken> builder)
     {
-        builder.ToTable("RefreshTokens");
+        builder.ToTable("auth_refresh_tokens");
 
         builder.HasKey(token => token.Id);
 
@@ -22,19 +24,19 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
             .HasConversion<string>()
             .HasMaxLength(32);
 
-        // Family revocation filters by FamilyId; the FK index on UserId supports per-user queries and cascade.
+        // Family revocation filters by FamilyId; the FK index on AccountId supports per-account queries and cascade.
         builder.HasIndex(token => token.FamilyId);
 
-        builder.HasIndex(token => token.UserId);
+        builder.HasIndex(token => token.AccountId);
 
         builder.HasIndex(token => token.ExpiresAtUtc);
 
         builder.Property(token => token.RowVersion)
             .IsRowVersion();
 
-        builder.HasOne(token => token.User)
+        builder.HasOne<Account>()
             .WithMany()
-            .HasForeignKey(token => token.UserId)
+            .HasForeignKey(token => token.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

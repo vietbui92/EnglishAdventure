@@ -8,7 +8,7 @@ public sealed class RefreshToken
 {
     public Guid Id { get; set; }
 
-    public Guid UserId { get; set; }
+    public Guid AccountId { get; set; }
 
     public Guid FamilyId { get; set; }
 
@@ -25,6 +25,4 @@ public sealed class RefreshToken
     public Guid? ReplacedByTokenId { get; set; }
 
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
-
-    public ApplicationUser User { get; set; } = null!;
 }

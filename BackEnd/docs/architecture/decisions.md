@@ -6,11 +6,11 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 | # | Decision | Status |
 |---|---|---|
-| 1 | Modular monolith, not microservices initially | 🟡 / 🔍 |
+| 1 | Modular monolith, not microservices initially | 🟡 (structure decided 2026-10-23) |
 | 2 | Clean Architecture with pragmatic DDD | 🟡 |
 | 3 | CQRS where it provides value | ✅ |
 | 4 | SQL Server and EF Core | 🟡 |
-| 5 | ASP.NET Core Identity as the identity foundation | ✅ |
+| 5 | Own identity tables (replaced ASP.NET Core Identity on 2026-10-23) | ✅ |
 | 6 | JWT access tokens and refresh-token rotation/revocation | ✅ |
 | 7 | Admin, Parent, and Child account types | 🟡 |
 | 8 | RBAC combined with fine-grained permissions | 📋 |
@@ -22,17 +22,34 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Decision.** Ship one deployable API, organised internally by business module. Split into services only when there is a proven need.
 
-**Status: 🟡 Single deployable exists. Module boundaries are not defined.** There is one API host and one `DbContext`. Code is grouped by feature folder (`Application/Authentication`, `Application/Foundation`), but there are no module projects, no per-module schemas, and no rules against cross-module access.
+**Module structure (decided 2026-10-23, plan step S0.4).** All 11 points were approved by the owner. Details are in the [domain model proposal](domain-model-proposal.md) §3, §4 and §10.
+1. **Modules:** Family, Content, Learning and Rewards, plus the existing Identity & Access. "Games & Assessment" and "Learning Progress" are merged into **Learning**.
+2. **Modules are folders** in the four existing projects, not projects per module.
+3. **Domain layout:** `Common/`, `Entities/<Module>/`, `Enums/`, `ValueObjects/`, `Services/` (rules spanning several entities), `Exceptions/`.
+4. **One `EnglishAdventureDbContext`** for all modules, so one transaction can cover several modules.
+5. **All tables in `dbo`, grouped by a module prefix** in the table name: `auth_`, `family_`, `content_`, `learning_`, `rewards_`. Names are lower-case snake_case and plural (`auth_accounts`, `content_lessons`); columns stay PascalCase. *Changed 2026-10-23 by the owner; originally one SQL schema per module.*
+6. **Between modules, entities store IDs only.** No navigation properties, but database foreign keys are still used.
+7. **Every table has a single `Guid Id` primary key.** Business uniqueness uses unique indexes.
+8. **Application uses one repository interface per aggregate,** implemented with EF Core in Infrastructure. No generic repository, and no EF Core in Application.
+9. **No separate Parent or User business entity.** Other modules store the account ID. Since S0.5, accounts are the `Account` entity of the Identity module (`Domain/Entities/Identity`), not Infrastructure framework classes (see ADR-5).
+10. **Reflection-based architecture tests** enforce the rules, with no extra package.
+11. **`AccountType` lives in `Domain/Enums/`.**
 
-**Needs validation.** Decide how modules are expressed. The options are feature folders within the current four projects, or a set of projects per module. Also decide whether modules share one `DbContext`. Decide this before the first learning-content feature.
+**Status: 🟡 Structure in place; no modules built yet.**
+- Done: `Domain/Common/Entity.cs` (Guid identity, equality by Id) and `AccountType` moved to `Domain/Enums/`.
+- Architecture tests:
+  - `tests/EnglishAdventure.Domain.UnitTests/Architecture/DomainArchitectureTests.cs`: Domain references only the base class library; classes under `Entities` derive from `Entity`; no entity holds another module's entity.
+  - `tests/EnglishAdventure.Application.UnitTests/Architecture/ApplicationArchitectureTests.cs`: Application references no Infrastructure, Api, EF Core or ASP.NET Core assembly.
+- `Entities/Identity/` holds the Identity entities (S0.5). `Entities/{Family,Content,Learning,Rewards}/` stay empty until their first approved entity (git does not track empty folders). `ValueObjects/` and `Services/` hold a `README.md`.
+- Not yet: no business entity classes until their plan step is approved.
 
 ## ADR-2: Clean Architecture with pragmatic DDD
 
 **Decision.** Four layers: Domain, Application, Infrastructure, and Api. Dependencies point inward. Use DDD tactical patterns (aggregates, value objects, domain exceptions) where the domain is rich, and avoid ceremony where it is not.
 
-**Status: 🟡** Project references follow the rule (see [overview.md](overview.md#2-project-references-and-dependency-rules)). Domain contains only `DomainException` and `AccountType`, so there are no aggregates yet. Nothing enforces the rule automatically.
+**Status: 🟡** Project references follow the rule (see [overview.md](overview.md#2-project-references-and-dependency-rules)). Domain contains `Common/Entity`, `Enums/AccountType`, `Exceptions/DomainException` and the Identity module's entities (`Account`, `AccountRole`, `Role`, `RolePermission`, `Permission`; see ADR-5). Since 2026-10-23, architecture tests enforce the Domain and Application dependency rules (see ADR-1).
 
-**Pragmatic choice already in code:** `ApplicationUser` and `RefreshToken` live in Infrastructure as persistence/identity types, not as domain entities. Application reaches them only through ports (`IIdentityUserService`, `IRefreshTokenService`).
+**Pragmatic choice already in code:** `RefreshToken` stays in Infrastructure as security machinery, not a domain entity. Application reaches login and sessions only through ports (`IIdentityUserService`, `IRefreshTokenService`, `IPasswordHasher`).
 
 ## ADR-3: CQRS where it provides value
 
@@ -42,25 +59,40 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 ## ADR-4: SQL Server and EF Core
 
-**Decision.** SQL Server, accessed through EF Core 10. Migrations live in the Infrastructure assembly and are applied explicitly, never at app startup.
+**Decision.** SQL Server, accessed through EF Core 10. Migrations live in the Infrastructure assembly and are applied explicitly, never at app startup. In Development they are applied by calling `POST /api/v1/database/migrate` (decided 2026-10-23); the endpoint returns 404 in every other environment.
 
-**Status: 🟡** One `DbContext` (`EnglishAdventureDbContext`, an `IdentityDbContext`) with SQL Server. First migration `InitialIdentity` exists (Identity + `RefreshTokens`). It is created but not applied to any persistent database. `dotnet ef` runs through the design-time factory in Infrastructure, with Infrastructure as the startup project. That avoids adding the EF Design package to Api. It has been verified on SQL Server LocalDB by the opt-in integration tests (each run migrates a throwaway database).
+**Status: 🟡** One `DbContext` (`EnglishAdventureDbContext`, a plain `DbContext`) with SQL Server. One standalone migration, `InitialCreate`, creates the identity tables in `dbo`. The owner reset the migration history on 2026-10-23: the old `InitialIdentity` (ASP.NET Identity tables) was deleted, and there is no drop-and-replace migration. `dotnet ef` is used only to create migrations; the migrate endpoint (`ApplyMigrationsCommand` → `IDatabaseMigrator` → `Database.MigrateAsync`) applies them. `dotnet ef` runs through the design-time factory in Infrastructure, with Infrastructure as the startup project. That avoids adding the EF Design package to Api. It has been verified on SQL Server LocalDB by the opt-in integration tests (each run migrates a throwaway database). Until 2026-10-23 those tests wrongly used the Development database `EnglishAdventure_Dev`; see project-status.
 
-## ADR-5: ASP.NET Core Identity as the identity foundation
+## ADR-5: Own identity tables (replaces ASP.NET Core Identity)
 
-**Decision.** User accounts, password hashing, and lockout use ASP.NET Core Identity with `Guid` keys.
+**Decision (changed 2026-10-23, plan step S0.5).** Accounts, roles and permissions are our own entities and tables, in `dbo` with the `auth_` prefix (owner's choice). ASP.NET Core Identity's tables, stores and `UserManager` are **not** used. Only Microsoft's password hashing algorithm is reused (`PasswordHasher` from `Microsoft.Extensions.Identity.Core`, PBKDF2), because writing our own password cryptography would be an unnecessary security risk.
 
-**Status: ✅ (foundation).** `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>` and `AddIdentityCore` (API-only, no cookies, no token providers), plus `AddRoles<ApplicationRole>` and EF stores. Settings:
-- Lockout is on for new users: 5 failures lead to a 15-minute lockout.
-- `RequireUniqueEmail`, backed by a unique filtered index on `NormalizedEmail`.
-- Password policy is the Identity defaults.
+*Originally:* ASP.NET Core Identity (`IdentityDbContext`, `AspNet*` tables). The owner changed this so that the database and the entities are designed by the project and easy to read.
 
-`IdentityUserService` implements `IIdentityUserService`. Its login policy:
+**Status: ✅ (foundation).**
+- **Entities** (`Domain/Entities/Identity`):
+  - `Account`, which owns its `AccountRole`s.
+  - `Role`, which owns its `RolePermission`s.
+  - `Permission`.
+- **Tables:**
+  - `auth_accounts`: unique `NormalizedEmail`, check constraint `CK_auth_accounts_AccountType`, row version.
+  - `auth_roles`: unique `Name`.
+  - `auth_permissions`: unique `Code`.
+  - `auth_account_roles`: unique (`AccountId`, `RoleId`).
+  - `auth_role_permissions`: unique (`RoleId`, `PermissionId`).
+  - `auth_refresh_tokens`.
+- **Lockout** is a rule of `Account`: the 5th failed login locks it for 15 minutes.
+- **Password hashing** sits behind `IPasswordHasher` (Application), implemented by `IdentityPasswordHasher` (Infrastructure).
+- **No password policy is enforced yet**, because no endpoint creates accounts. It is added with account creation (S1.2/S1.3).
+- **Dropped:** `AspNetUserClaims`, `AspNetUserLogins` and `AspNetUserTokens` (unused). Password reset and email confirmation will get their own tables when needed (OQ-010).
+
+`IdentityUserService` implements `IIdentityUserService`. Its login policy (unchanged by S0.5):
 - **Unknown email:** a dummy hash is verified (timing equalisation), then the generic failure is returned.
 - **Locked out:** the generic failure is returned and the password is **not** checked, so a locked account cannot be used as a password oracle.
 - **Wrong password:** the failure is counted and the generic failure is returned.
 - **Correct password on an inactive account:** 403. This is only revealed to someone who knows the password.
-- **Success:** the failure count is reset.
+- **Success:** the failure count is reset. If the stored hash uses outdated settings, it is replaced.
+- **Concurrent logins** to the same account: a row-version conflict re-applies the change to the reloaded account, so no failed attempt is lost.
 
 **Still open.** Password policy for children. Whether Child accounts sign in with email and password at all (see ADR-7). Email confirmation is not required, because no confirmation workflow exists.
 
@@ -101,7 +133,7 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Decision.** There are three account types.
 
-**Status: 🟡** `Domain.Users.AccountType` (`Admin=1, Parent=2, Child=3`) is stored on `ApplicationUser` as an int. A database check constraint (`CK_AspNetUsers_AccountType`) rejects other values. It is emitted as the `account_type` claim (enum name) and returned by `/me`.
+**Status: 🟡** `Domain.Enums.AccountType` (`Admin=1, Parent=2, Child=3`) is stored on `Account` as an int. A database check constraint (`CK_auth_accounts_AccountType`) rejects other values. It is emitted as the `account_type` claim (enum name) and returned by `/me`.
 - The account type is **not** a role and grants nothing by itself. Authorization will use roles and permissions (ADR-8).
 - Clients cannot choose or change it: there is no registration endpoint and no seeded admin.
 - There are no Parent–Child relationships, no child profiles, and no type-specific rules.
@@ -114,7 +146,9 @@ Status: ✅ Implemented · 🟡 Partially implemented · 📋 Planned · 🔍 Ne
 
 **Status: 📋 Not implemented.** Only role-name retrieval exists (`IIdentityUserService.GetRolesAsync`) and the token issuer contract takes roles. There is no permission model, no permission claims, and no authorization policies or handlers. `AddAuthorization()` is called with no configuration; only `[Authorize]` (authenticated user) is used, on `/me`.
 
-**Needs validation.** Where permissions are stored (role claims or a custom table). Whether permissions go into the JWT or are resolved on each request. Policy naming conventions.
+**Storage decided (S0.5):** `auth_permissions` and `auth_role_permissions` (tables exist, empty).
+
+**Needs validation (S1.1).** Whether permissions go into the JWT or are resolved on each request. Policy naming conventions.
 
 ## ADR-9: Azure hosting
 
