@@ -32,6 +32,9 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(500)
             .IsRequired();
 
+        builder.Property(user => user.ConsentVersion)
+            .HasMaxLength(User.ConsentVersionMaxLength);
+
         builder.Property(user => user.UserType)
             .HasConversion<int>()
             .IsRequired();

@@ -28,7 +28,12 @@ public sealed class EnglishAdventureWebApplicationFactory : WebApplicationFactor
         {
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Authentication:Jwt:SigningKey"] = SigningKey
+                ["Authentication:Jwt:SigningKey"] = SigningKey,
+                // Required outside Development, where appsettings.Development.json does not provide it.
+                ["WebApp:BaseUrl"] = "http://localhost:5173",
+                // Tests sign in far more often than a person would; the rate-limit tests set their own limits.
+                ["RateLimiting:SignInPermitLimit"] = "100000",
+                ["RateLimiting:RegistrationPermitLimit"] = "100000"
             });
         });
     }

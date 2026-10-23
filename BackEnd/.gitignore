@@ -13,3 +13,6 @@ secrets.json
 
 ## Tools
 *.DotSettings.user
+
+## Development email pickup folder (emails contain sign-in links)
+App_Data/

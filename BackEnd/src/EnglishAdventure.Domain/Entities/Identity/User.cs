@@ -11,6 +11,7 @@ namespace EnglishAdventure.Domain.Entities.Identity;
 public sealed class User : Entity
 {
     public const int EmailMaxLength = 256;
+    public const int ConsentVersionMaxLength = 32;
     public const int MaxFailedLoginAttempts = 5;
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
@@ -39,9 +40,47 @@ public sealed class User : Entity
 
     public DateTime? LastLoginAtUtc { get; private set; }
 
+    /// <summary>When the user proved they own the email. Null until then; a self-registered user cannot sign in yet.</summary>
+    public DateTime? EmailConfirmedAtUtc { get; private set; }
+
+    /// <summary>When a self-registered Parent accepted the terms and privacy policy, and which version.</summary>
+    public DateTime? ConsentAcceptedAtUtc { get; private set; }
+
+    public string? ConsentVersion { get; private set; }
+
+    public bool IsEmailConfirmed => EmailConfirmedAtUtc is not null;
+
     public IReadOnlyCollection<UserRole> Roles => _roles;
 
+    /// <summary>
+    /// A user created by an administrator. The administrator vouches for the email, so it counts as confirmed.
+    /// </summary>
     public static User Create(string email, string passwordHash, UserType userType, DateTime nowUtc)
+    {
+        var user = NewUser(email, passwordHash, userType, nowUtc);
+        user.EmailConfirmedAtUtc = nowUtc;
+        return user;
+    }
+
+    /// <summary>
+    /// A Parent who registered on the public site (PD-009). The email stays unconfirmed, so the user cannot sign in,
+    /// until <see cref="ConfirmEmail"/>. Records the accepted consent version.
+    /// </summary>
+    public static User RegisterParent(string email, string passwordHash, string consentVersion, DateTime nowUtc)
+    {
+        var trimmedVersion = consentVersion?.Trim() ?? string.Empty;
+        if (trimmedVersion.Length == 0 || trimmedVersion.Length > ConsentVersionMaxLength)
+        {
+            throw new DomainException("A consent version is required.");
+        }
+
+        var user = NewUser(email, passwordHash, UserType.Parent, nowUtc);
+        user.ConsentAcceptedAtUtc = nowUtc;
+        user.ConsentVersion = trimmedVersion;
+        return user;
+    }
+
+    private static User NewUser(string email, string passwordHash, UserType userType, DateTime nowUtc)
     {
         var trimmedEmail = email?.Trim() ?? string.Empty;
         if (trimmedEmail.Length == 0 || trimmedEmail.Length > EmailMaxLength || !trimmedEmail.Contains('@'))
@@ -111,6 +150,9 @@ public sealed class User : Entity
 
         PasswordHash = passwordHash;
     }
+
+    /// <summary>Confirming an already confirmed email changes nothing.</summary>
+    public void ConfirmEmail(DateTime nowUtc) => EmailConfirmedAtUtc ??= nowUtc;
 
     public void Activate() => IsActive = true;
 

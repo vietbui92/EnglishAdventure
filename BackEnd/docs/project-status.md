@@ -32,6 +32,13 @@ The API host starts again. The **authentication foundation** is implemented and 
   - `sync-roles` re-syncs after catalog changes.
   - Password rule: at least 12 characters with upper, lower, digit and symbol.
   - `ConflictException` maps to 409.
+- **Parent registration (S1.4, PD-009)**:
+  - `POST /api/v1/auth/register` (always 202, never reveals whether an email is taken), `POST confirm-email` (single-use token, 24 h, stored as SHA-256), `POST resend-confirmation` (always 202).
+  - A self-registered Parent cannot sign in before confirming (403, ProblemDetails `code` `email-not-confirmed`); deactivated users get `user-inactive`. Users created by an administrator count as confirmed.
+  - Consent version and time are stored on the user (`Consent.CurrentVersion`).
+  - Emails: development writes them as text files to `App_Data/emails` (`Email:PickupDirectory`); the production provider is not chosen yet. Links use `WebApp:BaseUrl` (required outside Development).
+  - Rate limiting (built-in ASP.NET Core): `sign-in` 10/min and `registration` 5/min per client address, 429 with `Retry-After`.
+  - Migration `AddParentRegistration` (owner applies it with `POST /api/v1/database/migrate`).
 - **User management (S1.3)**:
   - `GET /api/v1/admin/users` (search, paging) and `GET /{id}` need `users.read`.
   - `POST /` (Admin or Parent; Parent gets the Parent role), `POST /{id}/deactivate` and `/activate` (deactivation ends all sessions) need `users.manage`.
@@ -53,7 +60,8 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 - Role management API (S1.5): creating roles and choosing their permissions.
 - Password reset, email confirmation, external login, logout-all-sessions.
-- Rate limiting on `login`/`refresh` (lockout is per account only).
+- Production email provider (S1.4 writes development emails to files).
+- Cleanup of expired tokens and of Parent accounts never confirmed within 7 days (S6.2).
 - Cleanup job for expired/revoked refresh-token rows.
 - All learning features: lessons, levels, mini-games, child profiles, Parent–Child linking.
 - Architecture tests, CI/CD, Azure infrastructure.

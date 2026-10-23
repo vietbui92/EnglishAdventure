@@ -29,9 +29,16 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, TokenPai
 
         switch (validationResult)
         {
-            // Inactive is only reported after the password was verified, so it does not leak user existence.
+            // Inactive and unconfirmed are only reported after the password was verified, so they do not leak user
+            // existence. The code lets the web app offer a new confirmation link.
             case CredentialValidationInactive:
-                throw new AuthenticationForbiddenException("The user is not eligible to sign in.");
+                throw new AuthenticationForbiddenException(
+                    "The user is not eligible to sign in.",
+                    AuthenticationForbiddenException.UserInactiveCode);
+            case CredentialValidationEmailUnconfirmed:
+                throw new AuthenticationForbiddenException(
+                    "The email address has not been confirmed yet.",
+                    AuthenticationForbiddenException.EmailNotConfirmedCode);
             // Lockout is checked before the password, so it shares the generic failure response.
             case CredentialValidationLockedOut:
             case CredentialValidationFailed:

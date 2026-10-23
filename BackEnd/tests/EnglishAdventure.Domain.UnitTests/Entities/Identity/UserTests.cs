@@ -37,6 +37,49 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void A_user_created_by_an_administrator_has_a_confirmed_email()
+    {
+        var user = User.Create("a@b.test", "hash", UserType.Admin, Now);
+
+        Assert.True(user.IsEmailConfirmed);
+        Assert.Equal(Now, user.EmailConfirmedAtUtc);
+        Assert.Null(user.ConsentVersion);
+    }
+
+    [Fact]
+    public void A_registered_parent_starts_unconfirmed_and_records_the_consent()
+    {
+        var user = User.RegisterParent(" Parent@Example.com ", "hash", " 2026-10-23 ", Now);
+
+        Assert.Equal(UserType.Parent, user.UserType);
+        Assert.Equal("PARENT@EXAMPLE.COM", user.NormalizedEmail);
+        Assert.True(user.IsActive);
+        Assert.False(user.IsEmailConfirmed);
+        Assert.Equal(Now, user.ConsentAcceptedAtUtc);
+        Assert.Equal("2026-10-23", user.ConsentVersion);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("a-consent-version-that-is-far-too-long")]
+    public void Registering_needs_a_consent_version(string consentVersion)
+    {
+        Assert.Throws<DomainException>(() => User.RegisterParent("a@b.test", "hash", consentVersion, Now));
+    }
+
+    [Fact]
+    public void Confirming_the_email_keeps_the_first_confirmation_time()
+    {
+        var user = User.RegisterParent("a@b.test", "hash", "v1", Now);
+
+        user.ConfirmEmail(Now.AddHours(1));
+        user.ConfirmEmail(Now.AddHours(2));
+
+        Assert.Equal(Now.AddHours(1), user.EmailConfirmedAtUtc);
+    }
+
+    [Fact]
     public void The_fifth_failed_login_locks_the_user_for_the_lockout_duration()
     {
         var user = User.Create("a@b.test", "hash", UserType.Parent, Now);

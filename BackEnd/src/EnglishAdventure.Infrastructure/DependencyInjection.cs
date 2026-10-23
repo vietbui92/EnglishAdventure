@@ -3,7 +3,9 @@ using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authorization;
 using EnglishAdventure.Application.Common.Persistence;
 using EnglishAdventure.Application.Database;
+using EnglishAdventure.Application.Common.Email;
 using EnglishAdventure.Infrastructure.Authentication;
+using EnglishAdventure.Infrastructure.Email;
 using EnglishAdventure.Infrastructure.Identity;
 using EnglishAdventure.Infrastructure.Persistence;
 using EnglishAdventure.Infrastructure.Persistence.Queries;
@@ -50,8 +52,25 @@ public static class DependencyInjection
 
         services.AddIdentityInfrastructure();
         services.AddTokenInfrastructure(configuration);
+        services.AddEmailInfrastructure(configuration);
 
         return services;
+    }
+
+    private static void AddEmailInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<WebAppOptions>()
+            .Bind(configuration.GetSection(WebAppOptions.SectionName))
+            .Validate(
+                options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _),
+                $"{WebAppOptions.SectionName}:BaseUrl must be the web app's absolute address, e.g. http://localhost:5173.")
+            .ValidateOnStart();
+        services.AddOptions<EmailOptions>()
+            .Bind(configuration.GetSection(EmailOptions.SectionName));
+
+        services.AddSingleton<IAppLinks, WebAppLinks>();
+        services.AddSingleton<IEmailSender, PickupDirectoryEmailSender>();
+        services.AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
     }
 
     private static void AddIdentityInfrastructure(this IServiceCollection services)

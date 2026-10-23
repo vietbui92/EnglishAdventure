@@ -7,7 +7,7 @@ namespace EnglishAdventure.Infrastructure.Persistence;
 
 /// <summary>
 /// The application's single EF Core context for every module (ADR-1). It currently holds the <c>identity</c> schema:
-/// users, roles, permissions and refresh tokens. Each entity is mapped by its own configuration class in
+/// users, roles, permissions, refresh tokens and email confirmation tokens. Each entity is mapped by its own configuration class in
 /// <c>Persistence/Configurations/&lt;Module&gt;</c>.
 /// </summary>
 public sealed class EnglishAdventureDbContext : DbContext
@@ -24,6 +24,8 @@ public sealed class EnglishAdventureDbContext : DbContext
     public DbSet<Permission> Permissions => Set<Permission>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

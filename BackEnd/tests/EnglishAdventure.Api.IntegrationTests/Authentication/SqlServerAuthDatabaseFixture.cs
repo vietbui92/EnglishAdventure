@@ -2,7 +2,9 @@ using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Domain.Entities.Identity;
 using EnglishAdventure.Domain.Enums;
 using EnglishAdventure.Infrastructure.Persistence;
+using EnglishAdventure.Application.Common.Email;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,9 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
     private EnglishAdventureWebApplicationFactory? _rootFactory;
     private WebApplicationFactory<Program>? _factory;
 
+    /// <summary>Every email the API sent during this fixture's tests.</summary>
+    public CapturingEmailSender Emails { get; } = new();
+
     public WebApplicationFactory<Program> Factory =>
         _factory ?? throw new InvalidOperationException("SQL Server integration tests are not configured.");
 
@@ -39,8 +44,9 @@ public sealed class SqlServerAuthDatabaseFixture : IAsyncLifetime
         }.ConnectionString;
 
         _rootFactory = new EnglishAdventureWebApplicationFactory();
-        _factory = _rootFactory.WithWebHostBuilder(builder =>
-            builder.UseSetting(EnglishAdventureWebApplicationFactory.ConnectionStringKey, connectionString));
+        _factory = _rootFactory.WithWebHostBuilder(builder => builder
+            .UseSetting(EnglishAdventureWebApplicationFactory.ConnectionStringKey, connectionString)
+            .ConfigureTestServices(services => services.AddSingleton<IEmailSender>(Emails)));
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<EnglishAdventureDbContext>().Database;

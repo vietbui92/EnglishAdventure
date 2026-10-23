@@ -28,6 +28,14 @@ internal sealed class UserRepository : IUserRepository
                        && user.Roles.Any(userRole => userRole.RoleId == roleId),
             cancellationToken);
 
+    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var normalizedEmail = User.NormalizeEmail(email);
+        return _dbContext.Users
+            .Include(user => user.Roles)
+            .SingleOrDefaultAsync(user => user.NormalizedEmail == normalizedEmail, cancellationToken);
+    }
+
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken)
     {
         var normalizedEmail = User.NormalizeEmail(email);

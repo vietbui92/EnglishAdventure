@@ -97,6 +97,13 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("ConsentAcceptedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ConsentVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -104,6 +111,9 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime?>("EmailConfirmedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("FailedLoginCount")
                         .HasColumnType("int");
@@ -173,6 +183,41 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("auth_user_roles", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.EmailConfirmationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("auth_email_confirmation_tokens", (string)null);
                 });
 
             modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.RefreshToken", b =>
@@ -258,6 +303,15 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
 
                     b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
                         .WithMany("Roles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.EmailConfirmationToken", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

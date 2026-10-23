@@ -48,6 +48,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             problemDetails.Extensions["errors"] = errors;
         }
 
+        if (exception is AuthenticationForbiddenException { Code: { } code })
+        {
+            problemDetails.Extensions["code"] = code;
+        }
+
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 

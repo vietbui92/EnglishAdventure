@@ -61,6 +61,11 @@ internal sealed class IdentityUserService : IIdentityUserService
             return new CredentialValidationInactive();
         }
 
+        if (!user.IsEmailConfirmed)
+        {
+            return new CredentialValidationEmailUnconfirmed();
+        }
+
         await SaveAsync(
             user,
             current =>

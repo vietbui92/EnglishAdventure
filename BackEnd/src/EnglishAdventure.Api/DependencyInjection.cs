@@ -1,6 +1,7 @@
 using EnglishAdventure.Api.Authentication;
 using EnglishAdventure.Api.Authorization;
 using EnglishAdventure.Api.ExceptionHandling;
+using EnglishAdventure.Api.RateLimiting;
 using EnglishAdventure.Application;
 using EnglishAdventure.Infrastructure;
 
@@ -17,6 +18,7 @@ public static class DependencyInjection
         services.AddApiExceptionHandling();
         services.AddApiAuthentication();
         services.AddApiAuthorization();
+        services.AddApiRateLimiting(configuration);
 
         services.AddControllers();
         services.AddOpenApi(options =>

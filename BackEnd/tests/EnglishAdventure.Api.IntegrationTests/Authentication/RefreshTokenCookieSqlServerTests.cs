@@ -76,6 +76,22 @@ public sealed class RefreshTokenCookieSqlServerTests : IClassFixture<SqlServerAu
         var response = await Client.SendAsync(WebRequest(RefreshRoute, cookie: null));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Authentication failed.", body.GetProperty("title").GetString());
+        Assert.Equal(401, body.GetProperty("status").GetInt32());
+    }
+
+    [SqlServerFact]
+    public async Task Web_refresh_with_a_rejected_cookie_deletes_it()
+    {
+        var user = await _fixture.CreateUserAsync(UserType.Parent);
+        var cookie = ReadCookieValue(await WebLoginAsync(user));
+        await Client.SendAsync(WebRequest(LogoutRoute, cookie));
+
+        var response = await Client.SendAsync(WebRequest(RefreshRoute, cookie));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Contains("expires=thu, 01 jan 1970", GetRefreshSetCookie(response), StringComparison.OrdinalIgnoreCase);
     }
 
     [SqlServerFact]

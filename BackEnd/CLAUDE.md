@@ -78,7 +78,9 @@ Optional SQL test: set `ENGLISH_ADVENTURE_TEST_SQL_CONNECTION`. Without it, the 
 
 - Never commit secrets: passwords, JWT signing keys, SQL credentials. Use `dotnet user-secrets` (not initialised yet; there is no `UserSecretsId`), environment variables (`ConnectionStrings__EnglishAdventure`), or, later, Azure Key Vault.
 - Do not print secret values in output, logs, docs, or commits.
-- Store refresh tokens only as hashes (`RefreshTokenHasher`, SHA-256). Never persist or log raw tokens.
+- Store refresh tokens and email confirmation tokens only as hashes (`RefreshTokenHasher`, SHA-256). Never persist or log raw tokens, or links that contain them.
+- Anonymous auth endpoints carry `[EnableRateLimiting(...)]` (`Api/RateLimiting`). Public endpoints must not reveal whether an email is registered (same status and body for every outcome).
+- Emails go through `IEmailSender`; in development they are files in `App_Data/emails` (git-ignored). Links come from `IAppLinks` (`WebApp:BaseUrl`).
 - Outside Development, never return internal exception details to clients (see `GlobalExceptionHandler`).
 - Do not apply migrations or modify a database unless explicitly asked.
 

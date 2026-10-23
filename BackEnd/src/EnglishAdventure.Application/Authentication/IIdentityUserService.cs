@@ -23,3 +23,6 @@ public sealed record CredentialValidationFailed : CredentialValidationResult;
 public sealed record CredentialValidationLockedOut : CredentialValidationResult;
 
 public sealed record CredentialValidationInactive : CredentialValidationResult;
+
+/// <summary>The password is right, but a self-registered user has not confirmed the email yet.</summary>
+public sealed record CredentialValidationEmailUnconfirmed : CredentialValidationResult;

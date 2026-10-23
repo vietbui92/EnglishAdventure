@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isStrongPassword, passwordRules } from '@/areas/admin/users/password-rules'
+import { isStrongPassword, passwordRules } from '@/shared/auth/password-rules'
 
 describe('password rules', () => {
   it('accepts a password that meets every rule', () => {
