@@ -102,6 +102,17 @@ public sealed class ChildProfileTests
     }
 
     [Fact]
+    public void Only_an_active_profile_can_learn()
+    {
+        var profile = NewProfile();
+        profile.EnsureCanLearn();
+
+        profile.Archive(Now);
+
+        Assert.Throws<DomainException>(profile.EnsureCanLearn);
+    }
+
+    [Fact]
     public void Restoring_counts_against_the_limit()
     {
         var profile = NewProfile();

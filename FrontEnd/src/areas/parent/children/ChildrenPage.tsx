@@ -9,6 +9,7 @@ import {
   type ChildProfile,
 } from '@/areas/parent/children/api'
 import { ChildProfileDialog } from '@/areas/parent/children/ChildProfileDialog'
+import { StartLearningButton } from '@/areas/parent/children/StartLearningButton'
 import { ApiError } from '@/shared/api/problem-details'
 import { ChildAvatar, avatarKeys as drawnAvatars } from '@/shared/components/ChildAvatar'
 import {
@@ -96,6 +97,7 @@ export function ChildrenPage() {
             >
               <ChildAvatar avatarKey={profile.avatarKey} size="lg" />
               <h2 className="text-lg font-semibold break-all">{profile.nickname}</h2>
+              <StartLearningButton profile={profile} />
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setDialog({ open: true, profile })}>
                   <Pencil aria-hidden />

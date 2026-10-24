@@ -24,6 +24,23 @@ internal sealed class UserPermissionReader : IUserPermissionReader
         _cache = cache;
     }
 
+    private static readonly IReadOnlySet<string> ChildSessionPermissions =
+        Permissions.SessionOnly.ToHashSet(StringComparer.Ordinal);
+
+    public async Task<IReadOnlySet<string>> GetChildSessionPermissionsAsync(
+        Guid parentUserId,
+        CancellationToken cancellationToken)
+    {
+        var cacheKey = $"child-session-parent-active:{parentUserId:N}";
+        if (!_cache.TryGetValue(cacheKey, out bool parentActive))
+        {
+            parentActive = await _dbContext.Users.AnyAsync(user => user.Id == parentUserId && user.IsActive, cancellationToken);
+            _cache.Set(cacheKey, parentActive, CacheDuration);
+        }
+
+        return parentActive ? ChildSessionPermissions : NoPermissions;
+    }
+
     public async Task<IReadOnlySet<string>> GetPermissionsAsync(Guid userId, CancellationToken cancellationToken)
     {
         var cacheKey = $"user-permissions:{userId:N}";

@@ -25,10 +25,13 @@ internal sealed class RefreshTokenService : IRefreshTokenService
         _logger = logger;
     }
 
-    public async Task<(string RawToken, DateTime ExpiresAtUtc)> IssueAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task<(string RawToken, DateTime ExpiresAtUtc)> IssueAsync(
+        Guid userId,
+        Guid? childProfileId,
+        CancellationToken cancellationToken)
     {
         var now = UtcNow();
-        var (rawToken, token) = CreateToken(userId, familyId: Guid.NewGuid(), now);
+        var (rawToken, token) = CreateToken(userId, familyId: Guid.NewGuid(), childProfileId, now);
 
         _dbContext.RefreshTokens.Add(token);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -44,7 +47,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
         var current = await _dbContext.RefreshTokens
             .AsNoTracking()
             .Where(token => token.TokenHash == tokenHash)
-            .Select(token => new { token.Id, token.UserId, token.FamilyId, token.ExpiresAtUtc, token.RevokedAtUtc })
+            .Select(token => new { token.Id, token.UserId, token.FamilyId, token.ChildProfileId, token.ExpiresAtUtc, token.RevokedAtUtc })
             .SingleOrDefaultAsync(cancellationToken);
 
         if (current is null)
@@ -63,7 +66,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
             return new RefreshTokenRotationInvalid();
         }
 
-        var (newRawToken, replacement) = CreateToken(current.UserId, current.FamilyId, now);
+        var (newRawToken, replacement) = CreateToken(current.UserId, current.FamilyId, current.ChildProfileId, now);
 
         await using (var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken))
         {
@@ -90,7 +93,11 @@ internal sealed class RefreshTokenService : IRefreshTokenService
             await transaction.CommitAsync(cancellationToken);
         }
 
-        return new RefreshTokenRotationSucceeded(current.UserId, newRawToken, replacement.ExpiresAtUtc);
+        return new RefreshTokenRotationSucceeded(
+            current.UserId,
+            current.ChildProfileId,
+            newRawToken,
+            replacement.ExpiresAtUtc);
     }
 
     public async Task RevokeAsync(string rawRefreshToken, CancellationToken cancellationToken)
@@ -150,7 +157,11 @@ internal sealed class RefreshTokenService : IRefreshTokenService
                 cancellationToken);
     }
 
-    private (string RawToken, RefreshToken Token) CreateToken(Guid userId, Guid familyId, DateTime now)
+    private (string RawToken, RefreshToken Token) CreateToken(
+        Guid userId,
+        Guid familyId,
+        Guid? childProfileId,
+        DateTime now)
     {
         var rawToken = RefreshTokenHasher.GenerateRawToken();
 
@@ -159,6 +170,7 @@ internal sealed class RefreshTokenService : IRefreshTokenService
             Id = Guid.NewGuid(),
             UserId = userId,
             FamilyId = familyId,
+            ChildProfileId = childProfileId,
             TokenHash = RefreshTokenHasher.Hash(rawToken),
             CreatedAtUtc = now,
             ExpiresAtUtc = now.AddDays(_options.LifetimeDays)

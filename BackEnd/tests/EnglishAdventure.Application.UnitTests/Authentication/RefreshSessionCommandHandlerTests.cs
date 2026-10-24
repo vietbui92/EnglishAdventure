@@ -14,14 +14,15 @@ public sealed class RefreshSessionCommandHandlerTests
     private readonly FakeIdentityUserService _identityUserService = new();
     private readonly FakeAccessTokenIssuer _accessTokenIssuer = new();
     private readonly FakeRefreshTokenService _refreshTokenService = new();
+    private readonly FakeChildProfiles _childProfiles = new();
 
     private RefreshSessionCommandHandler CreateHandler() =>
-        new(_refreshTokenService, _identityUserService, _accessTokenIssuer);
+        new(_refreshTokenService, _identityUserService, _accessTokenIssuer, _childProfiles);
 
     [Fact]
     public async Task Handle_returns_rotated_refresh_token_and_new_access_token()
     {
-        _refreshTokenService.RotationResult = new RefreshTokenRotationSucceeded(UserId, "rotated", NewRefreshExpiresAtUtc);
+        _refreshTokenService.RotationResult = new RefreshTokenRotationSucceeded(UserId, null, "rotated", NewRefreshExpiresAtUtc);
         _identityUserService.User = new AuthenticatedUser(UserId, "child@example.test", UserType.Child, true, false);
 
         var tokens = await CreateHandler().Handle(new RefreshSessionCommand("old"), CancellationToken.None);
@@ -59,7 +60,7 @@ public sealed class RefreshSessionCommandHandlerTests
     [InlineData(true, true)]
     public async Task Handle_revokes_the_new_session_when_the_user_is_no_longer_eligible(bool isActive, bool isLockedOut)
     {
-        _refreshTokenService.RotationResult = new RefreshTokenRotationSucceeded(UserId, "rotated", NewRefreshExpiresAtUtc);
+        _refreshTokenService.RotationResult = new RefreshTokenRotationSucceeded(UserId, null, "rotated", NewRefreshExpiresAtUtc);
         _identityUserService.User = new AuthenticatedUser(UserId, "p@example.test", UserType.Parent, isActive, isLockedOut);
 
         await Assert.ThrowsAsync<RefreshTokenException>(

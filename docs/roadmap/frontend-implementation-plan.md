@@ -57,7 +57,7 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F2.6 | Badge definitions | S5.2 | ⚪ Waiting |
 | **Phase F3: Parent area** | | | |
 | F3.1 | Child profiles: list, create, edit, archive, restore (several per Parent) | | ✅ Done 2026-10-24 |
-| F3.2 | Start a child session ("hand the device to the child") | S2.2 | ⚪ Waiting |
+| F3.2 | Start a child session ("hand the device to the child") | | ✅ Done 2026-10-24 |
 | F3.3 | Progress and rewards per child | S4.3, S5.3 | ⚪ Waiting |
 | **Phase F4: Child play area** | | | |
 | F4.1 | Kid-friendly visual style and kids shell | | ⚪ Waiting (shell and theme exist since F0.4) |
@@ -320,7 +320,7 @@ Original scope:
 All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 
 - **F3.1 Child profiles.** ✅ Done 2026-10-24 (`src/areas/parent/children`). `/parent/children` shows the active profiles as cards (avatar, nickname, edit, archive with confirmation), "n/3 in use", an "add" button disabled at the limit with an explanation, a friendly empty state, and an "archived" group with restore (and the reason when the limit or a nickname blocks it). A dialog creates and edits: nickname (1–50, the API's 409 shown on the field) and a radio grid of the 12 drawn avatars. Avatars are emoji on coloured circles in `src/shared/components/ChildAvatar.tsx` (shared, the kids area will use them); their names are translated for screen readers. The limit and avatar keys come from `GET options`. Tests (6) with a fake API applying the backend rules; `mockFamilyWithoutChildren()` for tests that only pass through the Parent area. 116 front-end tests pass.
-- **F3.2 Child session:** the Parent picks a profile and enters child mode; the app switches to `/kids` with the child token. Leaving child mode asks the Parent to sign in again (S2.2).
+- **F3.2 Child session.** ✅ Done 2026-10-24. Each active profile card has "Cho con học": after a confirmation ("you will need to sign in again to come back") `startChildSession()` (`src/shared/auth/session.ts`) calls `POST api/v1/auth/child-session` with the web header, loads `/me` and opens `/kids`, which greets the child with their avatar and nickname. `RequireAuth` has a `childSession` flag: the kids area accepts only child sessions, every other area only users' own sessions, and anyone in the wrong place goes to their own (`homePathFor`: a child session → `/kids`). The kids area's exit button asks first ("a parent will need to sign in again"), then signs out and opens the sign-in page. Other tabs follow a sign-in or a switch to child mode by restoring from the cookie. Tests (10): start, cancel, failure, exit with stay and leave, child session sent back from Parent and Admin pages, Parent sent back from `/kids`, the kids greeting; `signInAsChild()` in `src/shared/test/session.ts`. 124 front-end tests pass.
 - **F3.3 Progress and rewards:** per-child completions, scores, points and badges.
 
 ### Phase F4: Child play area
@@ -353,6 +353,7 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | 2026-10-23 | F1.1 done: login page with zod validation, in-memory session store, redirect by user type. `@hookform/resolvers` replaced by a local resolver. F1.2 Ready. |
 | 2026-10-23 | F1.2 and F1.3 done: session restore, single-flight refresh with cross-tab lock, 401 retry, sign-out with cache clearing; route guards by user type and permission, 403 page, permission-filtered menus. Phase F1 complete; F2.1 Ready. |
 | 2026-10-23 | F2.1 done: users list (search, paging in the URL) and user detail. F2.2 Ready. |
+| 2026-10-24 | F3.2 done with backend S2.2: "let them learn" on each profile, child sessions land in `/kids`, guards by session kind, exit with confirmation. |
 | 2026-10-24 | F3.1 done with backend S2.1: child profiles page, create/edit dialog with avatar picker, archive and restore. |
 | 2026-10-23 | F-R1 and F-R2 done with backend S1.4: registration, check-email, confirm-email, resend, consent with provisional legal pages, unconfirmed sign-in handling. |
 | 2026-10-23 | R1 and P1 done (owner request): source split into `areas/{public,admin,parent,kids}` and `shared` with ESLint boundaries, `/play` renamed `/kids`, public landing page. OQ-010 decided (PD-009); registration steps F-R1, F-R2 added. |

@@ -47,6 +47,7 @@ Product decisions: [../docs/product/mvp-product-decisions.md](../docs/product/mv
   - Protect endpoints with `[Authorize(Policy = Permissions.X.Y)]` (`Application/Authorization/Permissions.cs`). Never authorize by role name.
   - A new permission must be added to `Permissions.All`, and to `SystemRoles` if a system role should hold it.
   - Permissions are read per request through `IUserPermissionReader` (1-minute cache), never from the token.
+  - Child sessions (PD-010) hold only `Permissions.SessionOnly` (`learning.play`), which is outside the role catalog. Learning endpoints take the profile from `IUserContext.ChildProfileId`, never from the request.
   - `DomainArchitectureTests` and `ApplicationArchitectureTests` enforce these rules.
   - Add entities only from approved plan steps ([domain model proposal](docs/architecture/domain-model-proposal.md)).
 - Integration tests override the connection string with `UseSetting`, never `ConfigureAppConfiguration`: `AddInfrastructure` reads it while `Program.cs` builds the host, before `ConfigureAppConfiguration` overrides apply.

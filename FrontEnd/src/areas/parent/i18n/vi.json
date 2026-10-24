@@ -44,7 +44,12 @@
           "limit": "Gia đình đã có đủ {{max}} hồ sơ đang dùng.",
           "failed": "Không lưu được hồ sơ. Hãy thử lại."
         }
-      }
+      },
+      "startLearning": "Cho con học",
+      "startTitle": "Cho {{nickname}} học trên thiết bị này?",
+      "startDescription": "Thiết bị sẽ chuyển sang khu vực học của {{nickname}}. Để quay lại trang phụ huynh, bạn cần đăng nhập lại.",
+      "start": "Bắt đầu học",
+      "startFailed": "Không chuyển được sang chế độ học. Hãy thử lại."
     }
   }
 }

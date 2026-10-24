@@ -17,4 +17,7 @@ internal sealed class FixedPermissionReader : IUserPermissionReader
 
     public Task<IReadOnlySet<string>> GetPermissionsAsync(Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult(_permissions.GetValueOrDefault(userId) ?? new HashSet<string>());
+
+    public Task<IReadOnlySet<string>> GetChildSessionPermissionsAsync(Guid parentUserId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlySet<string>>(Permissions.SessionOnly.ToHashSet(StringComparer.Ordinal));
 }

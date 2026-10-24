@@ -44,7 +44,12 @@
           "limit": "Your family already has {{max}} profiles in use.",
           "failed": "Could not save the profile. Try again."
         }
-      }
+      },
+      "startLearning": "Let them learn",
+      "startTitle": "Let {{nickname}} learn on this device?",
+      "startDescription": "This device switches to {{nickname}}'s learning area. To come back to the parent pages, you will need to sign in again.",
+      "start": "Start learning",
+      "startFailed": "Could not switch to learning mode. Try again."
     }
   }
 }

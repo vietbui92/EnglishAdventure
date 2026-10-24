@@ -25,4 +25,20 @@ internal sealed class HttpContextUserContext : IUserContext
             return Guid.TryParse(subject, out var userId) ? userId : null;
         }
     }
+
+    public Guid? ChildProfileId
+    {
+        get
+        {
+            var principal = _httpContextAccessor.HttpContext?.User;
+            if (principal?.Identity?.IsAuthenticated != true
+                || principal.FindFirst(AuthClaimTypes.Session)?.Value != AuthClaimTypes.ChildSession)
+            {
+                return null;
+            }
+
+            var profileId = principal.FindFirst(AuthClaimTypes.ChildProfileId)?.Value;
+            return Guid.TryParse(profileId, out var id) ? id : null;
+        }
+    }
 }

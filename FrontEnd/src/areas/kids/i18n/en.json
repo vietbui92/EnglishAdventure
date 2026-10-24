@@ -3,6 +3,11 @@
     "title": "Let's learn English!",
     "subtitle": "The lesson map will appear here.",
     "start": "Start",
-    "exit": "Exit"
+    "exit": "Exit",
+    "greeting": "Hello, {{nickname}}!",
+    "exitTitle": "Leave the learning area?",
+    "exitDescription": "A parent will need to sign in again to go back to the parent pages.",
+    "exitConfirm": "Leave",
+    "stay": "Keep learning"
   }
 }

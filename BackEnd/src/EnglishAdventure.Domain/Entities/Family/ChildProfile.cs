@@ -72,6 +72,15 @@ public sealed class ChildProfile : Entity
 
     public bool IsOwnedBy(Guid userId) => ParentUserId == userId;
 
+    /// <summary>Only an active profile can start or keep a child session.</summary>
+    public void EnsureCanLearn()
+    {
+        if (!IsActive)
+        {
+            throw new DomainException("An archived child profile cannot learn. Restore it first.");
+        }
+    }
+
     public void Update(Nickname nickname, string avatarKey)
     {
         if (!IsActive)

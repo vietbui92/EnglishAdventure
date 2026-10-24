@@ -1,3 +1,4 @@
+using EnglishAdventure.Domain.Entities.Family;
 using EnglishAdventure.Domain.Entities.Identity;
 using EnglishAdventure.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,12 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
 
         builder.Property(token => token.RowVersion)
             .IsRowVersion();
+
+        // Another module's entity: a foreign key without a navigation property (ADR-1).
+        builder.HasOne<ChildProfile>()
+            .WithMany()
+            .HasForeignKey(token => token.ChildProfileId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<User>()
             .WithMany()

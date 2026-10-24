@@ -51,7 +51,7 @@ Rules for every step:
 | S1.5 | Role management (create roles, choose their permissions) | | 🟢 Ready |
 | **Phase 2: Family** | | | |
 | S2.1 | Child profiles for Parents (up to 3 active per Parent) | | ✅ Done 2026-10-24 |
-| S2.2 | Child session started by the Parent | | 🟢 Ready (to plan) |
+| S2.2 | Child session started by the Parent | | ✅ Done 2026-10-24 |
 | **Phase 3: Content** | | | |
 | S3.1 | Levels and lessons: manage, order, publish | OQ-005, S1.1 | 🟡 Needs decision |
 | S3.2 | Quiz activities | S3.1, OQ-015 | ⚪ Waiting |
@@ -239,17 +239,22 @@ Scope:
 - **Questions for the owner:** (1) cap on active profiles per Parent (proposed 10); (2) nickname unique within a family (proposed yes, so the child picker is unambiguous); (3) avatars: a fixed set of about 12 drawn animal avatars (proposed), never photos; (4) archive and restore instead of delete (proposed).
 - *Done when:* the tests above pass and the Parent area (F3.1) can create, edit, archive and restore profiles end to end.
 
-**S2.2 Child session.** OQ-009 decided 2026-10-24 (PD-010, option B). Planned in detail after S2.1.
-- **Includes:**
-  - A Parent starts a child session for one profile.
-  - The child token carries only `learning.play` and the `child_profile_id`.
-  - The child session can be refreshed.
-  - Leaving child mode needs the Parent to sign in again.
-- **Migration:** a nullable `ChildProfileId` column on `auth_refresh_tokens`.
-- *Done when:*
-  - A child token cannot call Parent or Admin endpoints.
-  - A child token cannot act on another profile.
-  - An archived profile cannot start a session.
+**S2.2 Child session.** ✅ Done 2026-10-24. OQ-009 decided 2026-10-24 (PD-010, option B). **Owner answers:** a child session lasts like a Parent's (14 days, renewed with use); the exit button asks for confirmation only.
+
+*As built:* the endpoint is `POST api/v1/auth/child-session` (body `childProfileId`), not under `family/children`: the web app's refresh cookie is only sent to `api/v1/auth`, and it is needed to end the Parent's session on the device. `learning.play` is in `Permissions.SessionOnly`, outside the role catalog, so no role (not even SuperAdmin, nor a role created in S1.5) can hold it. `PermissionAuthorizationHandler` asks `IUserPermissionReader.GetChildSessionPermissionsAsync` for child sessions. `IUserContext.ChildProfileId` comes from the token for the learning endpoints. `RefreshTokenCookie.Respond` is the one place that answers with tokens (cookie for the web app). Migration `AddChildSessions` (nullable `ChildProfileId` with a foreign key on `auth_refresh_tokens`). Tests: 1 domain, 1 catalog, 6 SQL integration (claims and `/me`, 403 on family, admin and starting another child session; only this device's Parent session ends; refresh keeps child mode until the profile is archived; own active profile only; administrators refused; web cookie switched); 202 backend tests pass. Checked end to end through the Vite proxy on a scratch database.
+
+Scope as approved:
+- **Start** `POST api/v1/family/children/{id}/session` (`family.children.manage`, the Parent's own **active** profile; another family's → 404, archived → 422). The answer is a new token pair for a **child session**; with the web header the refresh token replaces the cookie, as on sign-in.
+- **One session per device:** starting child mode **ends the Parent's session on this device** (its refresh token is revoked). Getting back to the Parent area therefore needs the Parent's password: this is how "leaving child mode needs the Parent" is enforced. The Parent's other devices are not affected.
+- **Child access token:** `sub` = the Parent's user ID (who is responsible), plus `session` = `child` and `child_profile_id`. No roles.
+- **Permissions:** new catalog permission `learning.play`, held by **no role**. `IUserPermissionReader` gives a child session exactly `{ learning.play }` (and nothing once the Parent is deactivated); Parent, Admin and family endpoints therefore answer 403. A helper `IUserContext.ChildProfileId` gives learning endpoints (S4.x) the profile, so a child can never name another profile.
+- **Refresh:** `auth_refresh_tokens` gets a nullable `ChildProfileId` (migration). Rotation keeps it and issues child tokens again. If the profile was archived, or the Parent deactivated, refresh fails (401) and the session ends.
+- **`/me`** for a child session returns the child: `session: "child"`, `childProfile { id, nickname, avatarKey }`, `permissions: ["learning.play"]`. Parent and admin sessions get `session: "user"`.
+- **Leave** with the normal `logout`: the device is signed out and shows the sign-in page.
+- **Front end (F3.2):** a "Cho con học" button on each active profile card (with a short confirmation that the Parent will need to sign in to come back); a child session lands on `/kids` (greeting with the avatar and nickname); `/kids` accepts only child sessions and `/parent`, `/admin` refuse them; the exit button in the kids area signs out after a confirmation and opens the sign-in page.
+- **Tests:** start only for an own active profile; child token → 403 on family, admin and `users` endpoints; refresh keeps the child session; archiving the profile ends it at the next refresh; Parent's session on the device is revoked; `/me` shapes; front-end routing for both session kinds.
+- **Questions for the owner:** (1) how long a child session lasts without use (proposed: like a Parent's, 14 days sliding, so a family tablet stays in child mode); (2) the exit button: a confirmation only (proposed), or a parental check (for example a simple sum) so small children do not leave by accident.
+- *Done when:* the tests above pass, and on one browser a Parent can start child mode, the child sees their own space, and leaving asks for the Parent's sign-in.
 
 ### Phase 3: Content
 
@@ -349,6 +354,7 @@ Every Phase 6 step must be done before any public release.
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. |
+| 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |
 | 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |
 | 2026-10-24 | OQ-001, OQ-009, OQ-013 decided (PD-010): S2.1 drafted for approval (several profiles per Parent); S2.2 waits only for S2.1. |
 | 2026-10-23 | S1.4 done: Parent self-registration with email confirmation (PD-009), development email files, rate limiting on sign-in and registration. S6.2 now also removes unconfirmed accounts after 7 days. |

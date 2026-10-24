@@ -40,6 +40,7 @@ The API host starts again. The **authentication foundation** is implemented and 
   - Rate limiting (built-in ASP.NET Core): `sign-in` 10/min and `registration` 5/min per client address, 429 with `Retry-After`.
   - Migration `AddParentRegistration` (owner applies it with `POST /api/v1/database/migrate`).
 - **Child profiles (S2.1, PD-010)**: `api/v1/family/children` (`family.children.manage`, Parent users): list (`includeArchived`), get, create, update, archive, restore, and `options` (12 avatar keys, limit 3). At most 3 active profiles per Parent (422), nickname unique among a family's active profiles regardless of letter case (409), another family's profile answers 404. Table `family_child_profiles` (migration `AddChildProfiles`).
+- **Child session (S2.2, PD-010)**: `POST /api/v1/auth/child-session` (`family.children.manage`, own active profile) issues a child session: token claims `session=child` and `child_profile_id`, no roles; only the session-only permission `learning.play`; `/me` returns `session: "child"` and the child profile. The device's Parent session is revoked (the web cookie is replaced), so leaving child mode needs the Parent's password. Refresh keeps the child session until the profile is archived or the Parent deactivated. Migration `AddChildSessions`.
 - **User management (S1.3)**:
   - `GET /api/v1/admin/users` (search, paging) and `GET /{id}` need `users.read`.
   - `POST /` (Admin or Parent; Parent gets the Parent role), `POST /{id}/deactivate` and `/activate` (deactivation ends all sessions) need `users.manage`.

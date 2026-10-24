@@ -5,9 +5,9 @@ import { lazyPage } from '@/shared/routing'
 // The pages come from index.ts, loaded the first time someone opens /kids.
 const area = () => import('@/areas/kids')
 
-/** /kids: any signed-in user until the child session exists (S2.2, F3.2); then only a child session. */
+/** /kids: only a child session, started by a Parent from "My children" (PD-010). */
 export const kidsRoutes: RouteObject = {
-  element: <RequireAuth />,
+  element: <RequireAuth childSession />,
   children: [
     {
       path: '/kids',

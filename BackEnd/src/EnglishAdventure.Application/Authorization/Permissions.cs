@@ -36,6 +36,12 @@ public static class Permissions
         public const string ReadProgress = "family.progress.read";
     }
 
+    public static class Learning
+    {
+        /// <summary>Learn as one child profile. Only a child session holds it (see <see cref="SessionOnly"/>).</summary>
+        public const string Play = "learning.play";
+    }
+
     public static IReadOnlyList<PermissionDefinition> All { get; } =
     [
         new(Users.Read, "List and view users."),
@@ -49,8 +55,18 @@ public static class Permissions
         new(Family.ReadProgress, "View own children's progress, activity results, points and badges.")
     ];
 
-    private static readonly HashSet<string> Codes = All.Select(permission => permission.Code).ToHashSet(StringComparer.Ordinal);
+    /// <summary>
+    /// Permissions that come from the kind of session, not from roles: they are not in <see cref="All"/>, so they are
+    /// never synced to the database and no role, not even SuperAdmin, can hold them. A child session holds exactly
+    /// these (PD-010).
+    /// </summary>
+    public static IReadOnlyList<string> SessionOnly { get; } = [Learning.Play];
 
+    private static readonly HashSet<string> Codes = All.Select(permission => permission.Code)
+        .Concat(SessionOnly)
+        .ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>Whether the code can be used as a policy: a catalog permission or a session-only one.</summary>
     public static bool IsDefined(string code) => Codes.Contains(code);
 }
 

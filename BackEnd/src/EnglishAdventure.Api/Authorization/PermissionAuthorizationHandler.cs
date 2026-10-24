@@ -28,7 +28,10 @@ internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<Perm
         }
 
         var cancellationToken = (context.Resource as HttpContext)?.RequestAborted ?? CancellationToken.None;
-        var permissions = await _permissionReader.GetPermissionsAsync(userId, cancellationToken);
+        // A child session never gets the Parent's permissions, only the ones of a child session (PD-010).
+        var permissions = context.User.FindFirst(AuthClaimTypes.Session)?.Value == AuthClaimTypes.ChildSession
+            ? await _permissionReader.GetChildSessionPermissionsAsync(userId, cancellationToken)
+            : await _permissionReader.GetPermissionsAsync(userId, cancellationToken);
 
         if (permissions.Contains(requirement.Permission))
         {

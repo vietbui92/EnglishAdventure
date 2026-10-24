@@ -3,6 +3,11 @@
     "title": "Cùng học tiếng Anh nào!",
     "subtitle": "Bản đồ bài học sẽ xuất hiện ở đây.",
     "start": "Bắt đầu",
-    "exit": "Thoát"
+    "exit": "Thoát",
+    "greeting": "Xin chào, {{nickname}}!",
+    "exitTitle": "Thoát khu vực học?",
+    "exitDescription": "Bố mẹ sẽ cần đăng nhập lại để quay về trang phụ huynh.",
+    "exitConfirm": "Thoát",
+    "stay": "Ở lại học tiếp"
   }
 }

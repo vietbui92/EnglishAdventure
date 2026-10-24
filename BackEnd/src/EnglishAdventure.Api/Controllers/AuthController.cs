@@ -9,7 +9,9 @@ using EnglishAdventure.Application.Authentication.Commands.RegisterParent;
 using EnglishAdventure.Application.Authentication.Commands.ResendEmailConfirmation;
 using EnglishAdventure.Application.Authentication.Models;
 using EnglishAdventure.Application.Authentication.Queries.GetCurrentUser;
+using EnglishAdventure.Application.Authorization;
 using EnglishAdventure.Application.Common.Exceptions;
+using EnglishAdventure.Application.Family.Commands.StartChildSession;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -161,6 +163,33 @@ public sealed class AuthController : ControllerBase
             instance: Request.Path);
 
     /// <summary>
+    /// Switches this device to child mode for one of the Parent's active profiles (PD-010) and answers with the child
+    /// session's tokens; for the web app the refresh token replaces the cookie. The device's own session ends, so
+    /// leaving child mode needs the Parent to sign in again. 404 for a profile of another family, 422 for an archived
+    /// one. Under <c>api/v1/auth</c> because the web app's refresh cookie is only sent here.
+    /// </summary>
+    [HttpPost("child-session")]
+    [Authorize(Policy = Permissions.Family.ManageChildren)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [ProducesResponseType(typeof(AuthTokensResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<AuthTokensResponse>> StartChildSession(
+        StartChildSessionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var currentRefreshToken = RefreshTokenCookie.IsWebClient(Request)
+            ? RefreshTokenCookie.Read(Request)
+            : request.RefreshToken;
+        var tokens = await _mediator.Send(
+            new StartChildSessionCommand(request.ChildProfileId, currentRefreshToken),
+            cancellationToken);
+        return Ok(CreateTokensResponse(tokens));
+    }
+
+    /// <summary>
     /// Ends the session that the refresh token belongs to. Idempotent. Access tokens already issued stay valid
     /// until they expire. Web clients send no body: the cookie's session ends and the cookie is deleted.
     /// </summary>
@@ -200,14 +229,6 @@ public sealed class AuthController : ControllerBase
         return Ok(CurrentUserResponse.From(profile));
     }
 
-    private AuthTokensResponse CreateTokensResponse(TokenPair tokens)
-    {
-        if (!RefreshTokenCookie.IsWebClient(Request))
-        {
-            return AuthTokensResponse.From(tokens);
-        }
-
-        RefreshTokenCookie.Write(Response, tokens.RefreshToken, tokens.RefreshTokenExpiresAtUtc);
-        return AuthTokensResponse.From(tokens, includeRefreshToken: false);
-    }
+    private AuthTokensResponse CreateTokensResponse(TokenPair tokens) =>
+        RefreshTokenCookie.Respond(Request, Response, tokens);
 }

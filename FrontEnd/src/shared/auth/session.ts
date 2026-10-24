@@ -30,7 +30,8 @@ const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastCh
 channel?.addEventListener('message', (event: MessageEvent<'signed-in' | 'signed-out'>) => {
   if (event.data === 'signed-out' && state.status === 'signed-in') {
     setState({ status: 'signed-out' })
-  } else if (event.data === 'signed-in' && state.status !== 'signed-in') {
+  } else if (event.data === 'signed-in') {
+    // Another tab signed in or switched to child mode: the cookie now belongs to that session, so follow it.
     void restoreSession()
   }
 })
@@ -82,6 +83,24 @@ export async function signInWithPassword(email: string, password: string): Promi
   const session = await startSession(tokens)
   channel?.postMessage('signed-in')
   return session
+}
+
+/**
+ * Switches this device to child mode for one of the Parent's profiles (PD-010). The API ends the Parent's session
+ * here and puts the child session's refresh token in the cookie, so coming back needs the Parent's password.
+ */
+export async function startChildSession(childProfileId: string): Promise<Session> {
+  const tokens = await unwrap(
+    api.POST('/api/v1/auth/child-session', { body: { childProfileId, refreshToken: null }, headers: webClientHeaders }),
+  )
+  const session = await startSession(tokens)
+  channel?.postMessage('signed-in')
+  return session
+}
+
+/** Whether the session is a child session started by a Parent, not a user's own. */
+export function isChildSession(user: CurrentUser) {
+  return user.session === 'child'
 }
 
 // Tabs must not refresh at the same moment: the API treats a second use of the same refresh token as theft and ends

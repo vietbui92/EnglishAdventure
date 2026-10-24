@@ -12,6 +12,9 @@ public sealed class RefreshToken
 
     public Guid FamilyId { get; set; }
 
+    /// <summary>The child profile of a child session (PD-010); null for a user's own session.</summary>
+    public Guid? ChildProfileId { get; set; }
+
     public string TokenHash { get; set; } = string.Empty;
 
     public DateTime ExpiresAtUtc { get; set; }

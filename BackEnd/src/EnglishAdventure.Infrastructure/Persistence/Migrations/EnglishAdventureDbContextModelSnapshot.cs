@@ -273,6 +273,9 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ChildProfileId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -307,6 +310,8 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ChildProfileId");
 
                     b.HasIndex("ExpiresAtUtc");
 
@@ -375,6 +380,11 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.RefreshToken", b =>
                 {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Family.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

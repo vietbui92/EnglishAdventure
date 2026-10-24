@@ -1,4 +1,4 @@
-import { signInWithPassword, type CurrentUser, type Session } from '@/shared/auth/session'
+import { isChildSession, signInWithPassword, type CurrentUser, type Session } from '@/shared/auth/session'
 
 export interface Credentials {
   email: string
@@ -13,8 +13,11 @@ export function signIn({ email, password }: Credentials): Promise<Session> {
   return signInWithPassword(email, password)
 }
 
-/** Where a user lands after signing in. Child users have no sign-in flow yet (OQ-001, OQ-009). */
+/** Where a session lands: a child session in the kids area, a user in their own area. */
 export function homePathFor(user: CurrentUser): string {
+  if (isChildSession(user)) {
+    return '/kids'
+  }
   switch (user.userType) {
     case 'Admin':
       return '/admin'

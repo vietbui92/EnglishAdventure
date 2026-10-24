@@ -11,7 +11,10 @@ public sealed class GetCurrentUserQueryHandlerTests
     private readonly FakeIdentityUserService _identityUserService = new();
     private readonly FakeUserPermissionReader _permissionReader = new();
 
-    private GetCurrentUserQueryHandler CreateHandler() => new(_userContext, _identityUserService, _permissionReader);
+    private readonly FakeChildProfiles _childProfiles = new();
+
+    private GetCurrentUserQueryHandler CreateHandler() =>
+        new(_userContext, _identityUserService, _permissionReader, _childProfiles);
 
     [Fact]
     public async Task Handle_throws_unauthorized_when_there_is_no_authenticated_user()

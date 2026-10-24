@@ -13,6 +13,13 @@ public sealed record ConfirmEmailRequest(string Token);
 /// <param name="Language">"vi" (default) or "en": the language of the email.</param>
 public sealed record ResendEmailConfirmationRequest(string Email, string? Language);
 
+/// <param name="ChildProfileId">One of the signed-in Parent's active profiles.</param>
+/// <param name="RefreshToken">
+/// For clients that keep the refresh token themselves: the device's current one, which is ended. The web app leaves it
+/// out; its cookie is used.
+/// </param>
+public sealed record StartChildSessionRequest(Guid ChildProfileId, string? RefreshToken);
+
 public sealed record RefreshSessionRequest(string RefreshToken);
 
 public sealed record LogoutRequest(string RefreshToken);
@@ -36,12 +43,16 @@ public sealed record AuthTokensResponse(
     }
 }
 
+/// <param name="Session">"user" for a user's own session, "child" for a child session started by a Parent.</param>
+/// <param name="ChildProfile">The child a child session learns as; null otherwise.</param>
 public sealed record CurrentUserResponse(
     Guid UserId,
     string Email,
     string UserType,
     IReadOnlyList<string> Roles,
-    IReadOnlyList<string> Permissions)
+    IReadOnlyList<string> Permissions,
+    string Session,
+    CurrentChildResponse? ChildProfile)
 {
     public static CurrentUserResponse From(CurrentUserProfile profile)
     {
@@ -50,6 +61,12 @@ public sealed record CurrentUserResponse(
             profile.Email,
             profile.UserType.ToString(),
             profile.Roles,
-            profile.Permissions);
+            profile.Permissions,
+            profile.Session,
+            profile.ChildProfile is { } child
+                ? new CurrentChildResponse(child.Id, child.Nickname, child.AvatarKey)
+                : null);
     }
 }
+
+public sealed record CurrentChildResponse(Guid Id, string Nickname, string AvatarKey);

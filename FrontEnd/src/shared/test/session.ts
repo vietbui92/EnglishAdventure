@@ -19,8 +19,28 @@ export function testUser(role: TestRole, overrides: Partial<CurrentUser> = {}): 
     userType: role === 'Parent' ? 'Parent' : 'Admin',
     roles: [role],
     permissions: rolePermissions[role],
+    session: 'user',
+    childProfile: null,
     ...overrides,
   }
+}
+
+/** Puts the app in a child session (PD-010) for a profile of a test Parent, without calling the API. */
+export function signInAsChild(child: { nickname?: string; avatarKey?: string } = {}): Session {
+  const parent = testUser('Parent')
+  const session = {
+    accessToken: 'test-token-child',
+    accessTokenExpiresAtUtc: new Date(Date.now() + 60 * 60_000).toISOString(),
+    user: {
+      ...parent,
+      roles: [],
+      permissions: ['learning.play'],
+      session: 'child',
+      childProfile: { id: '00000000-0000-0000-0000-0000000000c1', nickname: 'Bin', avatarKey: 'fox', ...child },
+    },
+  }
+  sessionStore.set({ status: 'signed-in', session })
+  return session
 }
 
 /** Puts the app in a signed-in state without calling the API. The token stays valid for an hour. */

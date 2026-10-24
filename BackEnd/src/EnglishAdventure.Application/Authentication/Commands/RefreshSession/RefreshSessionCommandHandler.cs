@@ -1,5 +1,6 @@
 using EnglishAdventure.Application.Authentication.Models;
 using EnglishAdventure.Application.Common.Exceptions;
+using EnglishAdventure.Application.Family;
 using MediatR;
 
 namespace EnglishAdventure.Application.Authentication.Commands.RefreshSession;
@@ -9,15 +10,18 @@ public sealed class RefreshSessionCommandHandler : IRequestHandler<RefreshSessio
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IIdentityUserService _identityUserService;
     private readonly IAccessTokenIssuer _accessTokenIssuer;
+    private readonly IChildProfileRepository _childProfiles;
 
     public RefreshSessionCommandHandler(
         IRefreshTokenService refreshTokenService,
         IIdentityUserService identityUserService,
-        IAccessTokenIssuer accessTokenIssuer)
+        IAccessTokenIssuer accessTokenIssuer,
+        IChildProfileRepository childProfiles)
     {
         _refreshTokenService = refreshTokenService;
         _identityUserService = identityUserService;
         _accessTokenIssuer = accessTokenIssuer;
+        _childProfiles = childProfiles;
     }
 
     public async Task<TokenPair> Handle(RefreshSessionCommand request, CancellationToken cancellationToken)
@@ -40,11 +44,25 @@ public sealed class RefreshSessionCommandHandler : IRequestHandler<RefreshSessio
                     throw new RefreshTokenException();
                 }
 
-                var roles = await _identityUserService.GetRolesAsync(user.Id, cancellationToken);
+                if (succeeded.ChildProfileId is { } childProfileId)
+                {
+                    // A child session lasts only while its profile is active and still the Parent's (PD-010).
+                    var profile = await _childProfiles.GetOwnedAsync(childProfileId, user.Id, cancellationToken);
+                    if (profile is null || !profile.IsActive)
+                    {
+                        await _refreshTokenService.RevokeAsync(succeeded.NewRefreshToken, cancellationToken);
+                        throw new RefreshTokenException();
+                    }
+                }
+
+                var roles = succeeded.ChildProfileId is null
+                    ? await _identityUserService.GetRolesAsync(user.Id, cancellationToken)
+                    : [];
                 var (accessToken, accessExpires) = _accessTokenIssuer.Issue(
                     user.Id,
                     user.UserType,
-                    roles);
+                    roles,
+                    succeeded.ChildProfileId);
 
                 return new TokenPair(
                     accessToken,

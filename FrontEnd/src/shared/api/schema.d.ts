@@ -862,6 +862,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/child-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StartChildSessionRequest"];
+                    "text/json": components["schemas"]["StartChildSessionRequest"];
+                    "application/*+json": components["schemas"]["StartChildSessionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AuthTokensResponse"];
+                        "application/json": components["schemas"]["AuthTokensResponse"];
+                        "text/json": components["schemas"]["AuthTokensResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -1626,6 +1713,12 @@ export interface components {
             password: string;
             userType: string;
         };
+        CurrentChildResponse: {
+            /** Format: uuid */
+            id: string;
+            nickname: string;
+            avatarKey: string;
+        };
         CurrentUserResponse: {
             /** Format: uuid */
             userId: string;
@@ -1633,6 +1726,8 @@ export interface components {
             userType: string;
             roles: string[];
             permissions: string[];
+            session: string;
+            childProfile: null | components["schemas"]["CurrentChildResponse"];
         };
         GetFoundationStatusResponse: {
             message: string;
@@ -1682,6 +1777,11 @@ export interface components {
         };
         SetUserRolesRequest: {
             roles: string[];
+        };
+        StartChildSessionRequest: {
+            /** Format: uuid */
+            childProfileId: string;
+            refreshToken: null | string;
         };
         UserSummary: {
             /** Format: uuid */

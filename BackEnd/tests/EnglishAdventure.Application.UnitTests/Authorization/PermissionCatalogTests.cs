@@ -53,6 +53,15 @@ public sealed class PermissionCatalogTests
     }
 
     [Fact]
+    public void Learning_as_a_child_is_a_session_permission_that_no_role_can_hold()
+    {
+        Assert.True(Permissions.IsDefined(Permissions.Learning.Play));
+        Assert.Contains(Permissions.Learning.Play, Permissions.SessionOnly);
+        Assert.DoesNotContain(Permissions.Learning.Play, Codes);
+        Assert.All(SystemRoles.All, role => Assert.DoesNotContain(Permissions.Learning.Play, role.Permissions));
+    }
+
+    [Fact]
     public void ContentAdmin_and_Parent_follow_least_privilege()
     {
         Assert.Equal(

@@ -2,7 +2,11 @@ namespace EnglishAdventure.Application.Authentication;
 
 public interface IRefreshTokenService
 {
-    Task<(string RawToken, DateTime ExpiresAtUtc)> IssueAsync(Guid userId, CancellationToken cancellationToken);
+    /// <summary>Starts a new session (token family). With <paramref name="childProfileId"/> it is a child session.</summary>
+    Task<(string RawToken, DateTime ExpiresAtUtc)> IssueAsync(
+        Guid userId,
+        Guid? childProfileId,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Atomically consumes the token and issues its replacement in the same family. Presenting a token that was
@@ -23,8 +27,10 @@ public interface IRefreshTokenService
 
 public abstract record RefreshTokenRotationResult;
 
+/// <param name="ChildProfileId">Set when the session is a child session; the replacement token keeps it.</param>
 public sealed record RefreshTokenRotationSucceeded(
     Guid UserId,
+    Guid? ChildProfileId,
     string NewRefreshToken,
     DateTime NewRefreshTokenExpiresAtUtc) : RefreshTokenRotationResult;
 

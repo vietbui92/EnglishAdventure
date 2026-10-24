@@ -24,7 +24,8 @@ internal sealed class JwtAccessTokenIssuer : IAccessTokenIssuer
     public (string AccessToken, DateTime ExpiresAtUtc) Issue(
         Guid userId,
         UserType userType,
-        IReadOnlyList<string> roles)
+        IReadOnlyList<string> roles,
+        Guid? childProfileId = null)
     {
         if (!Enum.IsDefined(userType))
         {
@@ -40,7 +41,16 @@ internal sealed class JwtAccessTokenIssuer : IAccessTokenIssuer
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(AuthClaimTypes.UserType, userType.ToString())
         };
-        claims.AddRange(roles.Select(role => new Claim(AuthClaimTypes.Role, role)));
+        if (childProfileId is { } profileId)
+        {
+            // A child session learns as one profile; the Parent's roles do not travel with it.
+            claims.Add(new Claim(AuthClaimTypes.Session, AuthClaimTypes.ChildSession));
+            claims.Add(new Claim(AuthClaimTypes.ChildProfileId, profileId.ToString()));
+        }
+        else
+        {
+            claims.AddRange(roles.Select(role => new Claim(AuthClaimTypes.Role, role)));
+        }
 
         var descriptor = new SecurityTokenDescriptor
         {

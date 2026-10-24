@@ -5,7 +5,7 @@ import { sessionStore } from '@/shared/auth/session'
 import { mockApi, mockFamilyWithoutChildren } from '@/shared/test/api-mocks'
 import { renderRoutes } from '@/shared/test/render'
 import { server } from '@/shared/test/server'
-import { signInAs } from '@/shared/test/session'
+import { signInAs, signInAsChild } from '@/shared/test/session'
 
 function mainNav() {
   return screen.getByRole('navigation', { name: 'Điều hướng chính' })
@@ -34,12 +34,12 @@ describe('routes', () => {
     expect(await screen.findByRole('heading', { name: 'Con của tôi' })).toBeTruthy()
   })
 
-  it('shows the kids area in its own theme', async () => {
-    signInAs('Parent')
+  it('shows a child session its own space in the kids theme', async () => {
+    signInAsChild({ nickname: 'Bông', avatarKey: 'owl' })
 
     await renderRoutes(routes, { route: '/kids' })
 
-    expect(screen.getByRole('heading', { name: 'Cùng học tiếng Anh nào!' }).closest('.theme-kids')).not.toBeNull()
+    expect(screen.getByRole('heading', { name: 'Xin chào, Bông!' }).closest('.theme-kids')).not.toBeNull()
   })
 
   it('shows the not-found page for an unknown address', async () => {
@@ -53,6 +53,26 @@ describe('routes', () => {
 })
 
 describe('route guards', () => {
+  it.each(['/parent/children', '/admin', '/admin/users'])(
+    'send a child session from %s back to the kids area',
+    async (path) => {
+      signInAsChild()
+
+      const { router } = await renderRoutes(routes, { route: path })
+
+      expect(router.state.location.pathname).toBe('/kids')
+    },
+  )
+
+  it('send a Parent who opens the kids area to their own pages', async () => {
+    server.use(...mockFamilyWithoutChildren())
+    signInAs('Parent')
+
+    const { router } = await renderRoutes(routes, { route: '/kids' })
+
+    expect(router.state.location.pathname).toBe('/parent/children')
+  })
+
   it.each(['/admin', '/admin/users', '/parent/progress', '/kids'])(
     'send a signed-out visitor from %s to sign in',
     async (path) => {

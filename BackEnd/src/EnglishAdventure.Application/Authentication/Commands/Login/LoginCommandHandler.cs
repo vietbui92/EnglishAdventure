@@ -53,6 +53,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, TokenPai
 
                 var (refreshToken, refreshExpires) = await _refreshTokenService.IssueAsync(
                     succeeded.User.Id,
+                    childProfileId: null,
                     cancellationToken);
 
                 return new TokenPair(accessToken, accessExpires, refreshToken, refreshExpires);

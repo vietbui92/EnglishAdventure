@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { ForbiddenPage } from '@/shared/components/ErrorPages'
 import { hasPermission, type Permission, type UserType } from '@/shared/auth/permissions'
-import { useSessionState } from '@/shared/auth/session'
+import { isChildSession, useSessionState } from '@/shared/auth/session'
+import { homePathFor } from '@/shared/auth/sign-in'
 
 /** State passed to /login so it can return to the page the user asked for. */
 export interface LoginLocationState {
@@ -33,10 +34,11 @@ export function PageLoading() {
 }
 
 /**
- * Renders the child routes only for a signed-in user, optionally of the given user types. Everyone else is sent to
- * sign in, or sees the 403 page. This is for navigation only: the API checks every request itself.
+ * Renders the child routes only for a signed-in user, optionally of the given user types, and only for the right kind
+ * of session (`childSession` for the kids area). Everyone else is sent to sign in, to their own area, or sees the 403
+ * page. This is for navigation only: the API checks every request itself.
  */
-export function RequireAuth({ userTypes }: { userTypes?: UserType[] }) {
+export function RequireAuth({ userTypes, childSession = false }: { userTypes?: UserType[]; childSession?: boolean }) {
   const state = useSessionState()
   const location = useLocation()
 
@@ -46,6 +48,11 @@ export function RequireAuth({ userTypes }: { userTypes?: UserType[] }) {
   if (state.status === 'signed-out') {
     const from = `${location.pathname}${location.search}`
     return <Navigate to="/login" replace state={{ from } satisfies LoginLocationState} />
+  }
+  // A child cannot wander into the Parent's or the administration's pages, and a Parent reaches the kids area only
+  // through child mode (PD-010): each goes back to their own place.
+  if (isChildSession(state.session.user) !== childSession) {
+    return <Navigate to={homePathFor(state.session.user)} replace />
   }
   if (userTypes && !userTypes.some((userType) => userType === state.session.user.userType)) {
     return <ForbiddenPage />

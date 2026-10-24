@@ -1,3 +1,6 @@
+using EnglishAdventure.Api.Contracts.Authentication;
+using EnglishAdventure.Application.Authentication.Models;
+
 namespace EnglishAdventure.Api.Authentication;
 
 /// <summary>
@@ -18,6 +21,21 @@ public static class RefreshTokenCookie
         string.Equals(request.Headers[ClientHeaderName], WebClientValue, StringComparison.Ordinal);
 
     public static string? Read(HttpRequest request) => request.Cookies[CookieName];
+
+    /// <summary>
+    /// The response body for a new token pair. For the web app the refresh token goes into the cookie and is left out
+    /// of the body; other clients get it in the body.
+    /// </summary>
+    public static AuthTokensResponse Respond(HttpRequest request, HttpResponse response, TokenPair tokens)
+    {
+        if (!IsWebClient(request))
+        {
+            return AuthTokensResponse.From(tokens);
+        }
+
+        Write(response, tokens.RefreshToken, tokens.RefreshTokenExpiresAtUtc);
+        return AuthTokensResponse.From(tokens, includeRefreshToken: false);
+    }
 
     public static void Write(HttpResponse response, string refreshToken, DateTime expiresAtUtc) =>
         response.Cookies.Append(CookieName, refreshToken, CreateOptions(expiresAtUtc));
