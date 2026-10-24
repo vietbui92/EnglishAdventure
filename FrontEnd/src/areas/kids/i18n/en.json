@@ -15,7 +15,16 @@
       "empty": "No lessons yet. Come back later!",
       "level": "Level {{number}}",
       "lessonsOf": "Lessons of {{level}}",
-      "boss": "Boss"
+      "boss": "Boss",
+      "island": "Island {{number}}: {{title}}",
+      "pickIsland": "Tap an island to row there!",
+      "sailing": "Rowing to {{level}}…",
+      "lesson": "Lesson {{number}}: {{title}}",
+      "bossStop": "Boss: {{name}}",
+      "pickStop": "Pick a place on the island to explore!",
+      "walking": "Walking to {{place}}…",
+      "toBoat": "Going back to the boat…",
+      "toSea": "Sail out to sea"
     },
     "play": {
       "backToMap": "Back to the map",
@@ -28,8 +37,43 @@
       "next": "Next",
       "toGames": "Let’s play!",
       "bossIntro": "Defeat {{name}}!",
-      "gamesSoon": "Games are coming soon!",
-      "gamesSoonHint": "The quiz and matching games are being made."
-    }
+      "skipCards": "Go straight to the games",
+      "listen": "Listen"
+    },
+    "game": {
+      "start": "Start playing",
+      "fight": "Fight the boss!",
+      "startError": "The games could not start. Try again!",
+      "answerError": "Something went wrong. Tap again!",
+      "questionCount": "Question {{number}} of {{count}}",
+      "options": "Answers",
+      "pictureOption": "Picture {{number}}",
+      "promptPicture": "The question’s picture",
+      "pickWord": "What is this?",
+      "pickPicture": "Pick the right picture:",
+      "fillGap": "Pick the missing word:",
+      "right": "Right! 🎉",
+      "wrong": "Not quite. The right answer has the green tick.",
+      "next": "Next",
+      "matchPictures": "Match each word with its picture.",
+      "matchMeanings": "Match each word with its meaning.",
+      "words": "Words",
+      "pictures": "Pictures",
+      "meanings": "Meanings",
+      "pickWordFirst": "Pick a word first.",
+      "nowPickPartner": "Now pick its picture or meaning.",
+      "tryAgain": "Not quite, try again!",
+      "allMatched": "All matched!",
+      "bossHealth": "{{name}}’s health",
+      "bossDefeated": "You defeated {{name}}!",
+      "bossStands": "{{name}} is still standing. Try again!",
+      "perfect": "Perfect!",
+      "wellDone": "Well done!",
+      "keepTrying": "Keep going! Play again!",
+      "stars": "Stars: {{count}} of 3",
+      "score": "{{correct}} of {{total}} right ({{percent}}%)",
+      "replay": "Play again"
+    },
+    "sound": "Sound"
   }
 }

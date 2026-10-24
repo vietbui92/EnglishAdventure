@@ -2,6 +2,7 @@ using EnglishAdventure.Domain.Common;
 using EnglishAdventure.Domain.Entities.Content;
 using EnglishAdventure.Domain.Entities.Family;
 using EnglishAdventure.Domain.Entities.Identity;
+using EnglishAdventure.Domain.Entities.Learning;
 using EnglishAdventure.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,8 @@ public sealed class EnglishAdventureDbContext : DbContext
     public DbSet<Level> Levels => Set<Level>();
 
     public DbSet<Lesson> Lessons => Set<Lesson>();
+
+    public DbSet<LessonAttempt> LessonAttempts => Set<LessonAttempt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

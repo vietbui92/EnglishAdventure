@@ -62,8 +62,8 @@ Rules for every step:
 | S3.4 | Learner lesson map (read published content) | | ✅ Done 2026-10-24 |
 | S3.5 | Development seed content | OQ-006, S3.8 | 🟡 Needs decision |
 | **Phase 4: Learning** | | | |
-| S4.1 | Lesson attempts, server-side grading and stars | | 🟢 Ready |
-| S4.2 | Completion, best result, lesson and level unlocking | S4.1 | ⚪ Waiting |
+| S4.1 | Lesson attempts, server-side grading and stars | | ✅ Done 2026-10-24 |
+| S4.2 | Completion, best result, lesson and level unlocking | | 🟢 Ready |
 | S4.3 | Parent progress view | S4.2 | ⚪ Waiting |
 | **Phase 5: Rewards** | | | |
 | S5.1 | Points ledger (10 points per new star) | S4.2 | ⚪ Waiting |
@@ -350,17 +350,21 @@ Scope as approved:
 
 ### Phase 4: Learning
 
-**S4.1 Lesson attempts.** Resume from the activity where the child stopped (PD-012); also makes `ILearnerActivityReader` (S3.1) real.
+**S4.1 Lesson attempts.** ✅ Done 2026-10-24.
+
+*As built:* `LessonAttempt` (Learning module, `learning_lesson_attempts`) owns `AttemptAnswer`s (`learning_attempt_answers`, one row per try). The server builds an `AnswerKey` from the lesson (quiz option ids, matching pair id → `ChoiceId`) and grades every answer; no score is accepted from a client. Every question and every pair is one item; an attempt finishes when every question is answered and every pair matched, then `LessonScoring` gives the percent (rounded down) and the stars. One unfinished attempt per child and lesson (filtered unique index): starting again resumes it, after finishing a new one starts. A repeated answer returns the stored result; two answers at the same moment cannot both pass the attempt's row version (409, the client sends again), so the last item always finishes the attempt. Endpoints on `PlayController` (child session): `POST play/lessons/{lessonId}/attempts` (start or resume), `GET play/attempts/{attemptId}`, `POST play/attempts/{attemptId}/questions/{questionId}` `{ optionId }`, `POST play/attempts/{attemptId}/matches` `{ leftId, rightId }`; answers return right/wrong (and the right option for a quiz) with the attempt (done items, answered questions, matched pairs, result). 422 codes `answer-invalid`, `attempt-finished`; another child's attempt is 404. `ILearnerActivityReader` now reads attempts, so a started lesson can no longer be unpublished. Migration `AddLessonAttempts`. Tests: 15 domain cases, 5 SQL integration; 364 backend tests pass.
+
+**Owner answers 2026-10-24:** a quiz is answered **one question at a time** with immediate right/wrong feedback (and the right answer shown after a wrong one); only the first answer counts. A matching is checked **one pair at a time**; a wrong pair comes apart and can be tried again until all are matched; only pairs right on the first try count. Answers are saved one by one, so a child resumes even within an activity. *Scope note:* the "unlocked" check needs completions, so it is added with S4.2; S4.1 checks that the lesson and its level are published.
 - **Includes:**
-  - Start an attempt (checks published and unlocked). Works the same for lessons and boss challenges.
-  - Submit answers per activity (see the code flow in domain model proposal §8).
+  - Start an attempt (checks published; unlocked from S4.2). Works the same for lessons and boss challenges.
+  - Submit answers one question or pair at a time (see above).
   - Server-side grading: score = percentage of correct scored items; stars 0–3 at 60 / 80 / 100% (PD-011).
   - Submitting twice is safe.
 - **Migration:** `learning_lesson_attempts` and `learning_attempt_answers`.
 - *Done when:*
   - A client-sent score is ignored.
   - Submitting twice returns the same result.
-  - A locked lesson cannot be started.
+  - A locked lesson cannot be started (from S4.2).
   - The grading rules have unit tests.
 
 **S4.2 Completion, best result and unlocking.**
@@ -424,6 +428,8 @@ Every Phase 6 step must be done before any public release.
 | 2026-10-24 | S3.3 done: matching activities (word ↔ picture or word ↔ meaning, 2–6 pairs), migration `AddMatchingActivities`. S3.8 boss challenge is Ready; F2.5 matching editor is Ready. |
 | 2026-10-24 | S3.8 done: boss challenge per level (a boss lesson using the level's words, name and picture, level published only with its boss), migration `AddBossChallenges`. S3.4 learner lesson map and F2.8 boss editor are Ready. |
 | 2026-10-24 | S3.4 done: learner map and lessons to play (`api/v1/play`), answers never sent, migration `AddMatchingChoiceIds`. Phase 3 is done except S3.5 (OQ-006). S4.1 attempts and F4.6 learn step are Ready. |
+| 2026-10-24 | S4.1 done: lesson attempts graded by the server one question or pair at a time, stars, resume, migration `AddLessonAttempts`. S4.2 and F4.3/F4.4 (quiz and matching players) are Ready. |
+| 2026-10-24 | F4.3/F4.4 done on the frontend (quiz and matching players, result with stars, boss health bar). |
 | 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |
 | 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |
 | 2026-10-24 | OQ-001, OQ-009, OQ-013 decided (PD-010): S2.1 drafted for approval (several profiles per Parent); S2.2 waits only for S2.1. |

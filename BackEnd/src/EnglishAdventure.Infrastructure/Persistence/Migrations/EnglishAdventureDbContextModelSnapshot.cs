@@ -512,6 +512,99 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.ToTable("auth_user_roles", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.AttemptAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActivityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AnsweredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChosenId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TryNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId", "ItemId", "TryNumber")
+                        .IsUnique();
+
+                    b.ToTable("learning_attempt_answers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_learning_attempt_answers_TryNumber", "[TryNumber] >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.LessonAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("CorrectItems")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("FinishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastAnsweredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int?>("ScorePercent")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Stars")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalItems")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("ChildProfileId", "LessonId")
+                        .IsUnique()
+                        .HasFilter("[Status] = 1");
+
+                    b.ToTable("learning_lesson_attempts", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_learning_lesson_attempts_Stars", "[Stars] IS NULL OR [Stars] BETWEEN 0 AND 3");
+
+                            t.HasCheckConstraint("CK_learning_lesson_attempts_Status", "[Status] IN (1, 2)");
+                        });
+                });
+
             modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.EmailConfirmationToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -757,6 +850,30 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.AttemptAnswer", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Learning.LessonAttempt", null)
+                        .WithMany("Answers")
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.LessonAttempt", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Family.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.EmailConfirmationToken", b =>
                 {
                     b.HasOne("EnglishAdventure.Domain.Entities.Identity.User", null)
@@ -800,6 +917,11 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.User", b =>
                 {
                     b.Navigation("Roles");
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.LessonAttempt", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.MatchingActivity", b =>

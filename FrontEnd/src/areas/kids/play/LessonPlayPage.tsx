@@ -1,15 +1,19 @@
-import { ArrowLeft, ArrowRight, Map as MapIcon, Play, Swords } from 'lucide-react'
+import { motion } from 'motion/react'
+import { ArrowLeft, ArrowRight, Map as MapIcon, Play } from 'lucide-react'
 import { useState } from 'react'
+import { playSound } from '@/areas/kids/adventure/sound'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { usePlayLesson, type LearnCard, type PlayLesson } from '@/areas/kids/play/api'
+import { GamePlayer } from '@/areas/kids/play/GamePlayer'
 import { KidsPicture } from '@/areas/kids/play/KidsPicture'
+import { ListenButton } from '@/areas/kids/play/ListenButton'
 import { ApiError } from '@/shared/api/problem-details'
 import { Button } from '@/shared/components/ui/button'
 
 /**
- * Playing one lesson (F4.6): the learn step's word cards one at a time, then the games. The games themselves come with
- * F4.3 and F4.4, once answers can be sent (S4.1). A boss has no learn step (owner, 2026-10-24): it starts with the fight.
+ * Playing one lesson (F4.6, F4.3, F4.4): the learn step's word cards one at a time, then the games (`GamePlayer`),
+ * graded by the server one answer at a time (S4.1). A boss has no learn step (owner, 2026-10-24): it starts with the fight.
  */
 export function LessonPlayPage() {
   const { t } = useTranslation()
@@ -51,7 +55,6 @@ export function LessonPlayPage() {
 }
 
 function LessonSteps({ lesson }: { lesson: PlayLesson }) {
-  const { t } = useTranslation()
   const boss = lesson.kind === 'Boss'
   const [learning, setLearning] = useState(!boss && lesson.learnCards.length > 0)
 
@@ -62,23 +65,14 @@ function LessonSteps({ lesson }: { lesson: PlayLesson }) {
       </h1>
       {learning ? (
         <LearnStep cards={lesson.learnCards} onDone={() => setLearning(false)} />
-      ) : boss ? (
-        <div className="flex flex-col items-center gap-4 text-center">
-          <KidsPicture url={lesson.bossImageUrl} alt={lesson.title} className="size-56" />
-          <p className="flex items-center gap-2 text-2xl font-bold">
-            <Swords aria-hidden className="size-7" />
-            {t('kids.play.bossIntro', { name: lesson.title })}
-          </p>
-          <GamesComingSoon />
-        </div>
       ) : (
-        <GamesComingSoon />
+        <GamePlayer lesson={lesson} />
       )}
     </section>
   )
 }
 
-/** The learn step (S3.7, PD-011): one word card at a time, in order. Not scored. */
+/** The learn step (S3.7, PD-011): one word card at a time, in order, turning over as it comes; the word can be heard. Not scored. */
 function LearnStep({ cards, onDone }: { cards: LearnCard[]; onDone: () => void }) {
   const { t } = useTranslation()
   const [index, setIndex] = useState(0)
@@ -93,16 +87,23 @@ function LearnStep({ cards, onDone }: { cards: LearnCard[]; onDone: () => void }
         {t('kids.play.cardCount', { number: index + 1, count: cards.length })}
       </p>
 
-      <article
+      <motion.article
+        key={index}
         aria-label={card.english}
+        initial={{ rotateY: 80, opacity: 0 }}
+        animate={{ rotateY: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         className="flex w-full flex-col items-center gap-4 rounded-3xl bg-card p-6 text-center shadow-sm"
       >
         <KidsPicture url={card.imageUrl} alt={card.english} className="size-56 sm:size-64" />
-        <p lang="en" className="font-heading text-5xl font-bold">
-          {card.english}
-        </p>
+        <div className="flex items-center gap-3">
+          <p lang="en" className="font-heading text-5xl font-bold">
+            {card.english}
+          </p>
+          <ListenButton text={card.english} />
+        </div>
         <p className="text-2xl text-muted-foreground">{card.meaning}</p>
-      </article>
+      </motion.article>
 
       <div className="flex w-full flex-wrap justify-between gap-3">
         <Button
@@ -120,26 +121,24 @@ function LearnStep({ cards, onDone }: { cards: LearnCard[]; onDone: () => void }
             {t('kids.play.toGames')}
           </Button>
         ) : (
-          <Button className="min-h-14 rounded-2xl px-8 text-xl" onClick={() => setIndex(index + 1)}>
+          <Button
+            className="min-h-14 rounded-2xl px-8 text-xl"
+            onClick={() => {
+              playSound('tap')
+              setIndex(index + 1)
+            }}
+          >
             {t('kids.play.next')}
             <ArrowRight aria-hidden className="size-5" />
           </Button>
         )}
       </div>
-    </div>
-  )
-}
-
-/** Until the quiz and matching players exist (F4.3, F4.4). */
-function GamesComingSoon() {
-  const { t } = useTranslation()
-  return (
-    <div className="flex flex-col items-center gap-4 rounded-3xl bg-card p-6 text-center shadow-sm">
-      <p className="text-2xl font-bold">{t('kids.play.gamesSoon')}</p>
-      <p className="text-muted-foreground">{t('kids.play.gamesSoonHint')}</p>
-      <Button asChild className="min-h-14 rounded-2xl px-8 text-xl">
-        <Link to="/kids">{t('kids.play.backToMap')}</Link>
-      </Button>
+      {/* A child coming back to an unfinished lesson can go straight to where they stopped (PD-012). */}
+      {!last && (
+        <Button variant="ghost" className="min-h-12 px-4 text-base" onClick={onDone}>
+          {t('kids.play.skipCards')}
+        </Button>
+      )}
     </div>
   )
 }

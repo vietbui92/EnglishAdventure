@@ -7,7 +7,7 @@ Step-by-step plan, one approved step at a time: [../docs/roadmap/frontend-implem
 
 ## Stack (exact versions in package.json)
 
-Node 24, Vite 8, React 19, React Router 8, i18next, TypeScript 6 (`strict`, `noUncheckedIndexedAccess`), Tailwind CSS 4, shadcn/ui (`radix-nova` style, `radix-ui`, `cn`, `lucide-react`), openapi-fetch + openapi-typescript, TanStack Query 5, ESLint (flat config), Prettier, Vitest + jsdom, Testing Library, MSW 3.
+Node 24, Vite 8, React 19, React Router 8, i18next, TypeScript 6 (`strict`, `noUncheckedIndexedAccess`), Tailwind CSS 4, shadcn/ui (`radix-nova` style, `radix-ui`, `cn`, `lucide-react`), openapi-fetch + openapi-typescript, TanStack Query 5, Motion 14 (`motion/react`, kids area only), ESLint (flat config), Prettier, Vitest + jsdom, Testing Library, MSW 3.
 react-hook-form + zod (with the local resolver `src/shared/lib/zod-resolver.ts`; `@hookform/resolvers` is not used).
 Planned in later steps: Playwright.
 
@@ -21,7 +21,7 @@ src/
     public/             landing, sign-in, registration, email confirmation, legal pages
     admin/              AdminLayout, users/ (list, detail, create, roles), content/ (levels, lessons, word bank, quizzes, matchings, bosses), placeholders
     parent/             ParentLayout, placeholders
-    kids/               KidsLayout, kids.css (bright theme), KidsHomePage (adventure map), play/ (lesson, learn step)
+    kids/               KidsLayout, kids.css (bright theme), KidsHomePage (adventure map), adventure/ (SeaScene, IslandScene, scenery, sound, track, place, effects), play/ (lesson, learn step, GamePlayer with QuizStep and MatchingStep)
   shared/
     api/                generated schema, client, ApiError, query client
     auth/               session, sign-in, guards, permissions
@@ -50,7 +50,7 @@ Every area folder has the same shape:
 - **Adding an area:** a new folder in `src/areas` with the files above, its routes in `src/app/routes.tsx`, its name in the `areas` list in `eslint.config.js`, and its `vi.json` type in `src/shared/i18n/i18next.d.ts`.
 - shadcn components: add with `npx shadcn@latest add <name>` only when a step needs it (they land in `src/shared/components/ui`); they are our code afterwards. Answer "no" if it asks to overwrite `button.tsx`.
 - All user-facing text goes through i18n: `const { t } = useTranslation()`. Texts live in the area's `i18n/{vi,en}.json` (always add both; tests check that the keys match and that no two files share a top-level key); shared texts in `src/shared/i18n/locales`. Never write UI text directly in JSX, including `aria-label`. Lesson content stays in English.
-- Styling: Admin, Parent and the public site use the shadcn tokens in `src/index.css` (the landing page adds Tailwind palette accents). The kids area uses `.theme-kids` (`src/areas/kids/kids.css`) and touch targets of at least 48px (`min-h-12`).
+- Styling: Admin, Parent and the public site use the shadcn tokens in `src/index.css` (the landing page adds Tailwind palette accents). The kids area uses `.theme-kids` (`src/areas/kids/kids.css`) and touch targets of at least 48px (`min-h-12`). Its animations respect "reduce motion" (CSS `kids-*` classes in a `prefers-reduced-motion` query, `glide` in `adventure/track.ts`); tests run with reduced motion (`setup.ts` stubs `matchMedia`), so journeys end at once. Sounds are made in code (`adventure/sound.ts`), no sound files.
 - API types are generated from the backend OpenAPI document, never written by hand: `npm run api:types` (API running) rewrites `src/shared/api/schema.d.ts`. Call endpoints through `api` in `src/shared/api/client.ts` and `unwrap()`; handle failures by `ApiError.kind`, and show `fieldErrors` on form fields. Server data is read with TanStack Query hooks (`useQuery`/`useMutation`, client from `createQueryClient()`); keep an area's hooks in that area (e.g. `areas/admin/users/api.ts`).
 - Tests (Vitest, jsdom): put `*.test.ts(x)` next to the code. Render with `renderWithProviders`, `await renderRoutes(routes, { route })` (async: it waits for lazy routes and redirects) or `renderHookWithProviders` from `src/shared/test/render.tsx`. Mock the API only with `server.use(mockApi(...))` and `problem(...)` from `src/shared/test/api-mocks.ts`; an unmocked request fails the test. Query by role and visible Vietnamese text, and interact through the returned `user`.
 - Auth: the session lives in `src/shared/auth/session.ts` (`useSession`, `useSessionState`, `refreshSession`, `signOut`), sign-in in `src/shared/auth/sign-in.ts`. Protect routes with `RequireAuth` / `RequirePermission` (`src/shared/auth/guards.tsx`) and permission codes from `src/shared/auth/permissions.ts`; give menu items a `permission`. A route for the kids area uses `<RequireAuth childSession />`; all others refuse child sessions. In tests use `signInAs(role)` or `signInAsChild()` from `src/shared/test/session.ts`. Access token in memory only; the refresh token is an httpOnly cookie. Send `X-EnglishAdventure-Client: web` on `login`, `refresh` and `logout` (see `BackEnd/src/EnglishAdventure.Api/Authentication/RefreshTokenCookie.cs`). Never store tokens in `localStorage`.

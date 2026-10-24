@@ -11,6 +11,20 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 }
 
+// jsdom has no media queries. Tests run as a device that asks for less motion, so the kids area's journeys and
+// animations end at once (adventure/track.ts glide) instead of taking seconds.
+globalThis.matchMedia ??= (query: string) =>
+  ({
+    matches: query.includes('prefers-reduced-motion'),
+    media: query,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent: () => false,
+  }) as MediaQueryList
+
 // Tests start signed out (the app starts 'restoring'); sign in with signInAs() from '@/shared/test/session'.
 beforeEach(() => sessionStore.set({ status: 'signed-out' }))
 

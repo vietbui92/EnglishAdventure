@@ -15,7 +15,16 @@
       "empty": "Chưa có bài học nào. Bố mẹ hãy quay lại sau nhé!",
       "level": "Level {{number}}",
       "lessonsOf": "Các bài của {{level}}",
-      "boss": "Boss"
+      "boss": "Boss",
+      "island": "Đảo {{number}}: {{title}}",
+      "pickIsland": "Chạm vào một hòn đảo để chèo thuyền tới đó nhé!",
+      "sailing": "Đang chèo thuyền tới {{level}}…",
+      "lesson": "Bài {{number}}: {{title}}",
+      "bossStop": "Boss: {{name}}",
+      "pickStop": "Chọn một điểm trên đảo để khám phá!",
+      "walking": "Đang đi tới {{place}}…",
+      "toBoat": "Đang về thuyền…",
+      "toSea": "Lên thuyền ra biển"
     },
     "play": {
       "backToMap": "Về bản đồ",
@@ -28,8 +37,43 @@
       "next": "Tiếp",
       "toGames": "Chơi thôi!",
       "bossIntro": "Đánh bại {{name}}!",
-      "gamesSoon": "Trò chơi sắp có rồi!",
-      "gamesSoonHint": "Phần chơi quiz và nối từ đang được làm."
-    }
+      "skipCards": "Vào chơi luôn",
+      "listen": "Nghe"
+    },
+    "game": {
+      "start": "Bắt đầu chơi",
+      "fight": "Đánh boss!",
+      "startError": "Chưa vào chơi được. Thử lại nhé!",
+      "answerError": "Có lỗi rồi. Bấm lại lần nữa nhé!",
+      "questionCount": "Câu {{number}} / {{count}}",
+      "options": "Các đáp án",
+      "pictureOption": "Hình {{number}}",
+      "promptPicture": "Hình của câu hỏi",
+      "pickWord": "Đây là con gì / cái gì?",
+      "pickPicture": "Chọn hình đúng:",
+      "fillGap": "Chọn từ còn thiếu:",
+      "right": "Đúng rồi! 🎉",
+      "wrong": "Chưa đúng. Đáp án đúng có dấu tích xanh.",
+      "next": "Tiếp",
+      "matchPictures": "Nối mỗi từ với hình của nó.",
+      "matchMeanings": "Nối mỗi từ với nghĩa của nó.",
+      "words": "Các từ",
+      "pictures": "Các hình",
+      "meanings": "Các nghĩa",
+      "pickWordFirst": "Chọn một từ trước nhé.",
+      "nowPickPartner": "Giờ chọn hình hoặc nghĩa của nó.",
+      "tryAgain": "Chưa đúng, thử lại nhé!",
+      "allMatched": "Nối đúng hết rồi!",
+      "bossHealth": "Máu của {{name}}",
+      "bossDefeated": "Bạn đã đánh bại {{name}}!",
+      "bossStands": "{{name}} vẫn còn đứng vững. Thử lại nhé!",
+      "perfect": "Tuyệt vời!",
+      "wellDone": "Giỏi lắm!",
+      "keepTrying": "Cố lên! Chơi lại nhé!",
+      "stars": "{{count}} / 3 sao",
+      "score": "Đúng {{correct}} / {{total}} ({{percent}}%)",
+      "replay": "Chơi lại"
+    },
+    "sound": "Âm thanh"
   }
 }

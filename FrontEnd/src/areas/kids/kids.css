@@ -21,3 +21,142 @@
   --radius: 1.25rem;
   font-size: 1.125rem;
 }
+
+/*
+ * The adventure's animations (owner 2026-10-24: lots of movement so learning is not dry). Only with motion allowed:
+ * a device that asks for less motion sees a still map, and the journeys end at once (track.ts glide).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .kids-bob {
+    animation: kids-bob 4s ease-in-out infinite;
+  }
+  .kids-breathe {
+    animation: kids-breathe 2.4s ease-in-out infinite;
+  }
+  .kids-walk {
+    animation: kids-walk 0.32s ease-in-out infinite;
+  }
+  .kids-row {
+    animation: kids-row 0.9s ease-in-out infinite;
+  }
+  .kids-row-late {
+    animation-direction: reverse;
+  }
+  .kids-rock {
+    animation: kids-rock 2.6s ease-in-out infinite;
+  }
+  .kids-wake {
+    animation: kids-wake 0.9s ease-out infinite;
+  }
+  .kids-sway {
+    animation: kids-sway 3.2s ease-in-out infinite;
+  }
+  .kids-drift {
+    animation: kids-drift 18s ease-in-out infinite alternate;
+  }
+  .kids-drift-slow {
+    animation: kids-drift 30s ease-in-out infinite alternate-reverse;
+  }
+  .kids-wave {
+    animation: kids-wave 6s linear infinite;
+  }
+  .kids-wave-back {
+    animation: kids-wave 8s linear infinite reverse;
+  }
+  .kids-shimmer {
+    animation: kids-shimmer 3s ease-in-out infinite;
+  }
+  .kids-glow {
+    animation: kids-glow 1.6s ease-in-out infinite;
+  }
+  .kids-spin {
+    animation: kids-spin 40s linear infinite;
+  }
+  .kids-pulse {
+    animation: kids-pulse 1.4s ease-in-out infinite;
+  }
+  .kids-hint {
+    animation: kids-hint 1s ease-in-out infinite;
+  }
+}
+
+@keyframes kids-bob {
+  50% {
+    transform: translateY(-1.5%);
+  }
+}
+@keyframes kids-breathe {
+  50% {
+    transform: translateY(-4%) scale(1.03);
+  }
+}
+@keyframes kids-walk {
+  50% {
+    transform: translateY(-14%) rotate(-4deg);
+  }
+}
+@keyframes kids-row {
+  50% {
+    transform: rotate(28deg);
+  }
+}
+@keyframes kids-rock {
+  25% {
+    transform: rotate(-3deg) translateY(2%);
+  }
+  75% {
+    transform: rotate(3deg) translateY(-2%);
+  }
+}
+@keyframes kids-wake {
+  from {
+    opacity: 0.7;
+    transform: scaleX(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scaleX(1.3);
+  }
+}
+@keyframes kids-sway {
+  50% {
+    transform: rotate(5deg);
+  }
+}
+@keyframes kids-drift {
+  to {
+    transform: translateX(60px);
+  }
+}
+@keyframes kids-wave {
+  to {
+    transform: translateX(140px);
+  }
+}
+@keyframes kids-shimmer {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes kids-glow {
+  50% {
+    fill: #fff7c2;
+    filter: drop-shadow(0 0 6px #fde68a);
+  }
+}
+@keyframes kids-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes kids-pulse {
+  50% {
+    transform: scale(1.08);
+    opacity: 0.6;
+  }
+}
+@keyframes kids-hint {
+  50% {
+    transform: translateY(-25%);
+  }
+}

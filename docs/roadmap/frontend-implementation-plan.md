@@ -63,11 +63,11 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F3.3 | Progress and rewards per child | S4.3, S5.3 | ⚪ Waiting |
 | **Phase F4: Child play area** | | | |
 | F4.1 | Kid-friendly visual style and kids shell | | ⚪ Waiting (shell and theme exist since F0.4) |
-| F4.2 | Adventure map: levels, lessons (Locked / Available / Completed), best stars, boss | S4.2 for locks and stars | 🟡 Map without locks done 2026-10-24 |
+| F4.2 | Adventure map: levels, lessons (Locked / Available / Completed), best stars, boss | S4.2 for locks and stars | 🟡 Sea-and-islands map without locks done 2026-10-24 |
 | F4.6 | Learn step: word cards before the activities (PD-011) | | ✅ Done 2026-10-24 |
-| F4.3 | Quiz player | S4.1 | ⚪ Waiting |
-| F4.4 | Matching player | S4.1 | ⚪ Waiting |
-| F4.7 | Boss battle screen: boss health bar, victory and level-up (PD-011) | S4.2 | ⚪ Waiting |
+| F4.3 | Quiz player | | ✅ Done 2026-10-24 |
+| F4.4 | Matching player | | ✅ Done 2026-10-24 |
+| F4.7 | Boss battle screen: boss health bar, victory and level-up (PD-011) | S4.2 | 🟡 Health bar and victory message done with F4.3; level-up waits for S4.2 |
 | F4.5 | Lesson result: stars, points and badges | S5.3 | ⚪ Waiting |
 | **Phase F5: Release hardening** | | | |
 | F5.0 | Split the bundle per area (lazy routes) | | ✅ Done 2026-10-23 |
@@ -367,10 +367,11 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 
 - **F4.1 Visual style:** large touch targets (≥ 48 px), little text, icons and colors, sound effects optional and muted by default, tablet-first.
 - **F4.2 Lesson map:** a path of lessons with Locked / Available / Completed states from the server.
-  - *Done 2026-10-24 without locks (with F4.6, owner's choice):* `/kids` shows the child's greeting and the adventure map from `GET api/v1/play/map`: each level as an "island" (number, title, description), its lessons as large numbered buttons in order, and its boss as a highlighted button with its picture. Loading, empty and retry states. Every published lesson opens for now; locks and stars wait for S4.2.
-- **F4.6 Learn step:** ✅ Done 2026-10-24. `/kids/lessons/:lessonId` (`LessonPlayPage`, `GET api/v1/play/lessons/{id}`, read once per visit because the server shuffles options): the word cards one at a time (picture, English word, meaning; "Card n of m", Back / Next, "Let's play!" on the last), then a "games coming soon" panel until F4.3/F4.4. A boss starts with its picture and "Defeat …!" instead (no learn step). 404 says the lesson is not found; "Back to the map" everywhere. `KidsPicture` sends no referrer and keeps a placeholder for missing or broken pictures. The kids layout now centres "safely", so a long map starts at the top. Tests (6) in `KidsPlay.test.tsx`; tests that land on `/kids` use the new `mockEmptyAdventure()`.
-- **F4.3 Quiz player** and **F4.4 Matching player:** one activity at a time, answers sent per activity (S4.1); no answer keys ever reach the client (S3.4). Resume follows OQ-012.
-- **F4.5 Result screen:** score from the server, points and new badges with a small celebration.
+  - *Redesigned 2026-10-24 (owner): a sea of islands.* Decided by the owner: 2.5D with the `motion` package (approved), sounds made in code (Web Audio, no files), the child's avatar animal as the explorer, the map before the locks. The child starts on the mainland (house, lighthouse, dock); each level is an island out at sea with its own look (palm, autumn, snow, desert, candy, crystal, repeating). Tapping an island: the explorer walks to the boat, rows across (oars, wake, splashes, camera follows with parallax clouds and horizon), steps off and the view dives into the island. On the island a footpath links a signpost per lesson, in order, to the boss's lair; tapping a stop walks there and opens the lesson; "Sail out to sea" goes back. The map remembers per child, on the device, the island and the last stop (`kids.adventure.<childId>`). Sea, music-box tune and effects with a Sound on/off toggle in the header (`kids.sound`). Games: chime and confetti for a right answer, shake for a wrong one, boss shakes and flashes when hit, stars pop in one by one with a fanfare, cards turn over, "Listen" says the English word. Everything is still with "reduce motion". Locks (an island opens after beating the previous boss) and stars wait for S4.2. Tests: 14 in `KidsPlay.test.tsx`.
+  - *First version, 2026-10-24 (with F4.6):* `/kids` shows the child's greeting and the adventure map from `GET api/v1/play/map`: each level as an "island" (number, title, description), its lessons as large numbered buttons in order, and its boss as a highlighted button with its picture. Loading, empty and retry states. Every published lesson opens for now; locks and stars wait for S4.2.
+- **F4.6 Learn step:** ✅ Done 2026-10-24. `/kids/lessons/:lessonId` (`LessonPlayPage`, `GET api/v1/play/lessons/{id}`, read once per visit because the server shuffles options): the word cards one at a time (picture, English word, meaning; "Card n of m", Back / Next, "Let's play!" on the last), then the games (F4.3/F4.4); "Go straight to the games" skips the cards. A boss starts with its picture and "Defeat …!" instead (no learn step). 404 says the lesson is not found; "Back to the map" everywhere. `KidsPicture` sends no referrer and keeps a placeholder for missing or broken pictures. The kids layout now centres "safely", so a long map starts at the top. Tests (6) in `KidsPlay.test.tsx`; tests that land on `/kids` use the new `mockEmptyAdventure()`.
+- **F4.3 Quiz player** and **F4.4 Matching player:** ✅ Done 2026-10-24 (`GamePlayer`, `QuizStep`, `MatchingStep`). The attempt starts on "Start playing" ("Fight the boss!" for a boss), not on opening the lesson, and resumes at the first item not done (PD-012). Quiz: one question at a time, graded by the server per answer; the options lock, the right one gets a green tick and a wrong choice a red cross, then "Next". Matching: pick a word, then its picture or meaning; a miss shows "try again" without revealing the partner, a right match stays green; "All matched!" then "Next". Picture options are named "Picture n", never the word. A boss shows its health bar (`role=meter`, one notch per right answer or match). The result shows the 3 stars, "n of m right (p%)", a message (boss defeated / still standing), "Play again" (a new attempt) and "Back to the map". No answer keys reach the client (S3.4). Tests (10) in `KidsPlay.test.tsx` with a fake attempts API.
+- **F4.5 Result screen:** score from the server, points and new badges with a small celebration. *The stars and score part is done with F4.3/F4.4; points and badges wait for S5.3.*
 
 ### Phase F5: Release hardening
 
@@ -386,6 +387,8 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. OQ-014 decided by the owner: React + Vite + TS, one app with three areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. |
+| 2026-10-24 | F4.2 redesigned as a sea of islands (owner): mainland, boat journeys, island footpaths, sounds made in code, game effects; package `motion` 14.1.0 approved. |
+| 2026-10-24 | F4.3 and F4.4 done: quiz and matching players, resume, result with stars, boss health bar (part of F4.7). |
 | 2026-10-24 | F4.6 done and F4.2 map without locks: adventure map, lesson page with the learn step, boss intro. |
 | 2026-10-24 | F2.8 done: boss section on the level page, boss lesson page, boss rule messages. Content editing (F2.4–F2.8) is complete. |
 | 2026-10-24 | F2.5 done: matching editor next to the quizzes (mode, 2–6 words). |

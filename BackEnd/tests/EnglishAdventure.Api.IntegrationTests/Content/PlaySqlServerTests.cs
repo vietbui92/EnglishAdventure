@@ -14,8 +14,6 @@ namespace EnglishAdventure.Api.IntegrationTests.Content;
 /// </summary>
 public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixture>
 {
-    private const string LevelsRoute = "/api/v1/admin/content/levels";
-    private const string LessonsRoute = "/api/v1/admin/content/lessons";
     private const string PlayRoute = "/api/v1/play";
 
     private readonly SqlServerAuthDatabaseFixture _fixture;
@@ -28,7 +26,7 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
     [SqlServerFact]
     public async Task The_map_shows_only_published_levels_lessons_and_bosses()
     {
-        var content = await PublishLevelAsync();
+        var content = await PlayTestData.PublishLevelAsync(_fixture);
         var child = await AdminApiClient.StartChildSessionAsync(_fixture);
 
         var map = await ReadAsync(await child.GetAsync($"{PlayRoute}/map"));
@@ -47,7 +45,7 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
     [SqlServerFact]
     public async Task A_lesson_to_play_has_its_cards_and_games_but_never_its_answers()
     {
-        var content = await PublishLevelAsync();
+        var content = await PlayTestData.PublishLevelAsync(_fixture);
         var child = await AdminApiClient.StartChildSessionAsync(_fixture);
 
         var response = await child.GetAsync($"{PlayRoute}/lessons/{content.LessonId}");
@@ -72,13 +70,13 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
         Assert.Equal(["PictureToWord", "WordToPicture", "FillInTheBlank"], questions.Select(question => question.GetProperty("form").GetString()));
 
         // Picture → word: the answer's picture, options as words only.
-        Assert.Equal(Picture("cat"), questions[0].GetProperty("promptImageUrl").GetString());
+        Assert.Equal(PlayTestData.Picture("cat"), questions[0].GetProperty("promptImageUrl").GetString());
         Assert.Equal(["cat", "dog", "fish"], Texts(questions[0]).Order());
         Assert.All(Options(questions[0]), option => Assert.Equal(JsonValueKind.Null, option.GetProperty("imageUrl").ValueKind));
         // Word → picture: the English word, options as pictures only.
         Assert.Equal("dog", questions[1].GetProperty("promptText").GetString());
         Assert.All(Options(questions[1]), option => Assert.Equal(JsonValueKind.Null, option.GetProperty("text").ValueKind));
-        Assert.Equal([Picture("cat"), Picture("dog")], Options(questions[1]).Select(option => option.GetProperty("imageUrl").GetString()).Order());
+        Assert.Equal([PlayTestData.Picture("cat"), PlayTestData.Picture("dog")], Options(questions[1]).Select(option => option.GetProperty("imageUrl").GetString()).Order());
         // Fill in: the sentence with its gap.
         Assert.Equal("A ___ swims.", questions[2].GetProperty("promptText").GetString());
 
@@ -90,14 +88,14 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
         Assert.Equal(2, left.Count);
         Assert.Empty(left.Intersect(right));
         Assert.Equal(
-            [Picture("cat"), Picture("dog")],
+            [PlayTestData.Picture("cat"), PlayTestData.Picture("dog")],
             matching.GetProperty("right").EnumerateArray().Select(choice => choice.GetProperty("imageUrl").GetString()).Order());
     }
 
     [SqlServerFact]
     public async Task Options_come_in_a_new_order()
     {
-        var content = await PublishLevelAsync();
+        var content = await PlayTestData.PublishLevelAsync(_fixture);
         var child = await AdminApiClient.StartChildSessionAsync(_fixture);
 
         // The stored order puts the correct option first; reading often must show other orders.
@@ -114,7 +112,7 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
     [SqlServerFact]
     public async Task A_boss_is_played_with_the_level_words_and_drafts_are_not_found()
     {
-        var content = await PublishLevelAsync();
+        var content = await PlayTestData.PublishLevelAsync(_fixture);
         var child = await AdminApiClient.StartChildSessionAsync(_fixture);
 
         var boss = await ReadAsync(await child.GetAsync($"{PlayRoute}/lessons/{content.BossId}"));
@@ -122,7 +120,7 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
         var unknown = await child.GetAsync($"{PlayRoute}/lessons/{Guid.NewGuid()}");
 
         Assert.Equal("Boss", boss.GetProperty("kind").GetString());
-        Assert.Equal(Picture("lion"), boss.GetProperty("bossImageUrl").GetString());
+        Assert.Equal(PlayTestData.Picture("lion"), boss.GetProperty("bossImageUrl").GetString());
         Assert.Equal(0, boss.GetProperty("learnCards").GetArrayLength());
         var matching = boss.GetProperty("activities")[0].GetProperty("matching");
         Assert.Equal("WordToMeaning", matching.GetProperty("mode").GetString());
@@ -144,74 +142,6 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
         Assert.Equal(HttpStatusCode.Forbidden, (await parent.GetAsync($"{PlayRoute}/map")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await admin.GetAsync($"{PlayRoute}/map")).StatusCode);
     }
-
-    private sealed record PublishedContent(
-        string LevelId,
-        string LessonId,
-        string BossId,
-        string DraftLessonId,
-        string DraftLevelId,
-        List<string> WordIds);
-
-    /// <summary>
-    /// Builds and publishes a level: lesson "Pets" (cat, dog, fish) with a quiz of the three forms and a matching, a
-    /// draft lesson, and the boss "King Lion" matching all three words with their meanings. Also a draft level.
-    /// </summary>
-    private async Task<PublishedContent> PublishLevelAsync()
-    {
-        await AdminApiClient.SyncSystemRolesAsync(_fixture);
-        var admin = await AdminApiClient.SignInAsync(_fixture, await _fixture.CreateUserAsync(UserType.Admin, roles: SystemRoles.ContentAdmin));
-        var draftLevel = await ReadAsync(await admin.PostAsync(LevelsRoute, new { title = "Draft Land" }));
-        var level = await ReadAsync(await admin.PostAsync(LevelsRoute, new { title = "Animal Island" }));
-        var levelId = level.GetProperty("level").GetProperty("id").GetString()!;
-        var lesson = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/lessons", new { title = "Pets" }));
-        var draftLesson = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/lessons", new { title = "Farm" }));
-        var route = $"{LessonsRoute}/{lesson.GetProperty("id").GetString()}";
-
-        var version = lesson.GetProperty("version").GetString()!;
-        JsonElement bank = default;
-        foreach (var (english, meaning) in new[] { ("cat", "con mèo"), ("dog", "con chó"), ("fish", "con cá") })
-        {
-            bank = await ReadAsync(await admin.PostAsync($"{route}/words", new { english, meaning, imageUrl = Picture(english), version }));
-            version = LessonVersion(bank);
-        }
-
-        var words = QuizTestData.WordIds(bank);
-        var activities = await ReadAsync(await admin.PostAsync($"{route}/activities/quiz", new { version }));
-        var quizRoute = $"{route}/activities/{activities.GetProperty("activities")[0].GetProperty("id").GetString()}/questions";
-        activities = await ReadAsync(await admin.PostAsync(quizRoute, Question("PictureToWord", words[0], [words[1], words[2]], null, LessonVersion(activities))));
-        activities = await ReadAsync(await admin.PostAsync(quizRoute, Question("WordToPicture", words[1], [words[0]], null, LessonVersion(activities))));
-        activities = await ReadAsync(await admin.PostAsync(quizRoute, Question("FillInTheBlank", words[2], [words[0]], "A ___ swims.", LessonVersion(activities))));
-        activities = await ReadAsync(await admin.PostAsync(
-            $"{route}/activities/matching",
-            new { mode = "WordToPicture", wordIds = new[] { words[0], words[1] }, version = LessonVersion(activities) }));
-        Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"{route}/publish", new { version = LessonVersion(activities) })).StatusCode);
-
-        var boss = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/boss", new { title = "King Lion", imageUrl = Picture("lion") }));
-        var bossRoute = $"{LessonsRoute}/{boss.GetProperty("id").GetString()}";
-        var bossActivities = await ReadAsync(await admin.PostAsync(
-            $"{bossRoute}/activities/matching",
-            new { mode = "WordToMeaning", wordIds = words, version = boss.GetProperty("version").GetString() }));
-        Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"{bossRoute}/publish", new { version = LessonVersion(bossActivities) })).StatusCode);
-
-        var levelVersion = (await ReadAsync(await admin.GetAsync($"{LevelsRoute}/{levelId}"))).GetProperty("level").GetProperty("version").GetString();
-        Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"{LevelsRoute}/{levelId}/publish", new { version = levelVersion })).StatusCode);
-
-        return new PublishedContent(
-            levelId,
-            lesson.GetProperty("id").GetString()!,
-            boss.GetProperty("id").GetString()!,
-            draftLesson.GetProperty("id").GetString()!,
-            draftLevel.GetProperty("level").GetProperty("id").GetString()!,
-            words);
-    }
-
-    private static string Picture(string name) => $"https://cdn.example.test/{name}.png";
-
-    private static object Question(string form, string correctWordId, string[] wrongWordIds, string? sentence, string version) =>
-        new { form, correctWordId, wrongWordIds, sentence, version };
-
-    private static string LessonVersion(JsonElement element) => element.GetProperty("lessonVersion").GetString()!;
 
     private static IEnumerable<JsonElement> Options(JsonElement question) => question.GetProperty("options").EnumerateArray();
 

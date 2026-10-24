@@ -23,6 +23,11 @@ const avatars: Record<string, { emoji: string; tone: string }> = {
 
 export const avatarKeys = Object.keys(avatars)
 
+/** The animal and its tone for an avatar key, with a fallback for an unknown key. */
+export function avatarOf(avatarKey: string) {
+  return avatars[avatarKey] ?? { emoji: '🙂', tone: 'bg-muted' }
+}
+
 const sizes = { sm: 'size-10 text-xl', md: 'size-16 text-3xl', lg: 'size-24 text-5xl' }
 
 /**
@@ -41,7 +46,7 @@ export function ChildAvatar({
   className?: string
 }) {
   const { t } = useTranslation()
-  const avatar = avatars[avatarKey] ?? { emoji: '🙂', tone: 'bg-muted' }
+  const avatar = avatarOf(avatarKey)
   const label = avatars[avatarKey] ? t(`avatars.${avatarKey}` as ParseKeys) : avatarKey
 
   return (
