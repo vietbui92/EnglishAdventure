@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-10-23 (authentication foundation implemented)._
+_Last updated: 2026-10-24 (S3.1 levels and lessons implemented)._
 
 ## Summary
 
@@ -41,6 +41,13 @@ The API host starts again. The **authentication foundation** is implemented and 
   - Migration `AddParentRegistration` (owner applies it with `POST /api/v1/database/migrate`).
 - **Child profiles (S2.1, PD-010)**: `api/v1/family/children` (`family.children.manage`, Parent users): list (`includeArchived`), get, create, update, archive, restore, and `options` (12 avatar keys, limit 3). At most 3 active profiles per Parent (422), nickname unique among a family's active profiles regardless of letter case (409), another family's profile answers 404. Table `family_child_profiles` (migration `AddChildProfiles`).
 - **Child session (S2.2, PD-010)**: `POST /api/v1/auth/child-session` (`family.children.manage`, own active profile) issues a child session: token claims `session=child` and `child_profile_id`, no roles; only the session-only permission `learning.play`; `/me` returns `session: "child"` and the child profile. The device's Parent session is revoked (the web cookie is replaced), so leaving child mode needs the Parent's password. Refresh keeps the child session until the profile is archived or the Parent deactivated. Migration `AddChildSessions`.
+- **Levels and lessons (S3.1, PD-012)**:
+  - `api/v1/admin/content/levels`: list (`includeArchived`), get (with its lessons and lesson counts), create, update, `PUT order`, `publish`, `unpublish`, `archive`, `POST {id}/lessons`, `PUT {id}/lessons/order`.
+  - `api/v1/admin/content/lessons/{id}`: get, update, `publish`, `unpublish`, `archive`.
+  - Permissions: reading `content.read-drafts`, create/edit/order `content.manage`, publish/unpublish/archive `content.publish`.
+  - Rules: Draft ⇄ Published → Archived, archived is final (422 on any change) and leaves the order; an archived level freezes its lessons; texts can be corrected while published; unpublish only while no child started (`ILearnerActivityReader`, which answers "nobody" until S4.1).
+  - Every response has a `version` (row version, base64); changes send it back and a stale one answers 409. A reorder sends the full list of non-archived IDs (repeated ID 400, list not matching the current items 409) and is saved in one transaction through temporary positions.
+  - Tables `content_levels`, `content_lessons` (positions unique among non-archived items), migration `AddContentLevelsAndLessons` (owner applies it with `POST /api/v1/database/migrate`).
 - **User management (S1.3)**:
   - `GET /api/v1/admin/users` (search, paging) and `GET /{id}` need `users.read`.
   - `POST /` (Admin or Parent; Parent gets the Parent role), `POST /{id}/deactivate` and `/activate` (deactivation ends all sessions) need `users.manage`.
@@ -52,6 +59,7 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 | Command | Result |
 |---|---|
+| 2026-10-24, S3.1: `dotnet test -c Release` with `ENGLISH_ADVENTURE_TEST_SQL_CONNECTION` = `localhost` | ✅ 241 passed, 0 skipped, 0 failed (Domain 63, Application 86, Api 92) |
 | `dotnet build EnglishAdventure.sln` | ✅ 0 errors, 12 warnings (all NU1902/NU1903 for transitive `System.Security.Cryptography.Pkcs` 9.0.11; pre-existing) |
 | `dotnet test` (no SQL variable) | ✅ 102 passed, 31 skipped (SQL-only), 0 failed (Domain 27, Application 51, Api 24 + 31 skipped) |
 | Integration tests with `ENGLISH_ADVENTURE_TEST_SQL_CONNECTION` = LocalDB | ✅ 55 passed, 0 failed (throwaway DBs created by `InitialCreate`, then dropped; the Development DB is not touched) |
@@ -65,7 +73,7 @@ The API host starts again. The **authentication foundation** is implemented and 
 - Production email provider (S1.4 writes development emails to files).
 - Cleanup of expired tokens and of Parent accounts never confirmed within 7 days (S6.2).
 - Cleanup job for expired/revoked refresh-token rows.
-- All learning features: lessons, levels, mini-games, child profiles, Parent–Child linking.
+- Word bank, learn step, quiz, matching and boss content (S3.6, S3.7, S3.2, S3.3, S3.8); the learner lesson map (S3.4); attempts, progress and rewards (Phases 4–5).
 - Architecture tests, CI/CD, Azure infrastructure.
 
 ## Known issues and risks
@@ -77,4 +85,4 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 ## Recommended next task
 
-Account provisioning (admin creates Parent users; Parent creates/links Child users), followed by authorization policies (ADR-8).
+S3.6 word bank per lesson (PD-011), then S3.7 learn step and S3.2/S3.3 activities. The admin screens for S3.1 (F2.4) can start in parallel.

@@ -22,6 +22,103 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.Lesson", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LevelId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LevelId");
+
+                    b.HasIndex("LevelId", "SortOrder")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 3");
+
+                    b.ToTable("content_lessons", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_lessons_SortOrder", "[SortOrder] >= 1");
+
+                            t.HasCheckConstraint("CK_content_lessons_Status", "[Status] IN (1, 2, 3)");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.Level", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SortOrder")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 3");
+
+                    b.ToTable("content_levels", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_levels_SortOrder", "[SortOrder] >= 1");
+
+                            t.HasCheckConstraint("CK_content_levels_Status", "[Status] IN (1, 2, 3)");
+                        });
+                });
+
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Family.ChildProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -323,6 +420,15 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("auth_refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.Lesson", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Level", null)
+                        .WithMany()
+                        .HasForeignKey("LevelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Family.ChildProfile", b =>

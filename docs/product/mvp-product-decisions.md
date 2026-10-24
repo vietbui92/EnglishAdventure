@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Owner** | Quoc Viet Bui (product owner). Only the owner changes a decision. |
-| **Status** | Baseline. PD-001 to PD-010 are decided; PD-010 reconciles PD-001 and PD-007 (Section 8, option B). |
-| **Last updated** | 2026-10-23 |
+| **Status** | Baseline. PD-001 to PD-012 are decided; PD-010 reconciles PD-001 and PD-007 (Section 8, option B). |
+| **Last updated** | 2026-10-24 |
 | **Related** | [Implementation plan](../roadmap/mvp-implementation-plan.md) · [Domain model proposal](../../BackEnd/docs/architecture/domain-model-proposal.md) · [Architecture decisions](../../BackEnd/docs/architecture/decisions.md) |
 
 This document does **not** authorize code, migrations or schema changes. Each implementation step is reviewed and approved separately (see the implementation plan).
@@ -51,6 +51,8 @@ User type, role and permission are three different things:
 | PD-008 | Initial roles and permissions (answers OQ-007) | Three roles: SuperAdmin, ContentAdmin, Parent | ✅ Decided 2026-10-23 |
 | PD-010 | Child identity, session and guardians (answers OQ-001, OQ-009, OQ-013) | Section 8 option B: parent-owned child profiles, child session started by the Parent, one Parent per profile, several profiles per Parent | ✅ Decided 2026-10-24 |
 | PD-009 | Parent registration (answers OQ-010) | Parents register themselves on the public site and must confirm their email before signing in | ✅ Decided 2026-10-23 (details in S1.4) |
+| PD-011 | Lesson design, stars, levels and rewards (answers OQ-002, OQ-003, OQ-004, OQ-016) | Word bank and learn step per lesson, 0–3 stars per lesson, a boss challenge ends each level, 10 points per new star, four badge types | ✅ Decided 2026-10-24 |
+| PD-012 | Content editing, pictures, quiz answers, resume, boss (answers OQ-005, OQ-011, OQ-012, OQ-015, OQ-017) | Structure locked once published; picture URLs; one correct quiz option; resume per activity; boss rules | ✅ Decided 2026-10-24 |
 
 ### PD-001: Parent-managed child profiles
 - A Parent can manage several child profiles.
@@ -128,6 +130,61 @@ Decided by the owner on 2026-10-24, adopting option B of Section 8:
 - How a child accesses the app (OQ-001, OQ-009).
 - Every other open question.
 
+### PD-011: Lesson design, stars, levels and rewards (answers OQ-002, OQ-003, OQ-004, OQ-016)
+
+Decided by the owner on 2026-10-24. The learning experience works like a game: the child moves across an adventure map, earns stars and defeats a boss to reach the next level.
+
+**Content structure**
+
+```
+Adventure map
+└── Level        a topic, for example "Animal Island"; 4–6 lessons, then a boss challenge
+    └── Lesson   5–8 words, 2–4 activities, about 5–10 minutes
+        ├── Learn step: word cards (picture, English word, Vietnamese meaning), not scored
+        └── Activities: Quiz and Matching, built from the lesson's word bank
+```
+
+- **Word bank per lesson.** The Admin enters each word once (English word, Vietnamese meaning, picture), then builds Quiz and Matching activities by choosing words from the bank. This is faster, avoids typing errors, and later lets us show which words a child knows. Where pictures come from is still OQ-011. Audio comes later.
+- **Learn step.** Every lesson starts with word cards made from its word bank, so the child sees the words before being tested. It is not scored.
+- **Quiz forms** (still "pick one option", PD-003): picture → word, word → picture, fill in the missing word. "Listen → pick" waits for audio.
+- **Boss challenge.** Each level ends with a boss challenge ("defeat the boss"). The details are OQ-017.
+
+**Stars (OQ-002).** The server computes the score of an attempt as the percentage of correct scored items.
+
+| Score | Stars | Meaning |
+|---|---|---|
+| below 60% | 0 | Not passed ("Try again!") |
+| 60% or more | ⭐ | Passed: the lesson is completed and the next one unlocks |
+| 80% or more | ⭐⭐ | |
+| 100% | ⭐⭐⭐ | Perfect |
+
+**Replay (OQ-003).** A child can replay any lesson they have unlocked, at any time. The best result is kept. A lesson is completed only once, on the first attempt with at least one star.
+
+**Levels (OQ-016).** The boss challenge of a level unlocks when every regular lesson of that level has at least one star. Defeating the boss unlocks the next level. The **child's level** is the highest level unlocked. It is computed from results and never stored separately, so reordering content cannot corrupt it. Stars are not a gate ("collect N stars"): they only encourage replaying for three stars.
+
+**Points (OQ-004).** 10 points for each newly earned star. Example: a first attempt with ⭐⭐ gives 20 points, a replay with ⭐⭐⭐ gives 10 more, and a replay without a new star gives nothing. Each star of a lesson can be rewarded only once.
+
+**Badges (OQ-004).** Each badge is awarded at most once per child:
+- **First lesson:** the first completed lesson.
+- **Perfect:** the first lesson with ⭐⭐⭐.
+- **Level conqueror** (one per level): the level's boss is defeated.
+- **Level superstar** (one per level): ⭐⭐⭐ on every lesson of the level, including the boss (PD-012).
+
+### PD-012: Content editing, pictures, quiz answers, resume and the boss (answers OQ-005, OQ-011, OQ-012, OQ-015, OQ-017)
+
+Decided by the owner on 2026-10-24 (all proposals accepted).
+
+- **Editing published content (OQ-005).** Once a lesson is published its structure is locked: only texts and pictures can be corrected. Adding, removing or reordering words, activities, questions or options needs the lesson to be unpublished, which is allowed only while no child has started it. After that, the lesson can only be archived and replaced by a new one. Children's past results are never changed.
+- **Pictures (OQ-011).** The Admin enters a picture URL. File uploads (Blob Storage) come later.
+- **Quiz answers (OQ-015).** Every quiz question has exactly one correct option.
+- **Resume (OQ-012).** A child who leaves in the middle of a lesson continues from the activity where they stopped. Answers are saved per activity.
+- **Boss challenge (OQ-017).**
+  - It unlocks when every regular lesson of the level has at least one star.
+  - The Admin builds it like a lesson, from Quiz and Matching activities using words from the whole level, and gives it a boss name and picture.
+  - A boss health bar drops with each correct answer. It is display only; the server still grades.
+  - Same star thresholds as a lesson; it gives stars and points like a lesson. No lives.
+  - "Level superstar" includes the boss.
+
 ## 4. Privacy principles (they apply now)
 
 - Collect only the data that learning and safe operation need.
@@ -198,21 +255,22 @@ Rows marked _(added)_ were raised while preparing the plan. They are not in the 
 | ID | Question | Why it matters | Blocks plan step |
 |---|---|---|---|
 | OQ-001 | Are children profiles under a Parent, or independent application identities? | Account relationships, sign-in flow, privacy | ✅ **DECIDED** 2026-10-24 → PD-010: parent-owned learning profiles, several per Parent |
-| OQ-002 | What counts as completing a lesson (for example, a minimum score)? | Scoring, unlocking, progress state | S4.1, S4.2 |
-| OQ-003 | Can a child replay completed lessons? How are repeat scores handled? | Attempt history, best score, rewards | S4.2, S5.1 |
-| OQ-004 | What are the exact rules for awarding points and badges? | Reward integrity | S5.1, S5.2 |
-| OQ-005 | Can an Admin edit, reorder or unpublish a lesson after learners have started it? | Content versioning, historical progress | S3.1 |
+| OQ-002 | What counts as completing a lesson (for example, a minimum score)? | Scoring, unlocking, progress state | ✅ **DECIDED** 2026-10-24 → PD-011: at least 60% (one star) |
+| OQ-003 | Can a child replay completed lessons? How are repeat scores handled? | Attempt history, best score, rewards | ✅ **DECIDED** 2026-10-24 → PD-011: replay any time, best result kept, completed once |
+| OQ-004 | What are the exact rules for awarding points and badges? | Reward integrity | ✅ **DECIDED** 2026-10-24 → PD-011: 10 points per new star, four badge types |
+| OQ-005 | Can an Admin edit, reorder or unpublish a lesson after learners have started it? | Content versioning, historical progress | ✅ **DECIDED** 2026-10-24 → PD-012: structure locked once published |
 | OQ-006 | What levels, topics and lessons does the MVP start with? | Seed content, acceptance tests | S3.5 |
 | OQ-007 | Which roles and permissions does the first release need? | Authorization policies | ✅ **DECIDED** 2026-10-23 → PD-008. Roles: SuperAdmin, ContentAdmin, Parent. The permission catalog is finalized in S1.1 |
 | OQ-008 | Which markets, and what child-consent, retention and deletion rules apply? | Privacy controls, production readiness | S1.4, S6.4 |
 | OQ-009 | If independent identity is kept: how does a child start a session? | Credentials, or parent-authorized access | ✅ **DECIDED** 2026-10-24 → PD-010: the Parent starts a child session |
 | OQ-010 _(added)_ | How are Parent users created: self-registration, or created by an Admin? Is email confirmation required? | Public endpoints, consent, abuse protection | ✅ **DECIDED** 2026-10-23 → PD-009: self-registration with email confirmation |
-| OQ-011 _(added)_ | Where do Matching pictures come from: a URL entered by the Admin, or uploaded files? | Media storage (uploads need Blob Storage) | S3.3 |
-| OQ-012 _(added)_ | Does "resume" mean continuing from the next lesson, or from the middle of a lesson? | Saving answers per activity or per lesson | S4.1 |
+| OQ-011 _(added)_ | Where do word pictures come from: a URL entered by the Admin, or uploaded files? | Media storage (uploads need Blob Storage) | ✅ **DECIDED** 2026-10-24 → PD-012: a URL first, uploads later |
+| OQ-012 _(added)_ | Does "resume" mean continuing from the next lesson, or from the middle of a lesson? | Saving answers per activity or per lesson | ✅ **DECIDED** 2026-10-24 → PD-012: from the activity where the child stopped |
 | OQ-013 _(added)_ | Can a child profile belong to more than one Parent (for example two guardians)? | Family data model | ✅ **DECIDED** 2026-10-24 → PD-010: one Parent per profile in the MVP |
 | OQ-014 _(added)_ | Which front-end technology? (`FrontEnd/` is empty) | Front-end track, API contract style, refresh-token transport | ✅ **DECIDED** 2026-10-23: React + Vite + TS, one app with Admin/Parent/Play areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. See the [front-end plan](../roadmap/frontend-implementation-plan.md) |
-| OQ-015 _(added)_ | Does a quiz question always have exactly one correct answer? | Quiz validation and scoring | S3.2 |
-| OQ-016 _(added)_ | How do levels unlock: when every lesson of the previous level is complete, or does the lesson order simply continue across levels? | Unlock rule | S4.2 |
+| OQ-015 _(added)_ | Does a quiz question always have exactly one correct answer? | Quiz validation and scoring | ✅ **DECIDED** 2026-10-24 → PD-012: exactly one |
+| OQ-016 _(added)_ | How do levels unlock: when every lesson of the previous level is complete, or does the lesson order simply continue across levels? | Unlock rule | ✅ **DECIDED** 2026-10-24 → PD-011: defeat the previous level's boss |
+| OQ-017 _(added)_ | How does the boss challenge work? | Boss content model, unlock rule, badge rule | ✅ **DECIDED** 2026-10-24 → PD-012 |
 
 ## 8. Proposed resolution of PD-001 versus PD-007
 
@@ -252,3 +310,5 @@ The conflict goes away if we separate three things:
 | 2026-10-23 | PD-008 amended by the owner: roles can be created at runtime (role management, S1.5). Password rule for Admin/Parent users: at least 12 characters with upper case, lower case, a digit and a symbol. |
 | 2026-10-23 | OQ-010 decided by the owner: Parents self-register with email confirmation (PD-009). Front end restructured by area with a public landing page. |
 | 2026-10-24 | OQ-001, OQ-009 and OQ-013 decided by the owner (PD-010, Section 8 option B): parent-owned child profiles, several per Parent, child session started by the Parent, one Parent per profile. PD-001 and PD-007 are no longer in conflict. |
+| 2026-10-24 | OQ-002, OQ-003, OQ-004 and OQ-016 decided by the owner (PD-011): word bank and learn step, 60/80/100% stars, replay with best result, boss challenge per level, 10 points per new star, four badge types. Added OQ-017 (boss details). |
+| 2026-10-24 | OQ-005, OQ-011, OQ-012, OQ-015 and OQ-017 decided by the owner (PD-012): all proposals accepted. Remaining open: OQ-006, OQ-008. |

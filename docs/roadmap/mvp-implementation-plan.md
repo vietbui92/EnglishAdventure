@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Draft for review. No step is approved yet. |
-| **Last updated** | 2026-10-23 |
+| **Last updated** | 2026-10-24 |
 | **Related** | [Product decisions](../product/mvp-product-decisions.md) · [Domain model proposal](../../BackEnd/docs/architecture/domain-model-proposal.md) · [Backend status](../../BackEnd/docs/project-status.md) |
 
 ## How we work: one step = one review case
@@ -53,18 +53,21 @@ Rules for every step:
 | S2.1 | Child profiles for Parents (up to 3 active per Parent) | | ✅ Done 2026-10-24 |
 | S2.2 | Child session started by the Parent | | ✅ Done 2026-10-24 |
 | **Phase 3: Content** | | | |
-| S3.1 | Levels and lessons: manage, order, publish | OQ-005, S1.1 | 🟡 Needs decision |
-| S3.2 | Quiz activities | S3.1, OQ-015 | ⚪ Waiting |
-| S3.3 | Matching activities | S3.1, OQ-011 | ⚪ Waiting |
-| S3.4 | Learner lesson map (read published content) | S3.2, S3.3 | ⚪ Waiting |
-| S3.5 | Development seed content | OQ-006, S3.3 | 🟡 Needs decision |
+| S3.1 | Levels and lessons: manage, order, publish | | ✅ Done 2026-10-24 |
+| S3.6 | Word bank per lesson (PD-011) | | 🟢 Ready |
+| S3.7 | Learn step: word cards from the word bank (PD-011) | S3.6 | ⚪ Waiting |
+| S3.2 | Quiz activities built from the word bank | S3.6 | ⚪ Waiting |
+| S3.3 | Matching activities built from the word bank | S3.6 | ⚪ Waiting |
+| S3.8 | Boss challenge per level (PD-011, PD-012) | S3.2, S3.3 | ⚪ Waiting |
+| S3.4 | Learner lesson map (read published content) | S3.7, S3.8 | ⚪ Waiting |
+| S3.5 | Development seed content | OQ-006, S3.8 | 🟡 Needs decision |
 | **Phase 4: Learning** | | | |
-| S4.1 | Lesson attempts with server-side grading | OQ-002, OQ-012, S2.2, S3.4 | 🟡 Needs decision |
-| S4.2 | Lesson completion and sequential unlocking | OQ-002, OQ-003, OQ-016, S4.1 | 🟡 Needs decision |
+| S4.1 | Lesson attempts, server-side grading and stars | S2.2, S3.4 | ⚪ Waiting |
+| S4.2 | Completion, best result, lesson and level unlocking | S4.1 | ⚪ Waiting |
 | S4.3 | Parent progress view | S4.2 | ⚪ Waiting |
 | **Phase 5: Rewards** | | | |
-| S5.1 | Points ledger | OQ-004, S4.2 | 🟡 Needs decision |
-| S5.2 | Badges | OQ-004, S5.1 | 🟡 Needs decision |
+| S5.1 | Points ledger (10 points per new star) | S4.2 | ⚪ Waiting |
+| S5.2 | Badges (four types) | S5.1 | ⚪ Waiting |
 | S5.3 | Rewards views for child and Parent | S5.2 | ⚪ Waiting |
 | **Phase 6: Release hardening** | | | |
 | S6.1 | Rate limiting on `login` and `refresh` | | ⚪ Waiting |
@@ -86,8 +89,10 @@ flowchart LR
     S11 --> S12[S1.2<br/>SuperAdmin]
     S12 --> S13[S1.3<br/>Admin users]
     S11 --> S31[S3.1<br/>Levels & lessons]
-    S31 --> S32[S3.2 Quiz] & S33[S3.3 Matching]
-    S32 & S33 --> S34[S3.4<br/>Lesson map]
+    S31 --> S36[S3.6<br/>Word bank]
+    S36 --> S37[S3.7 Learn step] & S32[S3.2 Quiz] & S33[S3.3 Matching]
+    S32 & S33 --> S38[S3.8<br/>Boss]
+    S37 & S38 --> S34[S3.4<br/>Lesson map]
     S14[S1.4<br/>Parent users] --> S21[S2.1<br/>Child profiles] --> S22[S2.2<br/>Child session]
     S22 & S34 --> S41[S4.1<br/>Attempts] --> S42[S4.2<br/>Completion & unlock]
     S42 --> S51[S5.1 Points] --> S52[S5.2 Badges] --> S53[S5.3 Reward views]
@@ -96,7 +101,7 @@ flowchart LR
 
 1. **S0.1 → S0.4.** Clean baseline and an agreed module structure.
 2. **S1.1 → S1.2.** Admins can sign in, and endpoints are protected by permissions.
-3. **S3.1 → S3.4.** Admins can build real content. Meanwhile, decide OQ-001 / OQ-009 / OQ-010.
+3. **S3.1 → S3.6 → S3.7 / S3.2 / S3.3 → S3.8 → S3.4.** Admins can build real content (PD-011). Step numbers are kept stable, so the order is not numeric.
 4. **S1.4 → S2.2.** Parents, child profiles, child sessions.
 5. **S4.1 → S4.2 → S5.x → S4.3 / S5.3.** The learning loop and rewards.
 6. **S1.3, S3.5, Phase 6.** Fit around the above. Phase 6 must be done before any public release.
@@ -258,32 +263,70 @@ Scope as approved:
 
 ### Phase 3: Content
 
-**S3.1 Levels and lessons.** *Needs OQ-005.*
-- **Includes:**
-  - Create, edit and order levels and lessons (as Draft).
-  - Publish, unpublish and archive.
-  - Optimistic concurrency.
-  - The structural-edit rule from OQ-005.
-- **Migration:** `content_levels` and `content_lessons`.
-- *Done when:* the publishing rules and ordering uniqueness are tested, and only `content.*` permissions can change content.
+**S3.1 Levels and lessons.** ✅ Done 2026-10-24. OQ-005 decided 2026-10-24 (PD-012). The owner approved the scope below and its three points (archived is final, published content can be reordered, lessons do not move between levels).
 
-**S3.2 Quiz activities.** *Needs OQ-015.*
-- **Includes:** add, edit and order quiz activities, questions and options.
-- **Rules:** at least 2 options and exactly 1 correct option. A lesson can't be published with an invalid activity.
+*As built:* as listed below, with two details: a reorder list that does not name exactly the current items answers **409** (someone changed the list meanwhile; a repeated or empty ID is still 400); and the "children started" refusal is unit-tested with a fake `ILearnerActivityReader` instead of an integration test, because the real reader has no data before S4.1. Shared rules sit in an abstract `OrderedContent` base class (`Domain/Entities/Content`). `IUnitOfWork.ExecuteInTransactionAsync` was added for the reorder. Tests: 16 domain cases, 17 application cases (handlers with fakes, validators), 6 SQL integration; 241 backend tests pass.
+- **Domain** (`Domain/Entities/Content`):
+  - `Level` (aggregate root): `Title`, `Description?` (up to 500 characters), `SortOrder`, `Status`, `PublishedAtUtc?`, `ArchivedAtUtc?`.
+  - `Lesson` (aggregate root): `LevelId`, `Title`, `SortOrder`, `Status`, `PublishedAtUtc?`, `ArchivedAtUtc?`. Words, activities and the boss are added to it in S3.6–S3.8.
+  - `ContentStatus` enum (Draft, Published, Archived) and a `ContentTitle` value object (trimmed, 1–100 characters), in the style of `Nickname`.
+  - **Rules:**
+    - Draft → Published; Published → Draft (unpublish); Draft or Published → Archived. **Archived is final** (PD-012: replace it with a new lesson).
+    - Title and description can be changed while Draft or Published (fixing texts is allowed by PD-012), never when Archived.
+    - A lesson can be created, published or changed only while its level is not archived.
+    - **Unpublish** only while no child has started the lesson (any lesson of the level, for a level). Learning data does not exist yet: the handler asks `ILearnerActivityReader`, whose implementation answers "nobody" until S4.1 creates attempts and makes it real.
+    - Publish-readiness checks (word bank not empty, activities valid, boss present) are added by S3.6, S3.2, S3.3 and S3.8.
+- **Order:**
+  - A new level or lesson goes to the end.
+  - `PUT …/order` takes the full list of the non-archived IDs in their new order; a missing, extra or repeated ID → 400.
+  - Allowed for published content too (PD-002): S4.2's unlock rule keeps lessons a child already completed available, so reordering never takes progress away.
+  - `SortOrder` is unique among non-archived items (filtered unique index); a reorder is saved in one transaction.
+- **Concurrency:** each level and lesson returns a `version` (its row version). Update, publish, unpublish and archive send it back; a stale version → 409 ("someone else changed this, reload").
+- **Application** (`Application/Content`):
+  - Commands: `CreateLevel`, `UpdateLevel`, `PublishLevel`, `UnpublishLevel`, `ArchiveLevel`, `ReorderLevels`, `CreateLesson`, `UpdateLesson`, `PublishLesson`, `UnpublishLesson`, `ArchiveLesson`, `ReorderLessons`.
+  - Queries: `ListLevels` (with lesson counts per status), `GetLevel` (with its lessons), `GetLesson`.
+  - `ILevelRepository`, `ILessonRepository`, `IContentQueries`, `ILearnerActivityReader`.
+- **Api:** `api/v1/admin/content/levels` and `api/v1/admin/content/lessons`. Reading needs `content.read-drafts`; create, edit and reorder need `content.manage`; publish, unpublish and archive need `content.publish` (ContentAdmin and SuperAdmin hold all three; a Parent gets 403).
+- **Migration:** `AddContentLevelsAndLessons` (`content_levels`, `content_lessons`; `Lesson.LevelId` foreign key with restricted delete).
+- **Not included:** moving a lesson to another level; words, activities and the boss (S3.6–S3.8); the learner view (S3.4); the admin screens (F2.4).
+- **Tests:**
+  - Domain: every status change, archived is final, texts, publish/unpublish rules.
+  - Validators: titles, description, reorder lists.
+  - SQL integration: create and list in order, reorder (and a bad list → 400), stale version → 409, archived items leave the order, unpublish refused when learners started (with a fake reader), Parent → 403, anonymous → 401.
+- *Done when:* the tests above pass, and a ContentAdmin can create, order, publish, unpublish and archive levels and lessons through the API.
+
+**S3.6 Word bank per lesson (PD-011).**
+- **Includes:** add, edit, order and remove the lesson's words: English word, Vietnamese meaning, picture URL (PD-012; uploads later).
+- **Rules:** 1–50 characters per text, no duplicate English word in a lesson, a lesson can't be published with an empty word bank. A word used by an activity can't be removed.
+- **Migration:** `content_lesson_words`.
+- *Done when:* the rules are unit-tested and only `content.*` permissions can change words.
+
+**S3.7 Learn step (PD-011).**
+- **Includes:** every lesson shows word cards built from its word bank before its activities. Not scored. The Admin chooses which words appear (default: all).
+- *Done when:* the play view returns the cards in order (tested).
+
+**S3.2 Quiz activities.**
+- **Includes:** add, edit and order quiz activities and questions, built from the word bank. Forms: picture → word, word → picture, fill in the missing word.
+- **Rules:** at least 2 options and exactly 1 correct option (PD-012). Options come from the lesson's words. A lesson can't be published with an invalid activity.
 - **Migration:** `content_activities`, `content_quiz_questions`, `content_quiz_options`.
 - *Done when:* every invalid configuration returns a clear 400.
 
-**S3.3 Matching activities.** *Needs OQ-011.*
-- **Includes:** matching pairs with text or an image URL.
+**S3.3 Matching activities.**
+- **Includes:** a matching activity chooses 2–6 words from the word bank and pairs each word with its picture (or meaning).
 - **Rules:** at least 2 pairs, no duplicate values, exactly one right-hand value per pair.
 - **Migration:** `content_matching_pairs`.
 - *Done when:* the rules are tested and the activity can be published.
 
+**S3.8 Boss challenge (PD-011, PD-012).**
+- **Includes:** each level has at most one boss challenge, placed after its lessons. It is built like a lesson (Quiz and Matching) from the words of the whole level, with a boss name and picture for display.
+- **Rules:** a level can't be published without a valid boss challenge.
+- *Done when:* the rules are unit-tested.
+
 **S3.4 Learner lesson map.**
 - **Includes:**
-  - A read model of published levels and lessons for learners.
-  - Lesson content for play, **without the correct answers**.
-  - Lock state is added in S4.2.
+  - A read model of published levels, lessons and boss challenges for learners.
+  - Lesson content for play (learn cards and activities), **without the correct answers**.
+  - Lock state and stars are added in S4.2.
 - *Done when:* drafts never appear, and the play view contains no answer keys (tested).
 
 **S3.5 Development seed content.** *Needs OQ-006.*
@@ -291,11 +334,11 @@ Scope as approved:
 
 ### Phase 4: Learning
 
-**S4.1 Lesson attempts.** *Needs OQ-002, OQ-012.*
+**S4.1 Lesson attempts.** Resume from the activity where the child stopped (PD-012); also makes `ILearnerActivityReader` (S3.1) real.
 - **Includes:**
-  - Start an attempt (checks published and unlocked).
+  - Start an attempt (checks published and unlocked). Works the same for lessons and boss challenges.
   - Submit answers per activity (see the code flow in domain model proposal §8).
-  - Server-side grading.
+  - Server-side grading: score = percentage of correct scored items; stars 0–3 at 60 / 80 / 100% (PD-011).
   - Submitting twice is safe.
 - **Migration:** `learning_lesson_attempts` and `learning_attempt_answers`.
 - *Done when:*
@@ -304,15 +347,17 @@ Scope as approved:
   - A locked lesson cannot be started.
   - The grading rules have unit tests.
 
-**S4.2 Completion and sequential unlocking.** *Needs OQ-002, OQ-003, OQ-016.*
+**S4.2 Completion, best result and unlocking.**
 - **Includes:**
-  - A first passing attempt creates a `LessonCompletion`.
-  - The computed unlock rule.
-  - The lesson map shows Locked, Available or Completed.
-- **Migration:** `learning_lesson_completions` (unique index on child and lesson).
+  - The first attempt with at least one star creates a `LessonCompletion`; later attempts only raise its best stars (PD-011, replay allowed).
+  - The computed unlock rules: next lesson after a completed one; the boss after every lesson of the level has a star; the next level after the boss is defeated.
+  - The child's level, computed (never stored).
+  - The lesson map shows Locked, Available or Completed, with the best stars.
+- **Migration:** `learning_lesson_completions` (unique index on child and lesson, best stars).
 - *Done when:*
-  - The unlock rule is unit-tested, including reordering.
+  - The unlock rules are unit-tested, including reordering.
   - Concurrent submits create only one completion (integration test).
+  - A replay with a lower score never lowers the best stars.
 
 **S4.3 Parent progress view.**
 - **Includes:** a Parent sees each child's completions, scores and history.
@@ -320,13 +365,13 @@ Scope as approved:
 
 ### Phase 5: Rewards
 
-**S5.1 Points ledger.** *Needs OQ-004.*
-- **Includes:** points awarded on completion inside the same transaction, using the ledger and its unique source key.
+**S5.1 Points ledger.**
+- **Includes:** 10 points for each newly earned star (PD-011), awarded in the same transaction as the attempt result, using the ledger and its unique source key (child, lesson, star number).
 - **Migration:** `rewards_points_transactions`.
-- *Done when:* retries and concurrent submits never add points twice (tested).
+- *Done when:* retries, replays and concurrent submits never add points for the same star twice (tested).
 
-**S5.2 Badges.** *Needs OQ-004.*
-- **Includes:** badge definitions (criteria from a fixed set), awarding them, and management of definitions (`rewards.manage`).
+**S5.2 Badges.** "Level superstar" includes the boss (PD-012).
+- **Includes:** the four badge types of PD-011 (First lesson, Perfect, Level conqueror, Level superstar), awarding them, and management of definitions (`rewards.manage`).
 - **Migration:** `rewards_badges` and `rewards_badge_awards`.
 - *Done when:* each criterion is unit-tested and no badge is awarded twice.
 
@@ -354,6 +399,9 @@ Every Phase 6 step must be done before any public release.
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. |
+| 2026-10-24 | PD-011 (lesson design): added S3.6 word bank, S3.7 learn step, S3.8 boss challenge; S3.2/S3.3 build from the word bank; S4.1 computes stars; S4.2 adds best result, boss and level unlocking; S5.1/S5.2 no longer wait for OQ-004. |
+| 2026-10-24 | PD-012 (OQ-005, 011, 012, 015, 017 decided): no Phase 3–5 step waits for a decision any more except S3.5 (OQ-006). S3.1 scope drafted for approval. |
+| 2026-10-24 | S3.1 done: levels and lessons API (order, publish, unpublish, final archive, versions), migration `AddContentLevelsAndLessons`. S3.6 is Ready; F2.4 can start. |
 | 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |
 | 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |
 | 2026-10-24 | OQ-001, OQ-009, OQ-013 decided (PD-010): S2.1 drafted for approval (several profiles per Parent); S2.2 waits only for S2.1. |

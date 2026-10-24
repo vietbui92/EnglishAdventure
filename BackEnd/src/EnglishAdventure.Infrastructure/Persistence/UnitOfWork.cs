@@ -38,4 +38,13 @@ internal sealed class UnitOfWork : IUnitOfWork
             throw new ConflictException("A record with the same unique value already exists.", exception);
         }
     }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> work,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await work(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
 }

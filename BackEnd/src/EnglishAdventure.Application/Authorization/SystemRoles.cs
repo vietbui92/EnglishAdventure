@@ -26,7 +26,7 @@ public static class SystemRoles
         new(
             ContentAdmin,
             "Creates, edits, orders and publishes learning content.",
-            [Content.ReadDrafts, Content.Manage, Content.Publish]),
+            [Permissions.Content.ReadDrafts, Permissions.Content.Manage, Permissions.Content.Publish]),
         new(
             Parent,
             "Manages own children's learning profiles and views their progress.",

@@ -52,8 +52,10 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F2.1 | Users: list, search, paging, detail | | ✅ Done 2026-10-23 |
 | F2.2 | Users: create, activate/deactivate, set roles | | ✅ Done 2026-10-23 (role list: S1.5) |
 | F2.3 | Role management | S1.5 | ⚪ Waiting |
-| F2.4 | Content: levels and lessons, publish | S3.1 | 🟡 Needs decision |
-| F2.5 | Content: quiz and matching editors | S3.2, S3.3 | ⚪ Waiting |
+| F2.4 | Content: levels and lessons, publish | | 🟢 Ready (S3.1 done 2026-10-24) |
+| F2.7 | Content: word bank editor and learn-step cards (PD-011) | S3.6, S3.7 | ⚪ Waiting |
+| F2.5 | Content: quiz and matching editors (pick words from the word bank) | S3.2, S3.3 | ⚪ Waiting |
+| F2.8 | Content: boss challenge editor (PD-011) | S3.8 | ⚪ Waiting |
 | F2.6 | Badge definitions | S5.2 | ⚪ Waiting |
 | **Phase F3: Parent area** | | | |
 | F3.1 | Child profiles: list, create, edit, archive, restore (several per Parent) | | ✅ Done 2026-10-24 |
@@ -61,10 +63,12 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F3.3 | Progress and rewards per child | S4.3, S5.3 | ⚪ Waiting |
 | **Phase F4: Child play area** | | | |
 | F4.1 | Kid-friendly visual style and kids shell | | ⚪ Waiting (shell and theme exist since F0.4) |
-| F4.2 | Lesson map (Locked / Available / Completed) | S3.4, S4.2 | ⚪ Waiting |
+| F4.2 | Adventure map: levels, lessons (Locked / Available / Completed), best stars, boss | S3.4, S4.2 | ⚪ Waiting |
+| F4.6 | Learn step: word cards before the activities (PD-011) | S3.4 | ⚪ Waiting |
 | F4.3 | Quiz player | S4.1 | ⚪ Waiting |
 | F4.4 | Matching player | S4.1 | ⚪ Waiting |
-| F4.5 | Lesson result, points and badges | S5.3 | ⚪ Waiting |
+| F4.7 | Boss battle screen: boss health bar, victory and level-up (PD-011) | S4.2 | ⚪ Waiting |
+| F4.5 | Lesson result: stars, points and badges | S5.3 | ⚪ Waiting |
 | **Phase F5: Release hardening** | | | |
 | F5.0 | Split the bundle per area (lazy routes) | | ✅ Done 2026-10-23 |
 | F5.1 | End-to-end tests of the main flows | F4.x | ⚪ Waiting |
@@ -344,6 +348,7 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. OQ-014 decided by the owner: React + Vite + TS, one app with three areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. |
+| 2026-10-24 | PD-011 (lesson design): added F2.7 word bank editor, F2.8 boss editor, F4.6 learn step, F4.7 boss battle; F4.2 becomes the adventure map with stars. |
 | 2026-10-23 | Owner chose shadcn/ui for the Admin and Parent areas (no admin dashboard template). F0.1 package list and structure updated. |
 | 2026-10-23 | F0.1 approved by the owner. B-F1 done (opt-in cookie via `X-EnglishAdventure-Client: web`). |
 | 2026-10-23 | Owner upgraded to Node 24 LTS. F0.2 done (Vite 8, React 19, TS 6, Tailwind 4, shadcn/ui, ESLint, Prettier, Vitest). F0.3–F0.5 Ready. |
