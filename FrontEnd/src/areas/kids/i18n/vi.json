@@ -1,13 +1,35 @@
 {
   "kids": {
     "title": "Cùng học tiếng Anh nào!",
-    "subtitle": "Bản đồ bài học sẽ xuất hiện ở đây.",
-    "start": "Bắt đầu",
     "exit": "Thoát",
     "greeting": "Xin chào, {{nickname}}!",
     "exitTitle": "Thoát khu vực học?",
     "exitDescription": "Bố mẹ sẽ cần đăng nhập lại để quay về trang phụ huynh.",
     "exitConfirm": "Thoát",
-    "stay": "Ở lại học tiếp"
+    "stay": "Ở lại học tiếp",
+    "map": {
+      "label": "Bản đồ phiêu lưu",
+      "loading": "Đang mở bản đồ…",
+      "loadError": "Chưa mở được bản đồ.",
+      "retry": "Thử lại",
+      "empty": "Chưa có bài học nào. Bố mẹ hãy quay lại sau nhé!",
+      "level": "Level {{number}}",
+      "lessonsOf": "Các bài của {{level}}",
+      "boss": "Boss"
+    },
+    "play": {
+      "backToMap": "Về bản đồ",
+      "loading": "Đang mở bài học…",
+      "loadError": "Chưa mở được bài học.",
+      "notFound": "Không tìm thấy bài học này.",
+      "noPicture": "Chưa có hình",
+      "cardCount": "Thẻ {{number}} / {{count}}",
+      "previous": "Trước",
+      "next": "Tiếp",
+      "toGames": "Chơi thôi!",
+      "bossIntro": "Đánh bại {{name}}!",
+      "gamesSoon": "Trò chơi sắp có rồi!",
+      "gamesSoonHint": "Phần chơi quiz và nối từ đang được làm."
+    }
   }
 }

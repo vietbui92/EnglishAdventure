@@ -1,9 +1,11 @@
-import { ArrowLeft, Pencil, Plus } from 'lucide-react'
+import { ArrowLeft, CircleAlert, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
+  isBoss,
   moveInOrder,
+  useCreateBoss,
   useCreateLesson,
   useLessonStatus,
   useLevel,
@@ -14,11 +16,14 @@ import {
   type LessonSummary,
   type LevelSummary,
 } from '@/areas/admin/content/api'
+import { BossDialog } from '@/areas/admin/content/BossDialog'
 import { ContentFormDialog } from '@/areas/admin/content/ContentFormDialog'
 import { ContentError, ContentStatusActions, ContentStatusBadge, MoveButtons } from '@/areas/admin/content/ContentParts'
+import { WordPicture } from '@/areas/admin/content/WordPicture'
 import { ApiError } from '@/shared/api/problem-details'
 import { hasPermission, Permissions } from '@/shared/auth/permissions'
 import { useSession } from '@/shared/auth/session'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 
@@ -30,7 +35,7 @@ function usePermissions() {
   }
 }
 
-/** One level with its lessons (S3.1, F2.4). An archived level is read-only (PD-012). */
+/** One level with its lessons (S3.1, F2.4) and its boss (S3.8, F2.8). An archived level is read-only (PD-012). */
 export function LevelDetailPage() {
   const { t } = useTranslation()
   const { levelId = '' } = useParams()
@@ -65,7 +70,9 @@ export function LevelDetailPage() {
       ) : (
         <>
           <LevelHeader level={level.data.level} />
-          <LessonsSection level={level.data.level} lessons={level.data.lessons} />
+          {/* The boss is a lesson too, but it is not in the lessons' order (S3.8). */}
+          <LessonsSection level={level.data.level} lessons={level.data.lessons.filter((lesson) => !isBoss(lesson))} />
+          <BossSection level={level.data.level} bosses={level.data.lessons.filter(isBoss)} />
         </>
       )}
     </section>
@@ -91,6 +98,12 @@ function LevelHeader({ level }: { level: LevelSummary }) {
         <p role="note" className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
           {t('admin.content.level.archivedNote')}
         </p>
+      )}
+      {level.status === 'Draft' && level.bossStatus !== 'Published' && (
+        <Alert>
+          <CircleAlert aria-hidden />
+          <AlertDescription>{t('admin.content.level.needsBoss')}</AlertDescription>
+        </Alert>
       )}
 
       {!archived && (canManage || canPublish) && (
@@ -125,6 +138,68 @@ function LevelHeader({ level }: { level: LevelSummary }) {
         onSave={(values) => update.mutateAsync({ ...values, version: level.version })}
       />
     </div>
+  )
+}
+
+/** The level's boss challenge (S3.8, F2.8): create it, or open it to build its activities. */
+function BossSection({ level, bosses }: { level: LevelSummary; bosses: LessonSummary[] }) {
+  const { t } = useTranslation()
+  const { canManage } = usePermissions()
+  const [creating, setCreating] = useState(false)
+  const navigate = useNavigate()
+  const create = useCreateBoss(level.id)
+  const boss = bosses.find((candidate) => candidate.status !== 'Archived')
+  const archived = bosses.filter((candidate) => candidate.status === 'Archived')
+  const canCreate = canManage && level.status !== 'Archived' && !boss
+
+  return (
+    <section aria-labelledby="level-boss-title" className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 id="level-boss-title" className="text-lg font-semibold">
+          {t('admin.content.boss.title')}
+        </h2>
+        {canCreate && (
+          <Button size="sm" onClick={() => setCreating(true)}>
+            <Plus aria-hidden />
+            {t('admin.content.boss.add')}
+          </Button>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">{t('admin.content.boss.description')}</p>
+
+      {boss ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
+          <WordPicture url={boss.bossImageUrl} alt={boss.title} />
+          <span className="flex flex-col gap-1">
+            <Link to={`/admin/content/lessons/${boss.id}`} className="font-medium underline-offset-4 hover:underline">
+              {boss.title}
+            </Link>
+            <ContentStatusBadge status={boss.status} />
+          </span>
+          <Button asChild size="sm" variant="outline" className="ml-auto">
+            <Link to={`/admin/content/lessons/${boss.id}`}>{t('admin.content.boss.open')}</Link>
+          </Button>
+        </div>
+      ) : (
+        <p className="text-muted-foreground">{t('admin.content.boss.none')}</p>
+      )}
+
+      {archived.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t('admin.content.boss.archived', { names: archived.map((old) => old.title).join(', ') })}
+        </p>
+      )}
+
+      <BossDialog
+        open={creating}
+        onOpenChange={setCreating}
+        pictureRequired={false}
+        onSave={async (values) => {
+          const created = await create.mutateAsync(values)
+          await navigate(`/admin/content/lessons/${created.id}`)
+        }}
+      />
+    </section>
   )
 }
 

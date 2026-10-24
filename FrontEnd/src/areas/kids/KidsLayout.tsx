@@ -54,7 +54,8 @@ export function KidsLayout() {
           </AlertDialogContent>
         </AlertDialog>
       </header>
-      <main className="flex flex-1 flex-col items-center justify-center p-4">
+      {/* "Safe" centering: a long page (the map) starts at the top instead of being cut off above it. */}
+      <main className="flex flex-1 flex-col items-center justify-center-safe p-4">
         <Outlet />
       </main>
     </div>

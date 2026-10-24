@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import {
   moveInOrder,
+  isBoss,
   useAddWord,
   useLesson,
   useLessonActivities,
@@ -12,6 +13,7 @@ import {
   useRemoveWord,
   useReorderWords,
   useSetLearnCard,
+  useUpdateBoss,
   useUpdateWord,
   type LessonActivities,
   type LessonSummary,
@@ -20,6 +22,7 @@ import {
 } from '@/areas/admin/content/api'
 import { ContentError, ContentStatusActions, ContentStatusBadge, MoveButtons } from '@/areas/admin/content/ContentParts'
 import { ActivitiesEditor } from '@/areas/admin/content/ActivitiesEditor'
+import { BossDialog } from '@/areas/admin/content/BossDialog'
 import { WordDialog } from '@/areas/admin/content/WordDialog'
 import { WordPicture } from '@/areas/admin/content/WordPicture'
 import { ApiError } from '@/shared/api/problem-details'
@@ -93,7 +96,14 @@ export function LessonPage() {
       ) : lesson.data && words.data && activities.data ? (
         <>
           <LessonHeader lesson={lesson.data} bank={words.data} activities={activities.data} />
-          <WordBank lessonId={lessonId} bank={words.data} />
+          {isBoss(lesson.data) ? (
+            // A boss has no word bank: its activities use the words of the level's lessons (S3.8).
+            <p role="note" className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+              {t('admin.content.boss.wordsNote', { count: words.data.words.length })}
+            </p>
+          ) : (
+            <WordBank lessonId={lessonId} bank={words.data} />
+          )}
           <ActivitiesEditor lessonId={lessonId} words={words.data.words} activities={activities.data} />
         </>
       ) : (
@@ -111,31 +121,72 @@ interface LessonHeaderProps {
   activities: LessonActivities
 }
 
+/** The words the activities show, so the ones that need a picture (S3.8: a boss's words live in other lessons). */
+function usedWordIds(activities: LessonActivities) {
+  return new Set(
+    activities.activities.flatMap((activity) => [
+      ...activity.pairWordIds,
+      ...activity.questions.flatMap((question) => [question.correctWordId, ...question.wrongWordIds]),
+    ]),
+  )
+}
+
 function LessonHeader({ lesson, bank, activities }: LessonHeaderProps) {
   const { t } = useTranslation()
-  const { canPublish } = usePermissions()
+  const { canManage, canPublish } = usePermissions()
+  const [editingBoss, setEditingBoss] = useState(false)
   const status = useLessonStatus(lesson.id)
+  const updateBoss = useUpdateBoss(lesson.id)
+  const boss = isBoss(lesson)
   const missingPictures = bank.words.filter((word) => !word.imageUrl).length
-  // What a draft still lacks before it can be published (the backend's lesson-not-ready rule), first problem first.
-  const missing =
-    bank.words.length === 0
+  const used = usedWordIds(activities)
+  const bossWordsWithoutPicture = bank.words.filter((word) => used.has(word.id) && !word.imageUrl).length
+  // The activities the backend's lesson-not-ready rule checks for lessons and bosses alike.
+  const missingActivity =
+    activities.activities.length === 0
+      ? t('admin.content.lesson.needsActivity')
+      : activities.activities.some((activity) => activity.type === 'Quiz' && activity.questions.length === 0)
+        ? t('admin.content.lesson.needsQuestions')
+        : null
+  // What a draft still lacks before it can be published, first problem first.
+  const missing = boss
+    ? !lesson.bossImageUrl
+      ? t('admin.content.boss.needsPicture')
+      : (missingActivity ??
+        (bossWordsWithoutPicture > 0
+          ? t('admin.content.boss.needsWordPictures', { count: bossWordsWithoutPicture })
+          : null))
+    : bank.words.length === 0
       ? t('admin.content.lesson.needsWords')
       : missingPictures > 0
         ? t('admin.content.lesson.needsPictures', { count: missingPictures })
         : !bank.words.some((word) => word.showInLearnStep)
           ? t('admin.content.lesson.needsCards')
-          : activities.activities.length === 0
-            ? t('admin.content.lesson.needsActivity')
-            : activities.activities.some((activity) => activity.questions.length === 0)
-              ? t('admin.content.lesson.needsQuestions')
-              : null
+          : missingActivity
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
+        {boss && <WordPicture url={lesson.bossImageUrl} alt={lesson.title} />}
         <h1 className="font-heading text-2xl font-semibold break-words">{lesson.title}</h1>
+        {boss && <span className="text-sm text-muted-foreground">{t('admin.content.boss.label')}</span>}
         <ContentStatusBadge status={lesson.status} />
       </div>
+      {boss && canManage && lesson.status !== 'Archived' && (
+        <Button size="sm" variant="outline" className="self-start" onClick={() => setEditingBoss(true)}>
+          <Pencil aria-hidden />
+          {t('admin.content.boss.edit')}
+        </Button>
+      )}
+      {boss && (
+        <BossDialog
+          open={editingBoss}
+          onOpenChange={setEditingBoss}
+          initial={{ title: lesson.title, imageUrl: lesson.bossImageUrl ?? '' }}
+          pictureRequired={lesson.status === 'Published'}
+          onSave={(values) => updateBoss.mutateAsync({ ...values, version: lesson.version })}
+        />
+      )}
 
       {lesson.status === 'Draft' && missing && (
         <Alert>
@@ -145,7 +196,7 @@ function LessonHeader({ lesson, bank, activities }: LessonHeaderProps) {
       )}
       {lesson.status === 'Published' && (
         <p role="note" className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-          {t('admin.content.lesson.publishedNote')}
+          {boss ? t('admin.content.boss.publishedNote') : t('admin.content.lesson.publishedNote')}
         </p>
       )}
       {lesson.status === 'Archived' && (

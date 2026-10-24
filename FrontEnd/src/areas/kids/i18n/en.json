@@ -1,13 +1,35 @@
 {
   "kids": {
     "title": "Let's learn English!",
-    "subtitle": "The lesson map will appear here.",
-    "start": "Start",
     "exit": "Exit",
     "greeting": "Hello, {{nickname}}!",
     "exitTitle": "Leave the learning area?",
     "exitDescription": "A parent will need to sign in again to go back to the parent pages.",
     "exitConfirm": "Leave",
-    "stay": "Keep learning"
+    "stay": "Keep learning",
+    "map": {
+      "label": "Adventure map",
+      "loading": "Opening the map…",
+      "loadError": "The map could not be opened.",
+      "retry": "Try again",
+      "empty": "No lessons yet. Come back later!",
+      "level": "Level {{number}}",
+      "lessonsOf": "Lessons of {{level}}",
+      "boss": "Boss"
+    },
+    "play": {
+      "backToMap": "Back to the map",
+      "loading": "Opening the lesson…",
+      "loadError": "The lesson could not be opened.",
+      "notFound": "This lesson was not found.",
+      "noPicture": "No picture yet",
+      "cardCount": "Card {{number}} of {{count}}",
+      "previous": "Back",
+      "next": "Next",
+      "toGames": "Let’s play!",
+      "bossIntro": "Defeat {{name}}!",
+      "gamesSoon": "Games are coming soon!",
+      "gamesSoonHint": "The quiz and matching games are being made."
+    }
   }
 }

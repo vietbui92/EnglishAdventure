@@ -51,6 +51,11 @@ export function problem(status: number, details: Omit<ProblemDetails, 'status'> 
   return HttpResponse.json({ title: `HTTP ${status}`, ...details, status }, { status })
 }
 
+/** For tests that only pass through the kids area's map: an adventure without published levels. */
+export function mockEmptyAdventure() {
+  return [mockApi('get', '/api/v1/play/map', () => ({ levels: [] }))]
+}
+
 /** For tests that only pass through the Parent area: a family without child profiles. */
 export function mockFamilyWithoutChildren() {
   return [

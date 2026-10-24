@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<ILevelRepository, LevelRepository>();
         services.AddScoped<ILessonRepository, LessonRepository>();
         services.AddScoped<IContentQueries, ContentQueries>();
+        services.AddScoped<IPlayQueries, PlayQueries>();
         services.AddScoped<ILearnerActivityReader, LearnerActivityReader>();
 
         services.TryAddSingleton(TimeProvider.System);

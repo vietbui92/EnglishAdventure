@@ -60,6 +60,8 @@ function serveLesson(status: 'Draft' | 'Published' = 'Draft', words?: LessonWord
       publishedAtUtc: null,
       archivedAtUtc: null,
       version: 'lesson-v1',
+      kind: 'Regular',
+      bossImageUrl: null,
     } satisfies LessonSummary,
     words: words ?? [word(catId, 'cat', 'con mèo', catPicture, 1), word(dogId, 'dog', 'con chó', null, 2)],
     version: 1,
@@ -816,6 +818,84 @@ describe('matching editor', () => {
     expect(within(card).getByText('con mèo')).toBeTruthy()
     expect(within(card).queryByRole('button')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Thêm matching' })).toBeNull()
+  })
+})
+
+describe('boss page', () => {
+  const lionPicture = 'https://cdn.example.test/lion.png'
+
+  /** The fake lesson as the level's boss: the words are the level's, and it has no word bank of its own. */
+  function serveBoss(bossImageUrl: string | null, words: LessonWord[], activities: LessonActivity[] = []) {
+    const state = serveLesson('Draft', words, activities)
+    Object.assign(state.lesson, { kind: 'Boss', title: 'King Lion', bossImageUrl })
+    server.use(
+      mockApi('put', '/api/v1/admin/content/lessons/{lessonId}/boss', async ({ request }) => {
+        const body = (await request.json()) as { title: string; imageUrl: string | null; version: string }
+        state.requests.push({ method: 'PUT', path: new URL(request.url).pathname, search: '', body })
+        Object.assign(state.lesson, { title: body.title, bossImageUrl: body.imageUrl })
+        return state.lesson
+      }),
+    )
+    return state
+  }
+
+  it('shows the boss without a word bank and asks for its picture first', async () => {
+    serveBoss(null, [word(catId, 'cat', 'con mèo', catPicture, 1), word(dogId, 'dog', 'con chó', catPicture, 2)])
+    signInAs('ContentAdmin')
+    await renderRoutes(routes, { route })
+
+    expect(await screen.findByRole('heading', { name: 'King Lion' })).toBeTruthy()
+    expect(screen.getByText(/chọn trong 2 từ của các bài trong level/)).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Từ vựng/ })).toBeNull()
+    expect(screen.getByText('Boss cần có hình trước khi xuất bản.')).toBeTruthy()
+    // Its activities choose from the level's words.
+    expect(screen.getByRole('button', { name: 'Thêm matching' }).hasAttribute('disabled')).toBe(false)
+  })
+
+  it('names the words the boss uses that still need a picture', async () => {
+    serveBoss(
+      lionPicture,
+      [word(catId, 'cat', 'con mèo', catPicture, 1), word(dogId, 'dog', 'con chó', null, 2)],
+      [
+        {
+          id: '00000000-0000-0000-0000-0000000e0001',
+          type: 'Matching',
+          sortOrder: 1,
+          questions: [],
+          matchingMode: 'WordToMeaning',
+          pairWordIds: [catId, dogId],
+        },
+      ],
+    )
+    signInAs('ContentAdmin')
+    await renderRoutes(routes, { route })
+
+    expect(await screen.findByText(/Còn 1 từ boss dùng chưa có hình/)).toBeTruthy()
+  })
+
+  it('changes the boss name and picture with its version', async () => {
+    const state = serveBoss(null, [word(catId, 'cat', 'con mèo', catPicture, 1)])
+    signInAs('ContentAdmin')
+    const { user } = await renderRoutes(routes, { route })
+
+    await user.click(await screen.findByRole('button', { name: 'Sửa tên và hình boss' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.clear(within(dialog).getByLabelText('Tên boss'))
+    await user.type(within(dialog).getByLabelText('Tên boss'), 'Lion King')
+    await user.type(within(dialog).getByLabelText('Địa chỉ hình boss (https://)'), lionPicture)
+    await user.click(within(dialog).getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() =>
+      expect(state.requests).toEqual([
+        {
+          method: 'PUT',
+          path: `/api/v1/admin/content/lessons/${lessonId}/boss`,
+          search: '',
+          body: { title: 'Lion King', imageUrl: lionPicture, version: 'lesson-v1' },
+        },
+      ]),
+    )
+    expect(await screen.findByRole('heading', { name: 'Lion King' })).toBeTruthy()
   })
 })
 

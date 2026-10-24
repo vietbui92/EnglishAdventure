@@ -53,6 +53,7 @@ The API host starts again. The **authentication foundation** is implemented and 
 - **Quiz activities (S3.2, PD-011)**: `api/v1/admin/content/lessons/{lessonId}/activities` (`ContentActivitiesController`) — list (`content.read-drafts`); add a quiz, remove and reorder activities, add/change/remove/reorder questions (`content.manage`). Forms `PictureToWord`, `WordToPicture`, `FillInTheBlank`; 2–4 options from the lesson's words with exactly one correct; at most 4 activities per lesson and 10 questions per quiz; a word used by a question cannot be removed. A lesson is published only with at least one activity and no empty quiz. Tables `content_activities`, `content_quiz_questions`, `content_quiz_options`, migration `AddQuizActivities`.
 - **Matching activities (S3.3)**: `POST .../activities/matching`, `PUT .../activities/{activityId}/matching` (`content.manage`) with `{ mode: WordToPicture | WordToMeaning, wordIds: 2–6 words, version }`; locked once the lesson is published; words in a matching cannot be removed. Table `content_matching_pairs`, column `content_activities.MatchingMode`, migration `AddMatchingActivities`.
 - **Boss challenge (S3.8)**: `POST .../levels/{levelId}/boss`, `PUT .../lessons/{lessonId}/boss` (`content.manage`). The boss is a lesson of kind `Boss` (name, picture) without a word bank or learn step; its quizzes and matchings use the words of the level's lessons; one per level, outside the lessons' order. A level is published only with a published boss and keeps it while published. Columns `content_lessons.Kind`, `BossImageUrl`, migration `AddBossChallenges`.
+- **Learner map and play view (S3.4)**: `GET api/v1/play/map` and `GET api/v1/play/lessons/{lessonId}` (`learning.play`, child sessions only). Published content only; answers never sent: options with their own ids, shuffled on every read; matching sides with different ids (`MatchingPair.ChoiceId`, migration `AddMatchingChoiceIds`). Locks and stars come with S4.2.
 - **User management (S1.3)**:
   - `GET /api/v1/admin/users` (search, paging) and `GET /{id}` need `users.read`.
   - `POST /` (Admin or Parent; Parent gets the Parent role), `POST /{id}/deactivate` and `/activate` (deactivation ends all sessions) need `users.manage`.
@@ -64,6 +65,7 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 | Command | Result |
 |---|---|
+| 2026-10-24, S3.4: `dotnet test -c Release` with the SQL variable | ✅ 344 passed, 0 skipped, 0 failed (Domain 113, Application 112, Api 119) |
 | 2026-10-24, S3.8: `dotnet test -c Release` with the SQL variable | ✅ 339 passed, 0 skipped, 0 failed (Domain 113, Application 112, Api 114) |
 | 2026-10-24, S3.3: `dotnet test -c Release` with the SQL variable | ✅ 328 passed, 0 skipped, 0 failed (Domain 106, Application 112, Api 110) |
 | 2026-10-24, S3.2: `dotnet test -c Release` with the SQL variable | ✅ 308 passed, 0 skipped, 0 failed (Domain 99, Application 104, Api 105) |
@@ -95,4 +97,4 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 ## Recommended next task
 
-The boss editor (F2.8), then S3.4 learner lesson map.
+S4.1 lesson attempts with server-side grading and stars; the kids' learn step (F4.6) can start in parallel.

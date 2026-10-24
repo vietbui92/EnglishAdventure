@@ -111,6 +111,42 @@ export function useCreateLesson(levelId: string) {
   )
 }
 
+/** A boss challenge is a lesson of kind "Boss" (S3.8): it comes after the lessons and is not in their order. */
+export function isBoss(lesson: { kind: string }) {
+  return lesson.kind === 'Boss'
+}
+
+export interface BossInput {
+  /** The boss's name. */
+  title: string
+  /** Blank for no picture yet; required before the boss is published. */
+  imageUrl: string
+}
+
+/** POST .../levels/{levelId}/boss (content.manage): the level's boss as a draft. 422 boss-exists for a second one. */
+export function useCreateBoss(levelId: string) {
+  return useContentMutation((input: BossInput) =>
+    unwrap(
+      api.POST('/api/v1/admin/content/levels/{levelId}/boss', {
+        params: { path: { levelId } },
+        body: { title: input.title, imageUrl: input.imageUrl || null },
+      }),
+    ),
+  )
+}
+
+/** PUT .../lessons/{lessonId}/boss (content.manage): the boss's name and picture, also while published. */
+export function useUpdateBoss(lessonId: string) {
+  return useContentMutation((input: BossInput & { version: string }) =>
+    unwrap(
+      api.PUT('/api/v1/admin/content/lessons/{lessonId}/boss', {
+        params: { path: { lessonId } },
+        body: { title: input.title, imageUrl: input.imageUrl || null, version: input.version },
+      }),
+    ),
+  )
+}
+
 /** PUT /api/v1/admin/content/levels/{levelId}/lessons/order (content.manage) with every non-archived lesson once. */
 export function useReorderLessons(levelId: string) {
   return useContentMutation((lessonIds: string[]) =>

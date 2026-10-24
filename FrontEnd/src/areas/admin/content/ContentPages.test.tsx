@@ -13,6 +13,7 @@ const levelB = '00000000-0000-0000-0000-00000000a002'
 const levelOld = '00000000-0000-0000-0000-00000000a003'
 const lessonPets = '00000000-0000-0000-0000-00000000b001'
 const lessonFarm = '00000000-0000-0000-0000-00000000b002'
+const bossId = '00000000-0000-0000-0000-00000000b0b0'
 
 function level(id: string, title: string, overrides: Partial<LevelSummary> = {}): LevelSummary {
   return {
@@ -26,6 +27,7 @@ function level(id: string, title: string, overrides: Partial<LevelSummary> = {})
     archivedAtUtc: null,
     lessons: { draft: 0, published: 0, archived: 0 },
     version: `v-${id}`,
+    bossStatus: null,
     ...overrides,
   }
 }
@@ -41,6 +43,8 @@ function lesson(id: string, title: string, overrides: Partial<LessonSummary> = {
     publishedAtUtc: null,
     archivedAtUtc: null,
     version: `v-${id}`,
+    kind: 'Regular',
+    bossImageUrl: null,
     ...overrides,
   }
 }
@@ -109,6 +113,13 @@ function serveContent() {
       await record(request.clone())
       const { title } = (await request.json()) as { title: string }
       const created = lesson('00000000-0000-0000-0000-00000000b009', title, { sortOrder: 3 })
+      state.lessons.push(created)
+      return created
+    }),
+    mockApi('post', '/api/v1/admin/content/levels/{levelId}/boss', async ({ request }) => {
+      await record(request.clone())
+      const { title, imageUrl } = (await request.json()) as { title: string; imageUrl: string | null }
+      const created = lesson(bossId, title, { kind: 'Boss', bossImageUrl: imageUrl })
       state.lessons.push(created)
       return created
     }),
@@ -375,6 +386,99 @@ describe('level detail', () => {
     expect(screen.queryByRole('button', { name: 'Thêm bài học' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Xuất bản' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Đổi tên/ })).toBeNull()
+  })
+})
+
+describe('level boss', () => {
+  it('says a level needs a published boss and creates one, then opens it', async () => {
+    const state = serveContent()
+    // The new boss's page loads after creating it.
+    server.use(
+      mockApi('get', '/api/v1/admin/content/lessons/{lessonId}', () =>
+        state.lessons.find((item) => item.id === bossId)!,
+      ),
+      mockApi('get', '/api/v1/admin/content/lessons/{lessonId}/words', () => ({
+        lessonId: bossId,
+        lessonStatus: 'Draft',
+        lessonVersion: 'boss-v1',
+        maxWords: 0,
+        words: [],
+      })),
+      mockApi('get', '/api/v1/admin/content/lessons/{lessonId}/activities', () => ({
+        lessonId: bossId,
+        lessonStatus: 'Draft',
+        lessonVersion: 'boss-v1',
+        maxActivities: 4,
+        maxQuestionsPerQuiz: 10,
+        activities: [],
+      })),
+    )
+    signInAs('ContentAdmin')
+    const { user, router } = await renderRoutes(routes, { route: `/admin/content/levels/${levelB}` })
+
+    expect(await screen.findByText('Level cần một boss đã xuất bản thì mới xuất bản được.')).toBeTruthy()
+    expect(screen.getByText('Level này chưa có boss.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Thêm boss' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Tên boss'), 'King Lion')
+    await user.type(within(dialog).getByLabelText('Địa chỉ hình boss (https://)'), 'https://cdn.example.test/lion.png')
+    await user.click(within(dialog).getByRole('button', { name: 'Tạo' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/admin/content/lessons/${bossId}`))
+    expect(state.requests[0]).toEqual({
+      method: 'POST',
+      path: `/api/v1/admin/content/levels/${levelB}/boss`,
+      body: { title: 'King Lion', imageUrl: 'https://cdn.example.test/lion.png' },
+    })
+    expect(await screen.findByText(/Boss không có ngân hàng từ riêng/)).toBeTruthy()
+  })
+
+  it('shows the boss apart from the lessons and keeps it out of their order', async () => {
+    const state = serveContent()
+    state.lessons.push(
+      lesson(bossId, 'King Lion', {
+        kind: 'Boss',
+        status: 'Published',
+        bossImageUrl: 'https://cdn.example.test/lion.png',
+      }),
+    )
+    signInAs('ContentAdmin')
+    const { user } = await renderRoutes(routes, { route: `/admin/content/levels/${levelA}` })
+
+    const bossSection = (await screen.findByRole('heading', { name: 'Boss cuối level' })).closest('section')!
+    expect(within(bossSection).getByRole('link', { name: 'King Lion' }).getAttribute('href')).toBe(
+      `/admin/content/lessons/${bossId}`,
+    )
+    expect(within(bossSection).queryByRole('button', { name: 'Thêm boss' })).toBeNull()
+    const lessonsSection = screen.getByRole('heading', { name: 'Bài học' }).closest('section')!
+    expect(within(lessonsSection).queryByText('King Lion')).toBeNull()
+
+    await user.click(within(lessonsSection).getByRole('button', { name: 'Chuyển Pets xuống' }))
+    await waitFor(() =>
+      expect(state.requests).toEqual([
+        {
+          method: 'PUT',
+          path: `/api/v1/admin/content/levels/${levelA}/lessons/order`,
+          body: { lessonIds: [lessonFarm, lessonPets] },
+        },
+      ]),
+    )
+  })
+
+  it('explains that a level is published only with its boss (422 level-needs-boss)', async () => {
+    serveContent()
+    server.use(
+      mockApi('post', '/api/v1/admin/content/levels/{levelId}/publish', () =>
+        problem(422, { title: 'Domain rule violation.', code: 'level-needs-boss' }),
+      ),
+    )
+    signInAs('ContentAdmin')
+    const { user } = await renderRoutes(routes, { route: `/admin/content/levels/${levelB}` })
+
+    const header = (await screen.findByRole('heading', { name: 'Color Garden' })).parentElement!.parentElement!
+    await user.click(within(header).getByRole('button', { name: 'Xuất bản' }))
+
+    expect(await screen.findByText('Level chỉ xuất bản được khi boss của nó đã xuất bản.')).toBeTruthy()
   })
 })
 

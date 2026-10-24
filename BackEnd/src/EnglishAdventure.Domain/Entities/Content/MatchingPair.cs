@@ -18,8 +18,21 @@ public sealed class MatchingPair : Entity
 
     public int SortOrder { get; private set; }
 
+    /// <summary>
+    /// The identity children see for the pair's right side (picture or meaning), different from <see cref="Entity.Id"/>
+    /// (the left side), so the play view never shows which right side belongs to which word (S3.4).
+    /// </summary>
+    public Guid ChoiceId { get; private set; }
+
     internal static MatchingPair Create(Guid activityId, Guid wordId, int sortOrder) =>
-        new() { Id = Guid.NewGuid(), ActivityId = activityId, WordId = wordId, SortOrder = sortOrder };
+        new()
+        {
+            Id = Guid.NewGuid(),
+            ActivityId = activityId,
+            WordId = wordId,
+            SortOrder = sortOrder,
+            ChoiceId = Guid.NewGuid(),
+        };
 
     internal void MoveTo(int sortOrder) => SortOrder = sortOrder;
 }

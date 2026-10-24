@@ -153,7 +153,8 @@
         "editTitle": "Edit level",
         "notFound": "This level was not found.",
         "loadError": "The level could not be loaded.",
-        "archivedNote": "This level is archived: children no longer see it and it cannot be changed."
+        "archivedNote": "This level is archived: children no longer see it and it cannot be changed.",
+        "needsBoss": "The level needs a published boss before it can be published."
       },
       "lessons": {
         "title": "Lessons",
@@ -203,7 +204,11 @@
         "activityLimit": "The lesson already has the maximum number of activities.",
         "questionLimit": "The quiz already has the maximum number of questions.",
         "questionInvalid": "The question uses a word that is no longer in the lesson. Reload the page and choose again.",
-        "matchingInvalid": "The matching uses a word that is no longer in the lesson. Reload the page and choose again."
+        "matchingInvalid": "The matching uses a word that is no longer in the lesson. Reload the page and choose again.",
+        "bossNoWordBank": "A boss uses the words of the level’s lessons; it has no word bank of its own.",
+        "bossExists": "The level already has a boss. Archive the old boss to make a new one.",
+        "levelNeedsBoss": "A level is published only when its boss is published.",
+        "bossRequired": "A published level keeps its boss. Unpublish the level first."
       },
       "lesson": {
         "back": "Back to the level",
@@ -341,6 +346,35 @@
           "validation": {
             "tooFew": "Choose at least 2 words.",
             "tooMany": "Choose at most 6 words."
+          }
+        }
+      },
+      "boss": {
+        "title": "End-of-level boss",
+        "label": "Boss",
+        "description": "Children fight the boss once every lesson has a star. The boss uses the words of the level’s lessons; defeating it opens the next level.",
+        "add": "Add boss",
+        "none": "This level has no boss yet.",
+        "open": "Edit boss",
+        "edit": "Edit the boss’s name and picture",
+        "archived": "Archived bosses: {{names}}",
+        "wordsNote": "A boss has no word bank: its activities choose from the {{count}} words of the level’s lessons.",
+        "needsPicture": "The boss needs a picture before it is published.",
+        "needsWordPictures": "Words the boss uses without a picture: {{count}}. Add the pictures in the lessons that own the words.",
+        "publishedNote": "The boss is published: only its name, picture and fill-in sentences can be changed. To change its activities, unpublish the level, then the boss.",
+        "form": {
+          "addTitle": "Add a boss",
+          "editTitle": "Edit boss",
+          "hint": "The name and picture of the boss children defeat at the end of the level.",
+          "name": "Boss name",
+          "namePlaceholder": "For example: King Lion",
+          "picture": "Boss picture address (https://)",
+          "pictureHint": "Can be added later, but is needed before the boss is published.",
+          "pictureHintRequired": "The boss is published, so it needs a picture.",
+          "validation": {
+            "nameRequired": "Enter the boss’s name (1 to 100 characters).",
+            "nameTooLong": "The boss’s name can have at most 100 characters.",
+            "pictureRequired": "A published boss needs a picture."
           }
         }
       }

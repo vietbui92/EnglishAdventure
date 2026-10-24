@@ -153,7 +153,8 @@
         "editTitle": "Sửa level",
         "notFound": "Không tìm thấy level này.",
         "loadError": "Không tải được level.",
-        "archivedNote": "Level này đã được lưu trữ: trẻ không còn thấy nó và không thể thay đổi nữa."
+        "archivedNote": "Level này đã được lưu trữ: trẻ không còn thấy nó và không thể thay đổi nữa.",
+        "needsBoss": "Level cần một boss đã xuất bản thì mới xuất bản được."
       },
       "lessons": {
         "title": "Bài học",
@@ -203,7 +204,11 @@
         "activityLimit": "Bài đã có đủ số hoạt động tối đa.",
         "questionLimit": "Quiz đã có đủ số câu hỏi tối đa.",
         "questionInvalid": "Câu hỏi dùng một từ không còn trong bài. Hãy tải lại trang rồi chọn lại.",
-        "matchingInvalid": "Matching dùng một từ không còn trong bài. Hãy tải lại trang rồi chọn lại."
+        "matchingInvalid": "Matching dùng một từ không còn trong bài. Hãy tải lại trang rồi chọn lại.",
+        "bossNoWordBank": "Boss dùng từ của các bài trong level, không có ngân hàng từ riêng.",
+        "bossExists": "Level đã có boss. Hãy lưu trữ boss cũ nếu muốn tạo boss mới.",
+        "levelNeedsBoss": "Level chỉ xuất bản được khi boss của nó đã xuất bản.",
+        "bossRequired": "Level đã xuất bản cần giữ boss của nó. Hãy gỡ xuất bản level trước."
       },
       "lesson": {
         "back": "Quay lại level",
@@ -341,6 +346,35 @@
           "validation": {
             "tooFew": "Hãy chọn ít nhất 2 từ.",
             "tooMany": "Chỉ chọn tối đa 6 từ."
+          }
+        }
+      },
+      "boss": {
+        "title": "Boss cuối level",
+        "label": "Boss",
+        "description": "Trẻ đánh boss sau khi đã có sao ở mọi bài. Boss dùng từ của các bài trong level; đánh bại boss sẽ mở level sau.",
+        "add": "Thêm boss",
+        "none": "Level này chưa có boss.",
+        "open": "Soạn boss",
+        "edit": "Sửa tên và hình boss",
+        "archived": "Boss đã lưu trữ: {{names}}",
+        "wordsNote": "Boss không có ngân hàng từ riêng: các hoạt động của boss chọn trong {{count}} từ của các bài trong level.",
+        "needsPicture": "Boss cần có hình trước khi xuất bản.",
+        "needsWordPictures": "Còn {{count}} từ boss dùng chưa có hình. Hãy thêm hình ở bài chứa từ đó.",
+        "publishedNote": "Boss đã xuất bản: chỉ sửa được tên, hình và câu điền từ. Muốn đổi hoạt động, hãy gỡ xuất bản level rồi đến boss.",
+        "form": {
+          "addTitle": "Thêm boss",
+          "editTitle": "Sửa boss",
+          "hint": "Tên và hình của boss mà trẻ sẽ đánh bại ở cuối level.",
+          "name": "Tên boss",
+          "namePlaceholder": "Ví dụ: Vua Sư Tử",
+          "picture": "Địa chỉ hình boss (https://)",
+          "pictureHint": "Có thể thêm sau, nhưng cần có trước khi xuất bản boss.",
+          "pictureHintRequired": "Boss đã xuất bản nên phải có hình.",
+          "validation": {
+            "nameRequired": "Hãy nhập tên boss (1 đến 100 ký tự).",
+            "nameTooLong": "Tên boss chỉ được tối đa 100 ký tự.",
+            "pictureRequired": "Boss đã xuất bản phải có hình."
           }
         }
       }

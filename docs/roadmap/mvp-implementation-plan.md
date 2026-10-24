@@ -59,10 +59,10 @@ Rules for every step:
 | S3.2 | Quiz activities built from the word bank | | ✅ Done 2026-10-24 |
 | S3.3 | Matching activities built from the word bank | | ✅ Done 2026-10-24 |
 | S3.8 | Boss challenge per level (PD-011, PD-012) | | ✅ Done 2026-10-24 |
-| S3.4 | Learner lesson map (read published content) | | 🟢 Ready |
+| S3.4 | Learner lesson map (read published content) | | ✅ Done 2026-10-24 |
 | S3.5 | Development seed content | OQ-006, S3.8 | 🟡 Needs decision |
 | **Phase 4: Learning** | | | |
-| S4.1 | Lesson attempts, server-side grading and stars | S2.2, S3.4 | ⚪ Waiting |
+| S4.1 | Lesson attempts, server-side grading and stars | | 🟢 Ready |
 | S4.2 | Completion, best result, lesson and level unlocking | S4.1 | ⚪ Waiting |
 | S4.3 | Parent progress view | S4.2 | ⚪ Waiting |
 | **Phase 5: Rewards** | | | |
@@ -338,7 +338,7 @@ Scope as approved:
 - **Rules:** a level can't be published without a valid boss challenge.
 - *Done when:* the rules are unit-tested.
 
-**S3.4 Learner lesson map.**
+**S3.4 Learner lesson map.** ✅ Done 2026-10-24. *As built:* `PlayController` on `api/v1/play` for child sessions only (`learning.play`; Parents and Admins get 403): `GET map` (published levels in order, each with its published lessons in order and its published boss; a level without a published lesson is left out) and `GET lessons/{lessonId}` (a published lesson or boss of a published level, else 404): learn cards, then activities. **No answer is sent or can be derived:** quiz options use the options' own ids (never word ids) and are shuffled on every read (the stored order puts the correct one first); picture → word options carry text only, word → picture options pictures only; a matching's right side uses a separate `MatchingPair.ChoiceId` and its own shuffle. A boss is played with the words of the level's lessons and has no learn cards. Read model `PlayQueries` (`IPlayQueries`). Migration `AddMatchingChoiceIds` (each existing pair gets `NEWID()`). Tests: 5 SQL integration (map, no answers or word ids in the payload, new orders, boss and drafts, child session only); 344 backend tests pass.
 - **Includes:**
   - A read model of published levels, lessons and boss challenges for learners.
   - Lesson content for play (learn cards and activities), **without the correct answers**.
@@ -423,6 +423,7 @@ Every Phase 6 step must be done before any public release.
 | 2026-10-24 | S3.2 done: quiz activities (3 question forms, 2–4 options from the word bank, max 4 activities and 10 questions, at least one activity to publish), migration `AddQuizActivities`. F2.5 (quiz editor) is Ready. |
 | 2026-10-24 | S3.3 done: matching activities (word ↔ picture or word ↔ meaning, 2–6 pairs), migration `AddMatchingActivities`. S3.8 boss challenge is Ready; F2.5 matching editor is Ready. |
 | 2026-10-24 | S3.8 done: boss challenge per level (a boss lesson using the level's words, name and picture, level published only with its boss), migration `AddBossChallenges`. S3.4 learner lesson map and F2.8 boss editor are Ready. |
+| 2026-10-24 | S3.4 done: learner map and lessons to play (`api/v1/play`), answers never sent, migration `AddMatchingChoiceIds`. Phase 3 is done except S3.5 (OQ-006). S4.1 attempts and F4.6 learn step are Ready. |
 | 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |
 | 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |
 | 2026-10-24 | OQ-001, OQ-009, OQ-013 decided (PD-010): S2.1 drafted for approval (several profiles per Parent); S2.2 waits only for S2.1. |

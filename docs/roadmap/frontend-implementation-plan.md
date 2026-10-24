@@ -55,7 +55,7 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F2.4 | Content: levels and lessons, publish | | ✅ Done 2026-10-24 |
 | F2.7 | Content: word bank editor and learn-step cards (PD-011) | | ✅ Done 2026-10-24 |
 | F2.5 | Content: quiz and matching editors (pick words from the word bank) | | ✅ Done 2026-10-24 |
-| F2.8 | Content: boss challenge editor (PD-011) | | 🟢 Ready (S3.8 done 2026-10-24) |
+| F2.8 | Content: boss challenge editor (PD-011) | | ✅ Done 2026-10-24 |
 | F2.6 | Badge definitions | S5.2 | ⚪ Waiting |
 | **Phase F3: Parent area** | | | |
 | F3.1 | Child profiles: list, create, edit, archive, restore (several per Parent) | | ✅ Done 2026-10-24 |
@@ -63,8 +63,8 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F3.3 | Progress and rewards per child | S4.3, S5.3 | ⚪ Waiting |
 | **Phase F4: Child play area** | | | |
 | F4.1 | Kid-friendly visual style and kids shell | | ⚪ Waiting (shell and theme exist since F0.4) |
-| F4.2 | Adventure map: levels, lessons (Locked / Available / Completed), best stars, boss | S3.4, S4.2 | ⚪ Waiting |
-| F4.6 | Learn step: word cards before the activities (PD-011) | S3.4 | ⚪ Waiting |
+| F4.2 | Adventure map: levels, lessons (Locked / Available / Completed), best stars, boss | S4.2 for locks and stars | 🟡 Map without locks done 2026-10-24 |
+| F4.6 | Learn step: word cards before the activities (PD-011) | | ✅ Done 2026-10-24 |
 | F4.3 | Quiz player | S4.1 | ⚪ Waiting |
 | F4.4 | Matching player | S4.1 | ⚪ Waiting |
 | F4.7 | Boss battle screen: boss health bar, victory and level-up (PD-011) | S4.2 | ⚪ Waiting |
@@ -338,6 +338,13 @@ Original scope:
 - The lesson page now tells what a draft lacks also for activities (none yet, or a quiz without questions), and maps the new 422 codes (`word-in-use`, `activity-limit`, `question-limit`, `question-invalid`).
 - Tests (8): add a quiz and a question with suggestions, re-suggest and choose, fill-in sentence check, list/reorder/remove questions and remove a quiz, published sentence-only edit, two-word minimum, word in use, `suggestWrongWords`. The test API mock now registers `.../order` routes before `.../{id}` routes (MSW took "order" for an Id; also fixed for words).
 
+**F2.8 Boss editor.** ✅ Done 2026-10-24 (API: S3.8).
+- Level page: the boss is taken out of the lessons table and its order (a reorder sends regular lessons only) and shown in its own "End-of-level boss" section: picture, name (link), status, "Edit boss"; "Add boss" when there is none (`BossDialog`: name and https picture with preview), which opens the new boss. Archived bosses are listed by name. A draft level whose boss is not published says it needs one.
+- Lesson page for a boss: picture and "Boss" label in the header, "Edit the boss's name and picture" (picture required once published), no word bank but a note on how many level words it can use; the activities editor works on the level's words. The publish checklist covers the boss picture, activities and words without pictures.
+- New 422 messages: `boss-no-word-bank`, `boss-exists`, `level-needs-boss`, `boss-required`.
+- Found and fixed while testing: the boss section heading and the name field shared the id `boss-title`.
+- Tests (6): needs-boss notice and create-then-open, boss apart from the lessons and their order, `level-needs-boss`, boss page without word bank and picture check, words without pictures, edit name and picture.
+
 **F2.5 Matching editor.** ✅ Done 2026-10-24 (API: S3.3).
 - `ActivitiesEditor` (was `QuizEditor`) shows quizzes and matchings in their order; "Add matching" next to "Add quiz" (same 2-word minimum and 4-activity limit). The ↑ / ↓ and remove-with-confirmation controls are shared by both kinds (`ActivityActions`).
 - Matching card: mode, number of pairs, and each word ↔ its picture or meaning; "Edit" in drafts; nothing to change once published.
@@ -360,6 +367,8 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 
 - **F4.1 Visual style:** large touch targets (≥ 48 px), little text, icons and colors, sound effects optional and muted by default, tablet-first.
 - **F4.2 Lesson map:** a path of lessons with Locked / Available / Completed states from the server.
+  - *Done 2026-10-24 without locks (with F4.6, owner's choice):* `/kids` shows the child's greeting and the adventure map from `GET api/v1/play/map`: each level as an "island" (number, title, description), its lessons as large numbered buttons in order, and its boss as a highlighted button with its picture. Loading, empty and retry states. Every published lesson opens for now; locks and stars wait for S4.2.
+- **F4.6 Learn step:** ✅ Done 2026-10-24. `/kids/lessons/:lessonId` (`LessonPlayPage`, `GET api/v1/play/lessons/{id}`, read once per visit because the server shuffles options): the word cards one at a time (picture, English word, meaning; "Card n of m", Back / Next, "Let's play!" on the last), then a "games coming soon" panel until F4.3/F4.4. A boss starts with its picture and "Defeat …!" instead (no learn step). 404 says the lesson is not found; "Back to the map" everywhere. `KidsPicture` sends no referrer and keeps a placeholder for missing or broken pictures. The kids layout now centres "safely", so a long map starts at the top. Tests (6) in `KidsPlay.test.tsx`; tests that land on `/kids` use the new `mockEmptyAdventure()`.
 - **F4.3 Quiz player** and **F4.4 Matching player:** one activity at a time, answers sent per activity (S4.1); no answer keys ever reach the client (S3.4). Resume follows OQ-012.
 - **F4.5 Result screen:** score from the server, points and new badges with a small celebration.
 
@@ -377,6 +386,8 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. OQ-014 decided by the owner: React + Vite + TS, one app with three areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. |
+| 2026-10-24 | F4.6 done and F4.2 map without locks: adventure map, lesson page with the learn step, boss intro. |
+| 2026-10-24 | F2.8 done: boss section on the level page, boss lesson page, boss rule messages. Content editing (F2.4–F2.8) is complete. |
 | 2026-10-24 | F2.5 done: matching editor next to the quizzes (mode, 2–6 words). |
 | 2026-10-24 | F2.5 quiz editor done: quizzes and questions on the lesson page, suggested wrong words, publish checklist for activities. |
 | 2026-10-24 | F2.7 done: learn-card switches per word (drafts), card count and no-card notice. |

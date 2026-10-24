@@ -44,6 +44,10 @@ const ruleKeys: Record<string, ParseKeys> = {
   'question-limit': 'admin.content.errors.questionLimit',
   'question-invalid': 'admin.content.errors.questionInvalid',
   'matching-invalid': 'admin.content.errors.matchingInvalid',
+  'boss-no-word-bank': 'admin.content.errors.bossNoWordBank',
+  'boss-exists': 'admin.content.errors.bossExists',
+  'level-needs-boss': 'admin.content.errors.levelNeedsBoss',
+  'boss-required': 'admin.content.errors.bossRequired',
 }
 
 /**

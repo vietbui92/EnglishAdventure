@@ -1,8 +1,8 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { routes } from '@/app/routes'
 import { sessionStore } from '@/shared/auth/session'
-import { mockApi, mockFamilyWithoutChildren } from '@/shared/test/api-mocks'
+import { mockApi, mockEmptyAdventure, mockFamilyWithoutChildren } from '@/shared/test/api-mocks'
 import { renderRoutes } from '@/shared/test/render'
 import { server } from '@/shared/test/server'
 import { signInAs, signInAsChild } from '@/shared/test/session'
@@ -12,6 +12,9 @@ function mainNav() {
 }
 
 describe('routes', () => {
+  // A child session lands on the map.
+  beforeEach(() => server.use(...mockEmptyAdventure()))
+
   it('shows the admin shell with its navigation to a SuperAdmin', async () => {
     server.use(mockApi('get', '/api/v1/admin/users', () => ({ items: [], page: 1, pageSize: 20, totalCount: 0 })))
     signInAs('SuperAdmin')
@@ -53,6 +56,8 @@ describe('routes', () => {
 })
 
 describe('route guards', () => {
+  beforeEach(() => server.use(...mockEmptyAdventure()))
+
   it.each(['/parent/children', '/admin', '/admin/users'])(
     'send a child session from %s back to the kids area',
     async (path) => {

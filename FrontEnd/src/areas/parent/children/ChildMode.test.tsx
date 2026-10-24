@@ -1,8 +1,8 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { routes } from '@/app/routes'
 import { sessionStore } from '@/shared/auth/session'
-import { mockApi, mockFamilyWithoutChildren, problem } from '@/shared/test/api-mocks'
+import { mockApi, mockEmptyAdventure, mockFamilyWithoutChildren, problem } from '@/shared/test/api-mocks'
 import { renderRoutes } from '@/shared/test/render'
 import { server } from '@/shared/test/server'
 import { signInAs, signInAsChild, testUser } from '@/shared/test/session'
@@ -25,6 +25,9 @@ const childTokens = {
 }
 
 describe('child mode', () => {
+  // Child mode opens the map.
+  beforeEach(() => server.use(...mockEmptyAdventure()))
+
   it('lets a parent hand the device to a child after confirming', async () => {
     const requests: Request[] = []
     server.use(
