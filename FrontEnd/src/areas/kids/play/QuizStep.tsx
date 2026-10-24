@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Burst, useNudges } from '@/areas/kids/adventure/effects'
 import { playSound } from '@/areas/kids/adventure/sound'
-import { useAnswerQuestion, type AttemptView, type PlayChoice, type PlayQuestion } from '@/areas/kids/play/api'
+import {
+  useAnswerQuestion,
+  type AttemptView,
+  type EarnedRewards,
+  type PlayChoice,
+  type PlayQuestion,
+} from '@/areas/kids/play/api'
 import { KidsPicture } from '@/areas/kids/play/KidsPicture'
 import { ListenButton } from '@/areas/kids/play/ListenButton'
 import { Button } from '@/shared/components/ui/button'
@@ -17,7 +23,7 @@ interface QuizStepProps {
   count: number
   /** The answer already given in this attempt (after a resume or once answered here). */
   answered: AttemptView['questions'][number] | undefined
-  onAnswered: (attempt: AttemptView) => void
+  onAnswered: (attempt: AttemptView, rewards?: EarnedRewards | null) => void
   onNext: () => void
 }
 
@@ -39,7 +45,7 @@ export function QuizStep({ attemptId, question, number, count, answered, onAnswe
       { questionId: question.id, optionId: option.id },
       {
         onSuccess: (result) => {
-          onAnswered(result.attempt)
+          onAnswered(result.attempt, result.rewards)
           if (result.correct) {
             playSound('correct')
             setCelebrate(option.id)

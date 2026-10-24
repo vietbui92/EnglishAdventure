@@ -1,6 +1,8 @@
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Common.Persistence;
 using EnglishAdventure.Application.Content;
+using EnglishAdventure.Application.Rewards;
+using EnglishAdventure.Application.Rewards.Models;
 using EnglishAdventure.Application.Family;
 using EnglishAdventure.Application.Learning.Models;
 using EnglishAdventure.Domain.ValueObjects;
@@ -14,6 +16,9 @@ public sealed class MatchPairCommandHandler : IRequestHandler<MatchPairCommand, 
     private readonly IChildProfileRepository _profiles;
     private readonly ILessonRepository _lessons;
     private readonly ILessonAttemptRepository _attempts;
+    private readonly ILessonCompletionRepository _completions;
+    private readonly IRewardsRepository _rewards;
+    private readonly IPlayQueries _queries;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _timeProvider;
 
@@ -22,6 +27,9 @@ public sealed class MatchPairCommandHandler : IRequestHandler<MatchPairCommand, 
         IChildProfileRepository profiles,
         ILessonRepository lessons,
         ILessonAttemptRepository attempts,
+        ILessonCompletionRepository completions,
+        IRewardsRepository rewards,
+        IPlayQueries queries,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider)
     {
@@ -29,6 +37,9 @@ public sealed class MatchPairCommandHandler : IRequestHandler<MatchPairCommand, 
         _profiles = profiles;
         _lessons = lessons;
         _attempts = attempts;
+        _completions = completions;
+        _rewards = rewards;
+        _queries = queries;
         _unitOfWork = unitOfWork;
         _timeProvider = timeProvider;
     }
@@ -40,11 +51,23 @@ public sealed class MatchPairCommandHandler : IRequestHandler<MatchPairCommand, 
         var key = AnswerKey.For(await LearningRules.GetLessonOfAsync(_lessons, attempt, cancellationToken));
 
         var outcome = attempt.MatchPair(key, request.LeftId, request.RightId, _timeProvider.GetUtcNow().UtcDateTime);
+        EarnedRewards? earned = null;
         if (!outcome.Repeated)
         {
+            if (attempt.IsFinished)
+            {
+                earned = await LearningRules.FinishAsync(
+                    _completions,
+                    _rewards,
+                    _queries,
+                    attempt,
+                    _timeProvider.GetUtcNow().UtcDateTime,
+                    cancellationToken);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        return new AnswerResult(outcome.Correct, CorrectOptionId: null, AttemptView.From(attempt, key));
+        return new AnswerResult(outcome.Correct, CorrectOptionId: null, AttemptView.From(attempt, key), earned);
     }
 }

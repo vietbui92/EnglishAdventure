@@ -612,6 +612,149 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.LessonCompletion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("BestAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("BestScorePercent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BestStars")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("ChildProfileId", "LessonId")
+                        .IsUnique();
+
+                    b.ToTable("learning_lesson_completions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_learning_lesson_completions_BestScorePercent", "[BestScorePercent] BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_learning_lesson_completions_BestStars", "[BestStars] BETWEEN 1 AND 3");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Rewards.BadgeAward", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AwardedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("LevelId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("LevelId");
+
+                    b.HasIndex("ChildProfileId", "Kind", "LevelId")
+                        .IsUnique();
+
+                    b.ToTable("rewards_badge_awards", (string)null);
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Rewards.BadgeDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kind")
+                        .IsUnique();
+
+                    b.ToTable("rewards_badges", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_rewards_badges_Kind", "[Kind] IN (1, 2, 3, 4)");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Rewards.PointsTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AwardedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StarNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("ChildProfileId", "LessonId", "StarNumber")
+                        .IsUnique();
+
+                    b.ToTable("rewards_points_transactions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_rewards_points_transactions_Points", "[Points] > 0");
+
+                            t.HasCheckConstraint("CK_rewards_points_transactions_StarNumber", "[StarNumber] BETWEEN 1 AND 3");
+                        });
+                });
+
             modelBuilder.Entity("EnglishAdventure.Infrastructure.Identity.EmailConfirmationToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -867,6 +1010,56 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.LessonAttempt", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Family.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Learning.LessonCompletion", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Family.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Rewards.BadgeAward", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Family.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Level", null)
+                        .WithMany()
+                        .HasForeignKey("LevelId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Rewards.PointsTransaction", b =>
                 {
                     b.HasOne("EnglishAdventure.Domain.Entities.Family.ChildProfile", null)
                         .WithMany()

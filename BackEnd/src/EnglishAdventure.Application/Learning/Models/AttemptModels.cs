@@ -1,3 +1,4 @@
+using EnglishAdventure.Application.Rewards.Models;
 using EnglishAdventure.Domain.Entities.Learning;
 using EnglishAdventure.Domain.ValueObjects;
 
@@ -65,4 +66,5 @@ public sealed record AttemptResult(int CorrectItems, int TotalItems, int ScorePe
 
 /// <summary>One answer or match graded by the server, with the attempt after it.</summary>
 /// <param name="CorrectOptionId">For a quiz question: the right option. Null for a match, so a wrong try gives nothing away.</param>
-public sealed record AnswerResult(bool Correct, Guid? CorrectOptionId, AttemptView Attempt);
+/// <param name="Rewards">When this answer finished the attempt with a better result: the points and badges it earned (S5.1, S5.2).</param>
+public sealed record AnswerResult(bool Correct, Guid? CorrectOptionId, AttemptView Attempt, EarnedRewards? Rewards = null);

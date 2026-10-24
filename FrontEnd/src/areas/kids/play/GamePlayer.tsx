@@ -1,14 +1,27 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { motion, useAnimate, useReducedMotion } from 'motion/react'
-import { RotateCcw, Star, Swords } from 'lucide-react'
+import { RotateCcw, Sailboat, Star, Swords } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Burst } from '@/areas/kids/adventure/effects'
+import { savePlace } from '@/areas/kids/adventure/place'
 import { playSound } from '@/areas/kids/adventure/sound'
-import { gameSteps, nextStep, useStartAttempt, type AttemptView, type PlayLesson } from '@/areas/kids/play/api'
+import {
+  gameSteps,
+  nextStep,
+  playKeys,
+  useStartAttempt,
+  type AttemptView,
+  type EarnedRewards,
+  type LearnerMap,
+  type PlayLesson,
+} from '@/areas/kids/play/api'
 import { KidsPicture } from '@/areas/kids/play/KidsPicture'
 import { MatchingStep } from '@/areas/kids/play/MatchingStep'
 import { QuizStep } from '@/areas/kids/play/QuizStep'
+import { useSession } from '@/shared/auth/session'
+import { BadgeMedal } from '@/shared/components/BadgeMedal'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
@@ -25,6 +38,18 @@ export function GamePlayer({ lesson }: { lesson: PlayLesson }) {
   const [step, setStep] = useState(0)
   const steps = gameSteps(lesson.activities)
   const boss = lesson.kind === 'Boss'
+  const queryClient = useQueryClient()
+
+  // What the attempt earned, from the answer that finished it (S5.1, S5.2).
+  const [earned, setEarned] = useState<EarnedRewards | null>(null)
+
+  // A finished attempt may complete the lesson, open the next one (S4.2) and pay rewards: the map and the badge room
+  // read them again.
+  const answered = (next: AttemptView, rewards?: EarnedRewards | null) => {
+    setAttempt(next)
+    if (rewards) setEarned(rewards)
+    if (next.status === 'Finished') void queryClient.invalidateQueries({ queryKey: playKeys.all })
+  }
 
   const begin = () =>
     start.mutate(undefined, {
@@ -87,7 +112,7 @@ export function GamePlayer({ lesson }: { lesson: PlayLesson }) {
             number={current.number}
             count={current.count}
             answered={attempt.questions.find((answered) => answered.questionId === current.question.id)}
-            onAnswered={setAttempt}
+            onAnswered={answered}
             onNext={() => setStep(nextStep(steps, attempt, step + 1))}
           />
         ) : (
@@ -96,7 +121,7 @@ export function GamePlayer({ lesson }: { lesson: PlayLesson }) {
             attemptId={attempt.attemptId}
             activity={current.activity}
             attempt={attempt}
-            onAnswered={setAttempt}
+            onAnswered={answered}
             onNext={() => setStep(nextStep(steps, attempt, step + 1))}
           />
         )
@@ -104,7 +129,9 @@ export function GamePlayer({ lesson }: { lesson: PlayLesson }) {
         <ResultScreen
           lesson={lesson}
           attempt={attempt}
+          earned={earned}
           onReplay={() => {
+            setEarned(null)
             setAttempt(null)
             setStep(0)
             begin()
@@ -165,17 +192,25 @@ function BossHealth({ lesson, attempt }: { lesson: PlayLesson; attempt: AttemptV
   )
 }
 
-/** The end of an attempt: the stars (PD-011), the score, and playing again. */
+/**
+ * The end of an attempt: the stars (PD-011), the score, and playing again. A defeated boss opens the next island
+ * (F4.7, S4.2): "Sail to the new island" takes the child back to the sea, at this island's boat.
+ */
 function ResultScreen({
   lesson,
   attempt,
+  earned,
   onReplay,
 }: {
   lesson: PlayLesson
   attempt: AttemptView
+  earned: EarnedRewards | null
   onReplay: () => void
 }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const child = useSession()?.user.childProfile
+  const map = useQueryClient().getQueryData<LearnerMap>(playKeys.map())
   const result = attempt.result
   const stars = Number(result?.stars ?? 0)
   const boss = lesson.kind === 'Boss'
@@ -188,6 +223,14 @@ function ResultScreen({
       : stars > 0
         ? t('kids.game.wellDone')
         : t('kids.game.keepTrying')
+  const levels = map?.levels ?? []
+  const nextLevel = levels[levels.findIndex((level) => level.id === lesson.levelId) + 1]
+  const levelUp = boss && stars > 0
+
+  const sail = () => {
+    savePlace(child?.id, { levelId: lesson.levelId, lessonId: lesson.id, atSea: true })
+    void navigate('/kids')
+  }
 
   // A star sound as each earned star lands, then the fanfare.
   useEffect(() => {
@@ -233,7 +276,24 @@ function ResultScreen({
           })}
         </p>
       )}
+      {earned && <EarnedPanel earned={earned} />}
+      {levelUp && (
+        <motion.p
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 14, delay: 1.4 }}
+          className="rounded-2xl bg-amber-100 px-5 py-3 text-xl font-bold text-amber-900"
+        >
+          {nextLevel || levels.length === 0 ? t('kids.play.newIsland') : t('kids.play.allIslands')}
+        </motion.p>
+      )}
       <div className="flex flex-wrap justify-center gap-3">
+        {levelUp && nextLevel && (
+          <Button className="kids-pulse min-h-14 rounded-2xl px-8 text-xl" onClick={sail}>
+            <Sailboat aria-hidden className="size-5" />
+            {t('kids.play.toNewIsland')}
+          </Button>
+        )}
         <Button variant="outline" className="min-h-14 rounded-2xl px-8 text-xl" onClick={onReplay}>
           <RotateCcw aria-hidden className="size-5" />
           {t('kids.game.replay')}
@@ -243,5 +303,49 @@ function ResultScreen({
         </Button>
       </div>
     </motion.div>
+  )
+}
+
+/** The points and badges this attempt earned (F4.5): "+20 points" rising, then each new badge popping out. */
+function EarnedPanel({ earned }: { earned: EarnedRewards }) {
+  const { t } = useTranslation()
+  const points = Number(earned.points)
+
+  // The badges ring out after the stars have landed.
+  useEffect(() => {
+    if (earned.badges.length === 0) return
+    const timer = setTimeout(() => playSound('reveal'), 1800)
+    return () => clearTimeout(timer)
+  }, [earned.badges.length])
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      {points > 0 && (
+        <motion.p
+          initial={{ y: 20, opacity: 0, scale: 0.6 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 14, delay: 1.2 }}
+          className="rounded-full bg-yellow-100 px-5 py-2 font-heading text-2xl font-bold text-amber-700"
+        >
+          {t('kids.rewards.points', { points })}
+        </motion.p>
+      )}
+      {earned.badges.map((badge, index) => (
+        <motion.div
+          key={`${badge.kind}-${badge.levelId ?? ''}`}
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 12, delay: 1.8 + index * 0.5 }}
+          className="relative flex items-center gap-4 rounded-2xl bg-violet-50 px-5 py-3 text-left"
+        >
+          <BadgeMedal kind={badge.kind} imageUrl={badge.imageUrl} />
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold text-violet-700">{t('kids.rewards.newBadge')}</span>
+            <span className="font-heading text-xl font-bold">{badge.name}</span>
+            <span className="text-muted-foreground">{badge.description}</span>
+          </span>
+        </motion.div>
+      ))}
+    </div>
   )
 }

@@ -42,7 +42,12 @@ internal sealed class AdminApiClient
     /// A child session (PD-010): a new Parent signs in, adds a child profile and starts child mode with it. Needs the
     /// system roles to be synced.
     /// </summary>
-    public static async Task<AdminApiClient> StartChildSessionAsync(SqlServerAuthDatabaseFixture fixture)
+    public static async Task<AdminApiClient> StartChildSessionAsync(SqlServerAuthDatabaseFixture fixture) =>
+        (await StartFamilyAsync(fixture)).Child;
+
+    /// <summary>A new Parent with one child profile, and a child session for it.</summary>
+    public static async Task<(AdminApiClient Parent, AdminApiClient Child, string ProfileId)> StartFamilyAsync(
+        SqlServerAuthDatabaseFixture fixture)
     {
         var parent = await SignInAsync(
             fixture,
@@ -54,7 +59,7 @@ internal sealed class AdminApiClient
         var session = await parent.PostAsync("/api/v1/auth/child-session", new { childProfileId = profileId });
         Assert.Equal(HttpStatusCode.OK, session.StatusCode);
         var body = await session.Content.ReadFromJsonAsync<JsonElement>();
-        return new AdminApiClient(fixture, body.GetProperty("accessToken").GetString()!);
+        return (parent, new AdminApiClient(fixture, body.GetProperty("accessToken").GetString()!), profileId!);
     }
 
     public static Task<HttpResponseMessage> LoginAsync(SqlServerAuthDatabaseFixture fixture, string email, string password) =>

@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Burst, useNudges } from '@/areas/kids/adventure/effects'
 import { playSound } from '@/areas/kids/adventure/sound'
-import { useMatchPair, type AttemptView, type PlayActivity, type PlayChoice } from '@/areas/kids/play/api'
+import {
+  useMatchPair,
+  type AttemptView,
+  type EarnedRewards,
+  type PlayActivity,
+  type PlayChoice,
+} from '@/areas/kids/play/api'
 import { KidsPicture } from '@/areas/kids/play/KidsPicture'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
@@ -13,7 +19,7 @@ interface MatchingStepProps {
   attemptId: string
   activity: PlayActivity
   attempt: AttemptView
-  onAnswered: (attempt: AttemptView) => void
+  onAnswered: (attempt: AttemptView, rewards?: EarnedRewards | null) => void
   onNext: () => void
 }
 
@@ -45,7 +51,7 @@ export function MatchingStep({ attemptId, activity, attempt, onAnswered, onNext 
           const pair = `[data-choice="${selected}"], [data-choice="${right.id}"]`
           setSelected(null)
           setMissed(!result.correct)
-          onAnswered(result.attempt)
+          onAnswered(result.attempt, result.rewards)
           if (result.correct) {
             const finished = matching.left.every(
               (left) => left.id === selected || result.attempt.matchedPairs.some((match) => match.leftId === left.id),

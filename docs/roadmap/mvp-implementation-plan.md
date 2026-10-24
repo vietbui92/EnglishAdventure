@@ -64,12 +64,12 @@ Rules for every step:
 | S3.5 | Development seed content | OQ-006, S3.8 | 🟡 Needs decision |
 | **Phase 4: Learning** | | | |
 | S4.1 | Lesson attempts, server-side grading and stars | | ✅ Done 2026-10-24 |
-| S4.2 | Completion, best result, lesson and level unlocking | | 🟢 Ready |
-| S4.3 | Parent progress view | S4.2 | ⚪ Waiting |
+| S4.2 | Completion, best result, lesson and level unlocking | | ✅ Done 2026-10-24 |
+| S4.3 | Parent progress view | | 🟢 Ready |
 | **Phase 5: Rewards** | | | |
-| S5.1 | Points ledger (10 points per new star) | S4.2 | ⚪ Waiting |
-| S5.2 | Badges (four types) | S5.1 | ⚪ Waiting |
-| S5.3 | Rewards views for child and Parent | S5.2 | ⚪ Waiting |
+| S5.1 | Points ledger (10 points per new star) | | ✅ Done 2026-10-24 |
+| S5.2 | Badges (four types) | | ✅ Done 2026-10-24 |
+| S5.3 | Rewards views for child and Parent | | ✅ Done 2026-10-24 (backend) |
 | **Phase 6: Release hardening** | | | |
 | S6.1 | Rate limiting on `login` and `refresh` | | ⚪ Waiting |
 | S6.2 | Cleanup job: expired tokens, unconfirmed accounts after 7 days | | ⚪ Waiting |
@@ -370,7 +370,7 @@ Scope as approved:
   - A locked lesson cannot be started (from S4.2).
   - The grading rules have unit tests.
 
-**S4.2 Completion, best result and unlocking.**
+**S4.2 Completion, best result and unlocking.** ✅ Done 2026-10-24. Owner decisions 2026-10-24: a boss is defeated with one star or more; a completed lesson stays open even when a new lesson is put before it, and the boss closes again until every lesson has a star (a defeated boss keeps the next level open); the first lesson of the first level is open, a level's first lesson opens when the previous boss is defeated; an unfinished attempt can be played to its end even if its lesson closed, but not started again. *As built:* `LessonCompletion` (`learning_lesson_completions`, unique on child and lesson, best stars 1–3 and best score, row version) is created or raised in the same save as the answer that finishes an attempt with a star (`LearningRules.RecordCompletionAsync`); a worse replay changes nothing. `AdventureProgress` (domain service) computes from the published map in order and the best stars: each lesson and boss Locked / Available / Completed, each level unlocked and beaten, and the child's level (never stored). `GET play/map` now returns `AdventureMap` (`currentLevel`; per level `unlocked`, `beaten`; per lesson and boss `state`, `bestStars`) from the Learning query `GetAdventureQuery`; `GET play/lessons/{id}` (`GetLessonToPlayQuery`) and starting a new attempt answer 422 `lesson-locked` when the lesson is not open (the old Content queries `GetLearnerMap` and `GetPlayLesson` are gone). Migration `AddLessonCompletions` (hand-written backfill: attempts already finished with a star become completions). Tests: domain (unlock rules incl. a new lesson first, reordering, a level without a boss; completion from an attempt, replays only raise it), 7 SQL integration (new child, boss opening and defeat, worse replay, per child, unfinished boss after it closed, the last answer sent twice at once completes once); 396 backend tests pass.
 - **Includes:**
   - The first attempt with at least one star creates a `LessonCompletion`; later attempts only raise its best stars (PD-011, replay allowed).
   - The computed unlock rules: next lesson after a completed one; the boss after every lesson of the level has a star; the next level after the boss is defeated.
@@ -387,6 +387,10 @@ Scope as approved:
 - *Done when:* a cross-family request returns 404 (tested).
 
 ### Phase 5: Rewards
+
+*Owner decisions 2026-10-24 for S5.1–S5.3:* the Admin can edit the badges' names, descriptions and pictures (the four kinds and their rules stay fixed); points and badges are never taken back; results earned before rewards existed are paid by the migration; the child sees rewards on the result screen, on the map and in a badge room, and the Parent sees each child's. Editing stays with SuperAdmin (`rewards.manage`, S1.1 decision: ContentAdmin does not hold it).
+
+*As built (S5.1–S5.3, backend):* module Rewards (`Domain/Entities/Rewards`): `PointsTransaction` (`rewards_points_transactions`, unique source key child + lesson + star number, 10 points), `BadgeDefinition` (`rewards_badges`, one per `BadgeKind`, name ≤ 60 and description ≤ 200 with `{level}` replaced by the level's island name, optional https picture), `BadgeAward` (`rewards_badge_awards`, unique child + kind + level, nulls equal). `RewardRules` (domain service) decides, when a lesson's best result rises, the new stars (10 points each) and the badges now won (first completion; first three stars; boss defeated; three stars on every lesson and the boss of a level). `LearningRules.FinishAsync` records the completion and pays the rewards in the same save as the answer that finishes the attempt; the answer's `AnswerResult.rewards` says what was earned. Endpoints: `GET play/rewards` (child: points and every badge on the map, won or not), `GET family/children/{id}/rewards` (`family.progress.read`, another family's child is 404), `GET/PUT admin/rewards/badges[/{kind}]` (`rewards.manage`); `GET play/map` has `points`. Migration `AddRewards`: tables, the four default badges (Vietnamese texts), and the backfill (points for every completed star, badges already met). Tests: domain (points per new star, each badge once, level badges, texts), 5 SQL integration (points and first badges, both level badges, the last answer sent twice pays once, Parent's own children only, editing badges and the child seeing the new texts); 407 backend tests pass.
 
 **S5.1 Points ledger.**
 - **Includes:** 10 points for each newly earned star (PD-011), awarded in the same transaction as the attempt result, using the ledger and its unique source key (child, lesson, star number).
@@ -432,6 +436,8 @@ Every Phase 6 step must be done before any public release.
 | 2026-10-24 | S3.8 done: boss challenge per level (a boss lesson using the level's words, name and picture, level published only with its boss), migration `AddBossChallenges`. S3.4 learner lesson map and F2.8 boss editor are Ready. |
 | 2026-10-24 | S3.4 done: learner map and lessons to play (`api/v1/play`), answers never sent, migration `AddMatchingChoiceIds`. Phase 3 is done except S3.5 (OQ-006). S4.1 attempts and F4.6 learn step are Ready. |
 | 2026-10-24 | S4.1 done: lesson attempts graded by the server one question or pair at a time, stars, resume, migration `AddLessonAttempts`. S4.2 and F4.3/F4.4 (quiz and matching players) are Ready. |
+| 2026-10-24 | S5.1–S5.3 done on the backend: points ledger, four editable badges, child, Parent and Admin endpoints; migration `AddRewards` with defaults and backfill. |
+| 2026-10-24 | S4.2 done: lesson completions with best stars, computed unlocking (owner decisions), `lesson-locked`, map with states; migration `AddLessonCompletions`. S4.3 and S5.1 are Ready. |
 | 2026-10-24 | PD-013 (discovery walk, review cards, speaking practice) decided; S3.9 done: word movement and sound, migration `AddWordDiscovery`. |
 | 2026-10-24 | F4.3/F4.4 done on the frontend (quiz and matching players, result with stars, boss health bar). |
 | 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |

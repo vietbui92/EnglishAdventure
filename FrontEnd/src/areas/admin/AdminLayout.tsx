@@ -1,4 +1,4 @@
-import { BookOpen, LayoutDashboard, ShieldCheck, Users } from 'lucide-react'
+import { Award, BookOpen, LayoutDashboard, ShieldCheck, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, Outlet } from 'react-router'
 import { AccountMenu } from '@/shared/components/AccountMenu'
@@ -13,6 +13,7 @@ export function AdminLayout() {
     { to: '/admin/users', label: t('admin.nav.users'), icon: Users, permission: Permissions.usersRead },
     { to: '/admin/roles', label: t('admin.nav.roles'), icon: ShieldCheck, permission: Permissions.rolesManage },
     { to: '/admin/content', label: t('admin.nav.content'), icon: BookOpen, permission: Permissions.contentReadDrafts },
+    { to: '/admin/rewards', label: t('admin.nav.rewards'), icon: Award, permission: Permissions.rewardsManage },
   ]
 
   return (

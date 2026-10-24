@@ -5,7 +5,8 @@
       "dashboard": "Overview",
       "users": "Users",
       "roles": "Roles",
-      "content": "Content"
+      "content": "Content",
+      "rewards": "Badges"
     },
     "dashboard": {
       "description": "Welcome to the administration area."
@@ -393,6 +394,37 @@
             "nameTooLong": "The boss’s name can have at most 100 characters.",
             "pictureRequired": "A published boss needs a picture."
           }
+        }
+      }
+    },
+    "rewards": {
+      "title": "Badges",
+      "description": "The four badges children win while learning. You can change their names, descriptions and pictures; how they are won is fixed.",
+      "loading": "Loading the badges…",
+      "loadError": "The badges could not be loaded.",
+      "saveError": "Not saved. Please try again.",
+      "perLevel": "one per level",
+      "edit": "Edit",
+      "editBadge": "Edit the badge {{name}}",
+      "kinds": {
+        "FirstLesson": "First lesson",
+        "Perfect": "Perfect",
+        "LevelConqueror": "Level conqueror",
+        "LevelSuperstar": "Level superstar"
+      },
+      "form": {
+        "title": "Edit badge: {{kind}}",
+        "hint": "Children see this name and description in their badge room.",
+        "levelHint": "Write {level} where the island’s name goes: \"Conqueror of {level}\" becomes \"Conqueror of Pet Island\".",
+        "name": "Badge name",
+        "descriptionLabel": "Description (how to win it)",
+        "imageUrl": "Picture address (https://, optional)",
+        "imageUrlHint": "Leave it empty and the app draws the badge.",
+        "validation": {
+          "nameRequired": "Enter a name (1 to 60 characters).",
+          "nameTooLong": "The name can have at most 60 characters.",
+          "descriptionRequired": "Enter a description (1 to 200 characters).",
+          "descriptionTooLong": "The description can have at most 200 characters."
         }
       }
     }

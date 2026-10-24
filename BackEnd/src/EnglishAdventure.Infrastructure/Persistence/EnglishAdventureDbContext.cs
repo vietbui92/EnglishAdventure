@@ -3,6 +3,7 @@ using EnglishAdventure.Domain.Entities.Content;
 using EnglishAdventure.Domain.Entities.Family;
 using EnglishAdventure.Domain.Entities.Identity;
 using EnglishAdventure.Domain.Entities.Learning;
+using EnglishAdventure.Domain.Entities.Rewards;
 using EnglishAdventure.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +39,14 @@ public sealed class EnglishAdventureDbContext : DbContext
     public DbSet<Lesson> Lessons => Set<Lesson>();
 
     public DbSet<LessonAttempt> LessonAttempts => Set<LessonAttempt>();
+
+    public DbSet<LessonCompletion> LessonCompletions => Set<LessonCompletion>();
+
+    public DbSet<PointsTransaction> PointsTransactions => Set<PointsTransaction>();
+
+    public DbSet<BadgeDefinition> BadgeDefinitions => Set<BadgeDefinition>();
+
+    public DbSet<BadgeAward> BadgeAwards => Set<BadgeAward>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

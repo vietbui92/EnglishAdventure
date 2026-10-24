@@ -6,8 +6,10 @@ using EnglishAdventure.Application.Learning.Commands.StartLessonAttempt;
 using EnglishAdventure.Application.Learning.Models;
 using EnglishAdventure.Application.Learning.Queries.GetAttempt;
 using EnglishAdventure.Application.Content.Models;
-using EnglishAdventure.Application.Content.Queries.GetLearnerMap;
-using EnglishAdventure.Application.Content.Queries.GetPlayLesson;
+using EnglishAdventure.Application.Learning.Queries.GetAdventure;
+using EnglishAdventure.Application.Learning.Queries.GetLessonToPlay;
+using EnglishAdventure.Application.Rewards.Models;
+using EnglishAdventure.Application.Rewards.Queries.GetMyRewards;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,8 +18,8 @@ namespace EnglishAdventure.Api.Controllers;
 
 /// <summary>
 /// The content a child plays (S3.4), for child sessions only (<c>learning.play</c>, PD-010). Published levels, lessons
-/// and bosses only, and never their answers: options carry their own identities and come shuffled. Locks and stars come
-/// with S4.2, answering with S4.1.
+/// and bosses only, and never their answers: options carry their own identities and come shuffled. Answering is S4.1;
+/// locks, completion and best stars are S4.2.
 /// </summary>
 [ApiController]
 [Route("api/v1/play")]
@@ -33,31 +35,47 @@ public sealed class PlayController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>The adventure map: published levels in order with their lessons and boss.</summary>
+    /// <summary>
+    /// The adventure map: published levels in order with their lessons and boss, and where the child is: each level
+    /// unlocked or not, each lesson and boss Locked, Available or Completed with its best stars, and the child's level.
+    /// </summary>
     [HttpGet("map")]
-    [ProducesResponseType(typeof(LearnerMap), StatusCodes.Status200OK)]
-    public async Task<ActionResult<LearnerMap>> Map(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(AdventureMap), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AdventureMap>> Map(CancellationToken cancellationToken)
     {
-        return Ok(await _mediator.Send(new GetLearnerMapQuery(), cancellationToken));
+        return Ok(await _mediator.Send(new GetAdventureQuery(), cancellationToken));
     }
 
-    /// <summary>A lesson or boss to play: learn cards, then activities. 404 unless it and its level are published.</summary>
+    /// <summary>
+    /// A lesson or boss to play: learn cards, then activities. 404 unless it and its level are published; 422
+    /// <c>lesson-locked</c> when it is not open for the child (an unfinished attempt keeps it open).
+    /// </summary>
+    /// <summary>The child's points and every badge on the map, won or not (S5.3): the badge room.</summary>
+    [HttpGet("rewards")]
+    [ProducesResponseType(typeof(RewardsOverview), StatusCodes.Status200OK)]
+    public async Task<ActionResult<RewardsOverview>> Rewards(CancellationToken cancellationToken)
+    {
+        return Ok(await _mediator.Send(new GetMyRewardsQuery(), cancellationToken));
+    }
+
     [HttpGet("lessons/{lessonId:guid}")]
     [ProducesResponseType(typeof(PlayLesson), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<PlayLesson>> Lesson(Guid lessonId, CancellationToken cancellationToken)
     {
-        return Ok(await _mediator.Send(new GetPlayLessonQuery(lessonId), cancellationToken));
+        return Ok(await _mediator.Send(new GetLessonToPlayQuery(lessonId), cancellationToken));
     }
 
     /// <summary>
     /// Starts playing the lesson, or resumes the child's unfinished attempt of it (S4.1, PD-012): what is done so far.
-    /// 404 unless the lesson and its level are published.
+    /// 404 unless the lesson and its level are published; a new attempt needs the lesson open (422 <c>lesson-locked</c>).
     /// </summary>
     [HttpPost("lessons/{lessonId:guid}/attempts")]
     [ProducesResponseType(typeof(AttemptView), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<AttemptView>> StartAttempt(Guid lessonId, CancellationToken cancellationToken)
     {
         return Ok(await _mediator.Send(new StartLessonAttemptCommand(lessonId), cancellationToken));

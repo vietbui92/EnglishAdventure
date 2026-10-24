@@ -1,16 +1,18 @@
 import { motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
-import { Sailboat, Swords } from 'lucide-react'
+import { Lock, Sailboat, Star, Swords } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
+import { useNudges } from '@/areas/kids/adventure/effects'
 import { levelLabel } from '@/areas/kids/adventure/labels'
 import { Boat, Decor, Explorer, themeOf, WaveRows } from '@/areas/kids/adventure/scenery'
 import { playSound, unlockSound } from '@/areas/kids/adventure/sound'
 import { Stage } from '@/areas/kids/adventure/Stage'
 import { glide, pause, smooth, svgPath, track, type Point } from '@/areas/kids/adventure/track'
-import { type MapLevel } from '@/areas/kids/play/api'
+import { type MapLevel, type StopState } from '@/areas/kids/play/api'
 import { KidsPicture } from '@/areas/kids/play/KidsPicture'
 import { Button } from '@/shared/components/ui/button'
+import { cn } from '@/shared/lib/utils'
 
 const VIEW = 1000
 const HEIGHT = 600
@@ -53,6 +55,8 @@ interface Stop {
   title: string
   number: number
   imageUrl: string | null
+  state: StopState
+  stars: number
 }
 
 function stopsOf(level: MapLevel): Stop[] {
@@ -63,9 +67,22 @@ function stopsOf(level: MapLevel): Stop[] {
     title: lesson.title,
     number: index + 1,
     imageUrl: null,
+    state: lesson.state,
+    stars: Number(lesson.bestStars),
   }))
   const boss = level.boss
-    ? [{ id: level.boss.id, at: 1, boss: true, title: level.boss.name, number: 0, imageUrl: level.boss.imageUrl }]
+    ? [
+        {
+          id: level.boss.id,
+          at: 1,
+          boss: true,
+          title: level.boss.name,
+          number: 0,
+          imageUrl: level.boss.imageUrl,
+          state: level.boss.state,
+          stars: Number(level.boss.bestStars),
+        },
+      ]
     : []
   return [...lessons, ...boss]
 }
@@ -87,7 +104,8 @@ interface IslandSceneProps {
 /**
  * A level's island up close (owner 2026-10-24): a footpath with a signpost for each lesson, in order, and the boss's
  * lair at its end. The child taps a stop; the character walks the path to it and the lesson opens. "Back to the boat"
- * walks back down and sails off to the sea.
+ * walks back down and sails off to the sea. Stops show where the child is (S4.2): completed ones are green with their
+ * stars, the next one glows, locked ones are grey and say what opens them instead of opening.
  */
 export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpenLesson, onLeave }: IslandSceneProps) {
   const { t } = useTranslation()
@@ -101,6 +119,8 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
   const heroTop = useTransform(progress, (fraction) => top(trail.at(fraction).y))
   const [walking, setWalking] = useState<Stop | 'boat' | null>(null)
   const [facing, setFacing] = useState(1)
+  const [notice, setNotice] = useState<string | null>(null)
+  const { scope, shake } = useNudges()
 
   const walkTo = async (fraction: number) => {
     const from = progress.get()
@@ -116,6 +136,13 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
   const go = async (stop: Stop) => {
     if (walking) return
     unlockSound()
+    if (stop.state === 'Locked') {
+      playSound('wrong')
+      shake(`[data-stop="${stop.id}"]`)
+      setNotice(stop.boss ? t('kids.map.bossLocked') : t('kids.map.stopLocked'))
+      return
+    }
+    setNotice(null)
     playSound('tap')
     setWalking(stop)
     await walkTo(stop.at)
@@ -137,6 +164,8 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
 
   const lessonStops = stops.filter((stop) => !stop.boss)
   const bossStop = stops.find((stop) => stop.boss)
+  // The stop to go to next glows.
+  const next = stops.find((stop) => stop.state === 'Available')?.id
 
   return (
     <motion.section
@@ -145,6 +174,7 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: still ? 0 : 0.6, ease: 'easeOut' }}
       className="size-full"
+      ref={scope}
     >
       <Stage
         horizon={0}
@@ -173,7 +203,7 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
                   ? t('kids.map.toBoat')
                   : walking
                     ? t('kids.map.walking', { place: walking.title })
-                    : t('kids.map.pickStop')}
+                    : (notice ?? t('kids.map.pickStop'))}
               </p>
               <Button
                 variant="secondary"
@@ -259,12 +289,31 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
                     void go(stop)
                   }}
                   aria-label={t('kids.map.lesson', { number: stop.number, title: stop.title })}
-                  className="group flex flex-col items-center focus-visible:outline-none"
+                  aria-disabled={stop.state === 'Locked' ? true : undefined}
+                  aria-describedby={`stop-${stop.id}-state`}
+                  data-stop={stop.id}
+                  className="group relative flex flex-col items-center focus-visible:outline-none"
                 >
-                  <span className="flex size-[6.5cqw] items-center justify-center rounded-full border-[0.4cqw] border-white bg-[#f59e0b] font-heading text-[3cqw] font-bold text-white shadow-lg transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white">
-                    {stop.number}
+                  {stop.id === next && (
+                    <span
+                      aria-hidden
+                      className="kids-pulse absolute top-0 size-[6.5cqw] rounded-full bg-amber-300/70"
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      'relative flex size-[6.5cqw] items-center justify-center rounded-full border-[0.4cqw] border-white font-heading text-[3cqw] font-bold text-white shadow-lg transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white',
+                      stop.state === 'Completed'
+                        ? 'bg-green-500'
+                        : stop.state === 'Locked'
+                          ? 'bg-slate-400'
+                          : 'bg-[#f59e0b]',
+                    )}
+                  >
+                    {stop.state === 'Locked' ? <Lock aria-hidden className="size-[2.6cqw]" /> : stop.number}
                   </span>
-                  <span className="h-[2.4cqw] w-[0.8cqw] bg-[#7a4b22]" />
+                  <StopStars stop={stop} />
+                  <span className="h-[1.6cqw] w-[0.8cqw] bg-[#7a4b22]" />
                   <span className="max-w-[16cqw] truncate rounded-full bg-white/90 px-[1.2cqw] py-[0.2cqw] text-[1.7cqw] font-bold text-foreground shadow">
                     {stop.title}
                   </span>
@@ -282,13 +331,29 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
               void go(bossStop)
             }}
             aria-label={t('kids.map.bossStop', { name: bossStop.title })}
+            aria-disabled={bossStop.state === 'Locked' ? true : undefined}
+            aria-describedby={`stop-${bossStop.id}-state`}
+            data-stop={bossStop.id}
             className="group absolute flex -translate-x-1/2 -translate-y-full flex-col items-center focus-visible:outline-none"
             style={{ left: left(830), top: top(150) }}
           >
-            <span className="kids-pulse absolute top-[2cqw] size-[11cqw] rounded-full bg-red-500/40" />
-            <span className="relative overflow-hidden rounded-full border-[0.5cqw] border-red-500 bg-white shadow-xl transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white">
+            {bossStop.state === 'Available' && (
+              <span className="kids-pulse absolute top-[2cqw] size-[11cqw] rounded-full bg-red-500/40" />
+            )}
+            <span
+              className={cn(
+                'relative overflow-hidden rounded-full border-[0.5cqw] bg-white shadow-xl transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white',
+                bossStop.state === 'Locked' ? 'border-slate-400 grayscale' : 'border-red-500',
+              )}
+            >
               <KidsPicture url={bossStop.imageUrl} alt="" className="size-[11cqw]" />
+              {bossStop.state === 'Locked' && (
+                <span className="absolute inset-0 flex items-center justify-center bg-slate-900/40">
+                  <Lock aria-hidden className="size-[4cqw] text-white" />
+                </span>
+              )}
             </span>
+            <StopStars stop={bossStop} />
             <span className="relative -mt-[1.4cqw] flex items-center gap-[0.5cqw] rounded-full bg-red-500 px-[1.2cqw] py-[0.2cqw] text-[1.7cqw] font-bold text-white shadow">
               <Swords aria-hidden className="size-[1.8cqw]" />
               {bossStop.title}
@@ -306,5 +371,32 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
         </motion.div>
       </Stage>
     </motion.section>
+  )
+}
+
+/** A stop's best stars once completed, and its state in words for screen readers. */
+function StopStars({ stop }: { stop: Stop }) {
+  const { t } = useTranslation()
+  return (
+    <span className="relative -mt-[0.8cqw] flex">
+      <span id={`stop-${stop.id}-state`} className="sr-only">
+        {stop.state === 'Completed'
+          ? t('kids.map.stopCompleted', { count: stop.stars })
+          : stop.state === 'Locked'
+            ? t('kids.map.stopLockedState')
+            : t('kids.map.stopAvailable')}
+      </span>
+      {stop.state === 'Completed' &&
+        [1, 2, 3].map((position) => (
+          <Star
+            key={position}
+            aria-hidden
+            className={cn(
+              'size-[2cqw] drop-shadow',
+              position <= stop.stars ? 'fill-yellow-400 text-yellow-500' : 'fill-white/70 text-white/70',
+            )}
+          />
+        ))}
+    </span>
   )
 }

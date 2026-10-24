@@ -118,6 +118,8 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
     {
         var content = await PlayTestData.PublishLevelAsync(_fixture);
         var child = await AdminApiClient.StartChildSessionAsync(_fixture);
+        // The boss opens once the level's lessons have a star (S4.2).
+        await PlayTestData.PlayPetsAsync(child, content.LessonId);
 
         var boss = await ReadAsync(await child.GetAsync($"{PlayRoute}/lessons/{content.BossId}"));
         var draft = await child.GetAsync($"{PlayRoute}/lessons/{content.DraftLessonId}");

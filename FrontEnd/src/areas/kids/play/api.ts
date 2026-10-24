@@ -2,8 +2,12 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, unwrap } from '@/shared/api/client'
 import type { components } from '@/shared/api/schema'
 
-export type LearnerMap = components['schemas']['LearnerMap']
-export type MapLevel = components['schemas']['MapLevel']
+/** The child's adventure (S4.2): levels with their lessons and boss, each with its state and best stars. */
+export type LearnerMap = components['schemas']['AdventureMap']
+export type MapLevel = components['schemas']['AdventureLevel']
+export type MapLesson = components['schemas']['AdventureLesson']
+/** "Locked", "Available" or "Completed". */
+export type StopState = MapLesson['state']
 export type PlayLesson = components['schemas']['PlayLesson']
 export type LearnCard = components['schemas']['LearnCard']
 export type PlayActivity = components['schemas']['PlayActivity']
@@ -11,18 +15,30 @@ export type PlayQuestion = components['schemas']['PlayQuestion']
 export type PlayChoice = components['schemas']['PlayChoice']
 export type AttemptView = components['schemas']['AttemptView']
 export type AnswerResult = components['schemas']['AnswerResult']
+export type EarnedRewards = components['schemas']['EarnedRewards']
+export type RewardsOverview = components['schemas']['RewardsOverview']
+export type BadgeView = components['schemas']['BadgeView']
 
 export const playKeys = {
   all: ['kids', 'play'] as const,
   map: () => [...playKeys.all, 'map'] as const,
   lesson: (lessonId: string) => [...playKeys.all, 'lesson', lessonId] as const,
+  rewards: () => [...playKeys.all, 'rewards'] as const,
 }
 
-/** GET /api/v1/play/map (child session): published levels with their lessons and boss (S3.4). */
+/** GET /api/v1/play/map (child session): published levels with their lessons and boss (S3.4), locks and stars (S4.2). */
 export function useLearnerMap() {
   return useQuery({
     queryKey: playKeys.map(),
     queryFn: ({ signal }) => unwrap(api.GET('/api/v1/play/map', { signal })),
+  })
+}
+
+/** GET /api/v1/play/rewards (child session, S5.3): the child's points and every badge, won or not. */
+export function useMyRewards() {
+  return useQuery({
+    queryKey: playKeys.rewards(),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/v1/play/rewards', { signal })),
   })
 }
 

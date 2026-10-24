@@ -1,7 +1,9 @@
 using EnglishAdventure.Application.Content;
 using EnglishAdventure.Application.Family;
 using EnglishAdventure.Application.Learning;
+using EnglishAdventure.Application.Rewards;
 using EnglishAdventure.Infrastructure.Persistence.Repositories.Learning;
+using EnglishAdventure.Infrastructure.Persistence.Repositories.Rewards;
 using EnglishAdventure.Application.Users;
 using EnglishAdventure.Application.Authentication;
 using EnglishAdventure.Application.Authorization;
@@ -64,6 +66,8 @@ public static class DependencyInjection
         services.AddScoped<ILearnerActivityReader, LearnerActivityReader>();
 
         services.AddScoped<ILessonAttemptRepository, LessonAttemptRepository>();
+        services.AddScoped<ILessonCompletionRepository, LessonCompletionRepository>();
+        services.AddScoped<IRewardsRepository, RewardsRepository>();
 
         services.TryAddSingleton(TimeProvider.System);
 

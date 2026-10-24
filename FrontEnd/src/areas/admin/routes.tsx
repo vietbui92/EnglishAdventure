@@ -30,6 +30,9 @@ export const adminRoutes: RouteObject = {
         withPermission(Permissions.rolesManage, [
           { path: 'roles', lazy: lazyPage(area, (admin) => admin.AdminRolesPage) },
         ]),
+        withPermission(Permissions.rewardsManage, [
+          { path: 'rewards', lazy: lazyPage(area, (admin) => admin.BadgesPage) },
+        ]),
         withPermission(Permissions.contentReadDrafts, [
           {
             path: 'content',

@@ -16,6 +16,8 @@ public sealed class StartLessonAttemptCommandHandler : IRequestHandler<StartLess
     private readonly ILevelRepository _levels;
     private readonly ILessonRepository _lessons;
     private readonly ILessonAttemptRepository _attempts;
+    private readonly ILessonCompletionRepository _completions;
+    private readonly IPlayQueries _queries;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _timeProvider;
 
@@ -25,6 +27,8 @@ public sealed class StartLessonAttemptCommandHandler : IRequestHandler<StartLess
         ILevelRepository levels,
         ILessonRepository lessons,
         ILessonAttemptRepository attempts,
+        ILessonCompletionRepository completions,
+        IPlayQueries queries,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider)
     {
@@ -33,6 +37,8 @@ public sealed class StartLessonAttemptCommandHandler : IRequestHandler<StartLess
         _levels = levels;
         _lessons = lessons;
         _attempts = attempts;
+        _completions = completions;
+        _queries = queries;
         _unitOfWork = unitOfWork;
         _timeProvider = timeProvider;
     }
@@ -47,6 +53,8 @@ public sealed class StartLessonAttemptCommandHandler : IRequestHandler<StartLess
         var attempt = await _attempts.GetInProgressAsync(childId, lesson.Id, cancellationToken);
         if (attempt is null)
         {
+            // A new attempt only for an open lesson (S4.2).
+            await LearningRules.EnsureOpenAsync(_queries, _completions, _attempts, childId, lesson.Id, cancellationToken);
             attempt = LessonAttempt.Start(childId, lesson.Id, key, _timeProvider.GetUtcNow().UtcDateTime);
             _attempts.Add(attempt);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

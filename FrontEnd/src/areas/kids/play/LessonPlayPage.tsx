@@ -36,6 +36,9 @@ export function LessonPlayPage() {
         <div role="alert" className="flex flex-col items-center gap-4 text-center">
           {lesson.error instanceof ApiError && lesson.error.kind === 'not-found' ? (
             <p className="text-xl">{t('kids.play.notFound')}</p>
+          ) : lesson.error instanceof ApiError && lesson.error.code === 'lesson-locked' ? (
+            // Opened from an old link: the lessons before it come first (S4.2).
+            <p className="text-xl">{t('kids.play.locked')}</p>
           ) : (
             <>
               <p className="text-xl">{t('kids.play.loadError')}</p>

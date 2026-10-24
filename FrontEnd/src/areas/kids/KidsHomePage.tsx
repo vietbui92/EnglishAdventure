@@ -19,7 +19,7 @@ export function KidsHomePage() {
   const child = useSession()?.user.childProfile
   const map = useLearnerMap()
   const [place, setPlace] = useState<AdventurePlace>(() => readPlace(child?.id))
-  const [atSea, setAtSea] = useState(false)
+  const [atSea, setAtSea] = useState(place.atSea === true)
 
   // The sea and the music while the map is open.
   useEffect(() => startAmbience(), [])
@@ -37,6 +37,11 @@ export function KidsHomePage() {
       <span className="font-heading text-base font-bold sm:text-xl lg:text-2xl">
         {child ? t('kids.greeting', { nickname: child.nickname }) : t('kids.title')}
       </span>
+      {map.data && (
+        <span className="ml-1 rounded-full bg-yellow-100 px-3 py-0.5 text-sm font-bold text-amber-700 sm:text-base">
+          {t('kids.rewards.total', { points: Number(map.data.points) })}
+        </span>
+      )}
     </span>
   )
 
@@ -92,7 +97,7 @@ export function KidsHomePage() {
           greeting={greeting}
           onOpenLesson={(lessonId) => moveTo({ levelId: levels[at]!.id, lessonId })}
           onLeave={() => {
-            moveTo({ levelId: levels[at]!.id, lessonId: null })
+            moveTo({ levelId: levels[at]!.id, lessonId: null, atSea: true })
             setAtSea(true)
           }}
         />

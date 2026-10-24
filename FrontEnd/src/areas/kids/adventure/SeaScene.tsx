@@ -2,6 +2,7 @@ import { motion, motionValue, useMotionValue, useReducedMotion, useTransform } f
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { across, down, follow, HEIGHT, Layer, spread, VIEW } from '@/areas/kids/adventure/Layer'
+import { useNudges } from '@/areas/kids/adventure/effects'
 import { levelLabel } from '@/areas/kids/adventure/labels'
 import { Boat, Cloud, Explorer, IslandArt, Mainland, WaveRows } from '@/areas/kids/adventure/scenery'
 import { FishShadows, FoamWaves, Gulls, LeapingFish, SeaMist } from '@/areas/kids/adventure/sea'
@@ -74,7 +75,6 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
   // Where the camera looks: the boat while sailing, anywhere the child drags the map otherwise.
   const look = useMotionValue(boatX.get())
   const camera = useTransform(look, (x) => follow(x, width))
-  const stage = useRef<HTMLDivElement>(null)
   const pannedAt = useRef(-Infinity)
   const zoom = useMotionValue(1)
   const fade = useTransform(zoom, [1, 2.6], [1, 0])
@@ -84,6 +84,9 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
   const [facing, setFacing] = useState(1)
   const [trip, setTrip] = useState<MapLevel | null>(null)
   const [origin, setOrigin] = useState('50% 50%')
+  const [notice, setNotice] = useState<string | null>(null)
+  // The stage: shaken islands are found in it, and its width turns a drag into world units.
+  const { scope, shake } = useNudges()
 
   const walk = async (to: Point) => {
     const distance = Math.hypot(to.x - heroX.get(), to.y - heroY.get())
@@ -125,8 +128,16 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
     // A drag that ends on an island only looks around.
     if (trip || tappedAt - pannedAt.current < 250) return
     unlockSound()
-    playSound('tap')
     const level = levels[index]!
+    if (!level.unlocked) {
+      // Still in the mist: the boss before it opens the way (S4.2).
+      playSound('wrong')
+      shake(`[data-island="${level.id}"]`)
+      setNotice(t('kids.map.islandLocked', { boss: levels[index - 1]?.boss?.name ?? '' }))
+      return
+    }
+    setNotice(null)
+    playSound('tap')
     setTrip(level)
     // Back to the boat, if the child had looked elsewhere.
     await glide(look, boatX.get(), Math.min(1, Math.abs(look.get() - boatX.get()) / 1500), still)
@@ -141,8 +152,8 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
     onArrive(level)
   }
 
-  // The child only leaves `at` on a trip, which ends in the island.
-  const next = trip ? -1 : at + 1
+  // The island to go to next: the first one open whose boss is not defeated yet.
+  const next = trip ? -1 : levels.findIndex((level) => level.unlocked && !level.beaten)
 
   return (
     <Stage
@@ -160,7 +171,7 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
             aria-live="polite"
             className="absolute bottom-4 left-1/2 w-max max-w-[90%] -translate-x-1/2 rounded-full bg-white/90 px-5 py-2 text-center text-base font-bold text-foreground shadow-md sm:bottom-6 sm:text-xl lg:text-2xl"
           >
-            {trip ? t('kids.map.sailing', { level: trip.title }) : t('kids.map.pickIsland')}
+            {trip ? t('kids.map.sailing', { level: trip.title }) : (notice ?? t('kids.map.pickIsland'))}
             {!trip && width > VIEW && (
               <span className="block text-sm font-semibold text-muted-foreground sm:text-base">
                 {t('kids.map.dragHint')}
@@ -171,13 +182,13 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
       }
     >
       <motion.div
-        ref={stage}
+        ref={scope}
         className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
         style={{ scale: zoom, opacity: fade, transformOrigin: origin }}
         onPan={(_, info) => {
-          if (trip || !stage.current) return
+          if (trip || !scope.current) return
           // Screen pixels to world units: the stage is VIEW units across.
-          const units = (info.delta.x * VIEW) / stage.current.offsetWidth
+          const units = (info.delta.x * VIEW) / scope.current.offsetWidth
           look.set(Math.min(Math.max(look.get() - units, VIEW / 2), width - VIEW / 2))
         }}
         onPanEnd={(event) => {
@@ -307,7 +318,7 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
                 index={index}
                 width={width}
                 next={index === next}
-                misty={!trip && index > at + 1}
+
                 disabled={trip !== null}
                 onVisit={(tappedAt) => void visit(index, tappedAt)}
               />
@@ -370,7 +381,6 @@ function IslandButton({
   index,
   width,
   next,
-  misty,
   disabled,
   onVisit,
 }: {
@@ -378,8 +388,6 @@ function IslandButton({
   index: number
   width: number
   next: boolean
-  /** Far away, beyond the next island: half hidden in the mist. */
-  misty: boolean
   disabled: boolean
   onVisit: (tappedAt: number) => void
 }) {
@@ -401,6 +409,9 @@ function IslandButton({
         disabled={disabled}
         onClick={(event) => onVisit(event.timeStamp)}
         aria-label={t('kids.map.island', { number: index + 1, title: level.title })}
+        aria-disabled={level.unlocked ? undefined : true}
+        aria-describedby={`island-${level.id}-state`}
+        data-island={level.id}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.97 }}
         className="group relative flex size-full flex-col items-center rounded-[3cqw] focus-visible:ring-[0.6cqw] focus-visible:ring-white focus-visible:outline-none disabled:cursor-default"
@@ -408,6 +419,15 @@ function IslandButton({
         <span className="relative z-10 flex max-w-[26cqw] flex-col items-center rounded-[1.2cqw] border-[0.3cqw] border-[#7a4b22] bg-[#c8924f] px-[1.4cqw] py-[0.4cqw] text-white shadow-md">
           <span className="max-w-full truncate text-[1.25cqw] leading-tight font-semibold opacity-90">
             {levelLabel(t, index + 1, level.title)}
+            {level.beaten && <span aria-hidden> 🏆</span>}
+            {!level.unlocked && <span aria-hidden> 🔒</span>}
+          </span>
+          <span id={`island-${level.id}-state`} className="sr-only">
+            {level.beaten
+              ? t('kids.map.islandBeaten')
+              : level.unlocked
+                ? t('kids.map.islandOpen')
+                : t('kids.map.islandLockedState')}
           </span>
           {level.description && (
             <span className="line-clamp-2 font-heading text-[1.8cqw] leading-tight font-bold">{level.description}</span>
@@ -420,10 +440,10 @@ function IslandButton({
         )}
         <span className="kids-bob relative block w-full flex-1">
           <IslandArt index={index} boss={level.boss !== null} />
-          {misty && (
+          {!level.unlocked && (
             <span
               aria-hidden
-              className="absolute inset-[-10%] rounded-[50%] bg-[radial-gradient(ellipse,rgba(244,251,255,0.75)_30%,transparent_70%)] transition-opacity duration-500 group-hover:opacity-30"
+              className="absolute inset-[-10%] rounded-[50%] bg-[radial-gradient(ellipse,rgba(244,251,255,0.92)_35%,transparent_72%)]"
             />
           )}
         </span>

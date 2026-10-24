@@ -12,18 +12,53 @@ const petsId = '00000000-0000-0000-0000-00000000b001'
 const farmId = '00000000-0000-0000-0000-00000000b002'
 const bossId = '00000000-0000-0000-0000-00000000b0b0'
 
+const oceanId = '00000000-0000-0000-0000-00000000a002'
+
+// A child who finished Pets with two stars: Farm is next, the boss and the second island are still locked.
 const map: LearnerMap = {
+  currentLevel: 1,
+  points: 30,
   levels: [
     {
       id: levelId,
       title: 'Animal Island',
       description: 'Cats and dogs',
+      unlocked: true,
+      beaten: false,
       lessons: [
-        { id: petsId, title: 'Pets' },
-        { id: farmId, title: 'Farm' },
+        { id: petsId, title: 'Pets', state: 'Completed', bestStars: 2 },
+        { id: farmId, title: 'Farm', state: 'Available', bestStars: 0 },
       ],
-      boss: { id: bossId, name: 'King Lion', imageUrl: 'https://cdn.example.test/lion.png' },
+      boss: {
+        id: bossId,
+        name: 'King Lion',
+        imageUrl: 'https://cdn.example.test/lion.png',
+        state: 'Locked',
+        bestStars: 0,
+      },
     },
+    {
+      id: oceanId,
+      title: 'Ocean',
+      description: null,
+      unlocked: false,
+      beaten: false,
+      lessons: [{ id: '00000000-0000-0000-0000-00000000b003', title: 'Fish', state: 'Locked', bestStars: 0 }],
+      boss: null,
+    },
+  ],
+}
+
+/** The same map once the boss is open. */
+const bossOpen: LearnerMap = {
+  ...map,
+  levels: [
+    {
+      ...map.levels[0]!,
+      lessons: map.levels[0]!.lessons.map((stop) => ({ ...stop, state: 'Completed', bestStars: 3 })),
+      boss: { ...map.levels[0]!.boss!, state: 'Available' },
+    },
+    map.levels[1]!,
   ],
 }
 
@@ -60,8 +95,10 @@ describe('adventure map', () => {
 
     expect(await screen.findByRole('heading', { name: 'Xin chào, Bin!' })).toBeTruthy()
     expect(screen.getByText('Chạm vào một hòn đảo để chèo thuyền tới đó nhé!')).toBeTruthy()
+    expect(screen.getByText('⭐ 30 điểm')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Huy hiệu' }).getAttribute('href')).toBe('/kids/badges')
     const islands = within(screen.getByRole('list', { name: 'Bản đồ phiêu lưu' })).getAllByRole('button')
-    expect(islands.map((island) => island.getAttribute('aria-label'))).toEqual(['Đảo 1: Animal Island'])
+    expect(islands.map((island) => island.getAttribute('aria-label'))).toEqual(['Đảo 1: Animal Island', 'Đảo 2: Ocean'])
     // The sign: the level's title, and the island's name from the level's description.
     expect(within(islands[0]!).getByText('Level 1 · Animal Island')).toBeTruthy()
     expect(within(islands[0]!).getByText('Cats and dogs')).toBeTruthy()
@@ -70,6 +107,7 @@ describe('adventure map', () => {
   it('does not repeat "Level n" when that is already the title of the level', async () => {
     server.use(
       mockApi('get', '/api/v1/play/map', () => ({
+        ...map,
         levels: [{ ...map.levels[0]!, title: 'Level 1', description: 'Đảo Thú Cưng' }],
       })),
     )
@@ -96,13 +134,41 @@ describe('adventure map', () => {
     const lessons = within(screen.getByRole('list', { name: 'Các bài của Animal Island' })).getAllByRole('link')
     expect(lessons.map((link) => link.getAttribute('aria-label'))).toEqual(['Bài 1: Pets', 'Bài 2: Farm'])
     expect(lessons[0]!.getAttribute('href')).toBe(`/kids/lessons/${petsId}`)
+    expect(screen.getByText('Đã xong, 2 / 3 sao')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Boss: King Lion' }).getAttribute('href')).toBe(`/kids/lessons/${bossId}`)
 
-    await user.click(lessons[0]!)
+    await user.click(lessons[1]!)
 
     expect(await screen.findByRole('heading', { name: 'Pets' })).toBeTruthy()
-    expect(router.state.location.pathname).toBe(`/kids/lessons/${petsId}`)
-    expect(JSON.parse(localStorage.getItem(placeKey)!)).toEqual({ levelId, lessonId: petsId })
+    expect(router.state.location.pathname).toBe(`/kids/lessons/${farmId}`)
+    expect(JSON.parse(localStorage.getItem(placeKey)!)).toEqual({ levelId, lessonId: farmId })
+  })
+
+  it('explains a locked lesson or boss instead of opening it', async () => {
+    localStorage.setItem(placeKey, JSON.stringify({ levelId, lessonId: null }))
+    server.use(mockApi('get', '/api/v1/play/map', () => map))
+    signInAsChild()
+    const { user, router } = await renderRoutes(routes, { route: '/kids' })
+
+    const boss = await screen.findByRole('link', { name: 'Boss: King Lion' })
+    expect(boss.getAttribute('aria-disabled')).toBe('true')
+    await user.click(boss)
+
+    expect(screen.getByText('Hãy có sao ở mọi bài của đảo để gặp boss!')).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/kids')
+  })
+
+  it('keeps an island in the mist until the boss before it is defeated', async () => {
+    server.use(mockApi('get', '/api/v1/play/map', () => map))
+    signInAsChild()
+    const { user } = await renderRoutes(routes, { route: '/kids' })
+
+    const ocean = await screen.findByRole('button', { name: 'Đảo 2: Ocean' })
+    expect(ocean.getAttribute('aria-disabled')).toBe('true')
+    await user.click(ocean)
+
+    expect(screen.getByText('Đảo này còn chìm trong sương. Hãy đánh bại King Lion để mở đường nhé!')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: /Ocean/ })).toBeNull()
   })
 
   it('opens on the island where the child left, and sails back out to sea', async () => {
@@ -115,7 +181,7 @@ describe('adventure map', () => {
     await user.click(screen.getByRole('button', { name: 'Lên thuyền ra biển' }))
 
     expect(await screen.findByRole('button', { name: 'Đảo 1: Animal Island' })).toBeTruthy()
-    expect(JSON.parse(localStorage.getItem(placeKey)!)).toEqual({ levelId, lessonId: null })
+    expect(JSON.parse(localStorage.getItem(placeKey)!)).toEqual({ levelId, lessonId: null, atSea: true })
   })
 
   it('starts on the mainland when the remembered island is no longer published', async () => {
@@ -142,7 +208,7 @@ describe('adventure map', () => {
   })
 
   it('says when there is nothing to play yet', async () => {
-    server.use(mockApi('get', '/api/v1/play/map', () => ({ levels: [] })))
+    server.use(mockApi('get', '/api/v1/play/map', () => ({ currentLevel: 0, points: 0, levels: [] })))
     signInAsChild()
     await renderRoutes(routes, { route: '/kids' })
 
@@ -308,6 +374,14 @@ describe('review cards', () => {
     expect(screen.queryByText(/Thẻ 1/)).toBeNull()
   })
 
+  it('says a lesson opened from an old link is not open yet', async () => {
+    server.use(mockApi('get', '/api/v1/play/lessons/{lessonId}', () => problem(422, { code: 'lesson-locked' })))
+    signInAsChild()
+    await renderRoutes(routes, { route: `/kids/lessons/${bossId}` })
+
+    expect(await screen.findByText('Bài này chưa mở. Hãy học bài trước trên đảo nhé!')).toBeTruthy()
+  })
+
   it('shows not found for a lesson that is not published', async () => {
     server.use(mockApi('get', '/api/v1/play/lessons/{lessonId}', () => problem(404)))
     signInAsChild()
@@ -393,6 +467,29 @@ function fakeAttempts(activities: PlayLesson['activities'], resumeWith: AttemptV
     }
   }
 
+  // What a finishing answer earns: 10 points per star; three stars also win the level's badge.
+  const earned = () => {
+    const stars = Number(attempt?.result?.stars ?? 0)
+    if (!attempt?.result || stars === 0) return null
+    return {
+      points: stars * 10,
+      badges:
+        stars === 3
+          ? [
+              {
+                kind: 'LevelConqueror',
+                levelId,
+                name: 'Chinh phục Animal Island',
+                description: 'Đánh bại boss của Animal Island.',
+                imageUrl: null,
+                earned: true,
+                awardedAtUtc: '2026-10-24T09:00:00Z',
+              },
+            ]
+          : [],
+    }
+  }
+
   const handlers = [
     mockApi('post', '/api/v1/play/lessons/{lessonId}/attempts', ({ params }) => {
       if (!attempt || attempt.status === 'Finished') {
@@ -428,7 +525,7 @@ function fakeAttempts(activities: PlayLesson['activities'], resumeWith: AttemptV
         correctOptionId: answers[questionId]!,
       })
       finishIfDone(attempt!)
-      return { correct, correctOptionId: answers[questionId]!, attempt: structuredClone(attempt!) }
+      return { correct, correctOptionId: answers[questionId]!, attempt: structuredClone(attempt!), rewards: earned() }
     }),
     mockApi('post', '/api/v1/play/attempts/{attemptId}/matches', async ({ request }) => {
       const { leftId, rightId } = (await request.json()) as { leftId: string; rightId: string }
@@ -439,11 +536,42 @@ function fakeAttempts(activities: PlayLesson['activities'], resumeWith: AttemptV
         missed.add(leftId)
       }
       finishIfDone(attempt!)
-      return { correct, correctOptionId: null, attempt: structuredClone(attempt!) }
+      return { correct, correctOptionId: null, attempt: structuredClone(attempt!), rewards: earned() }
     }),
   ]
   return { handlers, starts }
 }
+
+/** The boss: one picture question, the cat. */
+const bossGames: PlayLesson['activities'] = [
+  {
+    id: quizId,
+    type: 'Quiz',
+    matching: null,
+    questions: [
+      {
+        id: 'q1',
+        form: 'WordToPicture',
+        promptText: 'cat',
+        promptImageUrl: null,
+        options: [
+          option('q1-dog', null, 'https://cdn.example.test/dog.png'),
+          option('q1-cat', null, 'https://cdn.example.test/cat.png'),
+        ],
+      },
+    ],
+  },
+]
+
+const bossLesson = (): PlayLesson =>
+  lesson({
+    id: bossId,
+    title: 'King Lion',
+    kind: 'Boss',
+    bossImageUrl: 'https://cdn.example.test/lion.png',
+    learnCards: [],
+    activities: bossGames,
+  })
 
 describe('games', () => {
   it('plays the quiz and the matching one at a time, then shows the stars', async () => {
@@ -525,36 +653,8 @@ describe('games', () => {
   })
 
   it('fights a boss whose health drops with each right answer', async () => {
-    const bossGames: PlayLesson['activities'] = [
-      {
-        id: quizId,
-        type: 'Quiz',
-        matching: null,
-        questions: [
-          {
-            id: 'q1',
-            form: 'WordToPicture',
-            promptText: 'cat',
-            promptImageUrl: null,
-            options: [
-              option('q1-dog', null, 'https://cdn.example.test/dog.png'),
-              option('q1-cat', null, 'https://cdn.example.test/cat.png'),
-            ],
-          },
-        ],
-      },
-    ]
     server.use(
-      mockApi('get', '/api/v1/play/lessons/{lessonId}', () =>
-        lesson({
-          id: bossId,
-          title: 'King Lion',
-          kind: 'Boss',
-          bossImageUrl: 'https://cdn.example.test/lion.png',
-          learnCards: [],
-          activities: bossGames,
-        }),
-      ),
+      mockApi('get', '/api/v1/play/lessons/{lessonId}', () => bossLesson()),
       ...fakeAttempts(bossGames).handlers,
     )
     signInAsChild()
@@ -572,6 +672,35 @@ describe('games', () => {
     await user.click(screen.getByRole('button', { name: 'Tiếp' }))
     expect(screen.getByText('Bạn đã đánh bại King Lion!')).toBeTruthy()
     expect(screen.getByRole('img', { name: '3 / 3 sao' })).toBeTruthy()
+    // What it earned (F4.5).
+    expect(screen.getByText('+30 điểm')).toBeTruthy()
+    expect(screen.getByText('Huy hiệu mới!')).toBeTruthy()
+    expect(screen.getByText('Chinh phục Animal Island')).toBeTruthy()
+  })
+
+  it('defeating the boss opens the next island and sails there', async () => {
+    localStorage.setItem(placeKey, JSON.stringify({ levelId, lessonId: farmId }))
+    server.use(
+      mockApi('get', '/api/v1/play/map', () => bossOpen),
+      mockApi('get', '/api/v1/play/lessons/{lessonId}', () => bossLesson()),
+      ...fakeAttempts(bossGames).handlers,
+    )
+    signInAsChild()
+    const { user, router } = await renderRoutes(routes, { route: '/kids' })
+
+    await user.click(await screen.findByRole('link', { name: 'Boss: King Lion' }))
+    await user.click(await screen.findByRole('button', { name: 'Đánh boss!' }))
+    await user.click(await screen.findByRole('button', { name: 'Hình 2' }))
+    await user.click(await screen.findByRole('button', { name: 'Tiếp' }))
+
+    expect(screen.getByText('Bạn đã đánh bại King Lion!')).toBeTruthy()
+    expect(screen.getByText('Một hòn đảo mới đã hiện ra khỏi sương!')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Lên thuyền tới đảo mới' }))
+
+    // Back at the island's boat, looking out to sea.
+    expect(router.state.location.pathname).toBe('/kids')
+    expect(await screen.findByRole('button', { name: 'Đảo 2: Ocean' })).toBeTruthy()
+    expect(JSON.parse(localStorage.getItem(placeKey)!)).toEqual({ levelId, lessonId: bossId, atSea: true })
   })
 
   it('offers to start again when the attempt does not start', async () => {
@@ -586,5 +715,58 @@ describe('games', () => {
 
     expect(await screen.findByText('Chưa vào chơi được. Thử lại nhé!')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Bắt đầu chơi' })).toBeTruthy()
+  })
+})
+
+describe('badge room', () => {
+  it('shows the points and every badge, won ones with their date', async () => {
+    server.use(
+      mockApi('get', '/api/v1/play/map', () => map),
+      mockApi('get', '/api/v1/play/rewards', () => ({
+        points: 30,
+        badges: [
+          {
+            kind: 'FirstLesson',
+            levelId: null,
+            name: 'Bài học đầu tiên',
+            description: 'Hoàn thành bài học đầu tiên.',
+            imageUrl: null,
+            earned: true,
+            awardedAtUtc: '2026-10-24T09:00:00Z',
+          },
+          {
+            kind: 'Perfect',
+            levelId: null,
+            name: 'Hoàn hảo',
+            description: 'Đạt 3 sao ở một bài học.',
+            imageUrl: null,
+            earned: false,
+            awardedAtUtc: null,
+          },
+          {
+            kind: 'LevelConqueror',
+            levelId,
+            name: 'Chinh phục Cats and dogs',
+            description: 'Đánh bại boss của Cats and dogs.',
+            imageUrl: null,
+            earned: false,
+            awardedAtUtc: null,
+          },
+        ],
+      })),
+    )
+    signInAsChild()
+    await renderRoutes(routes, { route: '/kids/badges' })
+
+    expect(await screen.findByRole('heading', { name: 'Huy hiệu', level: 1 })).toBeTruthy()
+    expect(screen.getByText('⭐ 30 điểm')).toBeTruthy()
+    expect(screen.getByText('Đã có 1 / 3 huy hiệu')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Huy hiệu chung' })).toBeTruthy()
+    // An island's badges sit under its name (the level's description).
+    expect(await screen.findByRole('heading', { name: 'Cats and dogs' })).toBeTruthy()
+    const first = screen.getByText('Bài học đầu tiên').closest('li')!
+    expect(within(first).getByText(/^Nhận ngày /)).toBeTruthy()
+    const perfect = screen.getByText('Hoàn hảo').closest('li')!
+    expect(within(perfect).getByText('Chưa nhận')).toBeTruthy()
   })
 })

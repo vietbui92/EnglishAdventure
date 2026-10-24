@@ -53,7 +53,7 @@ export function problem(status: number, details: Omit<ProblemDetails, 'status'> 
 
 /** For tests that only pass through the kids area's map: an adventure without published levels. */
 export function mockEmptyAdventure() {
-  return [mockApi('get', '/api/v1/play/map', () => ({ levels: [] }))]
+  return [mockApi('get', '/api/v1/play/map', () => ({ currentLevel: 0, points: 0, levels: [] }))]
 }
 
 /** For tests that only pass through the Parent area: a family without child profiles. */

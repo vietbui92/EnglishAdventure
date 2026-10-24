@@ -5,7 +5,8 @@
       "dashboard": "Tổng quan",
       "users": "Người dùng",
       "roles": "Vai trò",
-      "content": "Nội dung"
+      "content": "Nội dung",
+      "rewards": "Huy hiệu"
     },
     "dashboard": {
       "description": "Chào mừng đến khu vực quản trị."
@@ -393,6 +394,37 @@
             "nameTooLong": "Tên boss chỉ được tối đa 100 ký tự.",
             "pictureRequired": "Boss đã xuất bản phải có hình."
           }
+        }
+      }
+    },
+    "rewards": {
+      "title": "Huy hiệu",
+      "description": "Bốn huy hiệu trẻ nhận khi học. Bạn đổi được tên, mô tả và hình; cách nhận huy hiệu là cố định.",
+      "loading": "Đang tải huy hiệu…",
+      "loadError": "Chưa tải được huy hiệu.",
+      "saveError": "Chưa lưu được. Hãy thử lại.",
+      "perLevel": "mỗi level một huy hiệu",
+      "edit": "Sửa",
+      "editBadge": "Sửa huy hiệu {{name}}",
+      "kinds": {
+        "FirstLesson": "Bài học đầu tiên",
+        "Perfect": "Hoàn hảo",
+        "LevelConqueror": "Chinh phục level",
+        "LevelSuperstar": "Siêu sao level"
+      },
+      "form": {
+        "title": "Sửa huy hiệu: {{kind}}",
+        "hint": "Trẻ thấy tên và mô tả này trong phòng huy hiệu.",
+        "levelHint": "Viết {level} ở chỗ cần tên đảo, ví dụ \"Chinh phục {level}\" thành \"Chinh phục Đảo Thú Cưng\".",
+        "name": "Tên huy hiệu",
+        "descriptionLabel": "Mô tả (cách nhận)",
+        "imageUrl": "Địa chỉ hình (https://, không bắt buộc)",
+        "imageUrlHint": "Để trống thì app tự vẽ huy hiệu.",
+        "validation": {
+          "nameRequired": "Hãy nhập tên (1 đến 60 ký tự).",
+          "nameTooLong": "Tên chỉ được tối đa 60 ký tự.",
+          "descriptionRequired": "Hãy nhập mô tả (1 đến 200 ký tự).",
+          "descriptionTooLong": "Mô tả chỉ được tối đa 200 ký tự."
         }
       }
     }

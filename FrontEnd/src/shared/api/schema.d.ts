@@ -63,6 +63,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/rewards/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BadgeDefinitionView"][];
+                        "application/json": components["schemas"]["BadgeDefinitionView"][];
+                        "text/json": components["schemas"]["BadgeDefinitionView"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/rewards/badges/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    kind: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BadgeDefinitionRequest"];
+                    "text/json": components["schemas"]["BadgeDefinitionRequest"];
+                    "application/*+json": components["schemas"]["BadgeDefinitionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["BadgeDefinitionView"];
+                        "application/json": components["schemas"]["BadgeDefinitionView"];
+                        "text/json": components["schemas"]["BadgeDefinitionView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -1184,6 +1332,78 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/family/children/{profileId}/rewards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    profileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RewardsOverview"];
+                        "application/json": components["schemas"]["RewardsOverview"];
+                        "text/json": components["schemas"]["RewardsOverview"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4915,9 +5135,68 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["LearnerMap"];
-                        "application/json": components["schemas"]["LearnerMap"];
-                        "text/json": components["schemas"]["LearnerMap"];
+                        "text/plain": components["schemas"]["AdventureMap"];
+                        "application/json": components["schemas"]["AdventureMap"];
+                        "text/json": components["schemas"]["AdventureMap"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/play/rewards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["RewardsOverview"];
+                        "application/json": components["schemas"]["RewardsOverview"];
+                        "text/json": components["schemas"]["RewardsOverview"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5014,6 +5293,17 @@ export interface paths {
                         "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
             };
         };
         put?: never;
@@ -5090,6 +5380,17 @@ export interface paths {
                 };
                 /** @description Conflict */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5416,6 +5717,40 @@ export interface components {
             matchingMode: null | string;
             pairWordIds: string[];
         };
+        AdventureBoss: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            imageUrl: null | string;
+            state: string;
+            /** Format: int32 */
+            bestStars: number | string;
+        };
+        AdventureLesson: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            state: string;
+            /** Format: int32 */
+            bestStars: number | string;
+        };
+        AdventureLevel: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: null | string;
+            unlocked: boolean;
+            beaten: boolean;
+            lessons: components["schemas"]["AdventureLesson"][];
+            boss: null | components["schemas"]["AdventureBoss"];
+        };
+        AdventureMap: {
+            /** Format: int32 */
+            currentLevel: number | string;
+            /** Format: int32 */
+            points: number | string;
+            levels: components["schemas"]["AdventureLevel"][];
+        };
         AnsweredQuestion: {
             /** Format: uuid */
             activityId: string;
@@ -5436,6 +5771,7 @@ export interface components {
             /** Format: uuid */
             correctOptionId: null | string;
             attempt: components["schemas"]["AttemptView"];
+            rewards?: null | components["schemas"]["EarnedRewards"];
         };
         ApplyMigrationsResponse: {
             appliedMigrations: string[];
@@ -5472,6 +5808,29 @@ export interface components {
             refreshToken: null | string;
             /** Format: date-time */
             refreshTokenExpiresAtUtc: string;
+        };
+        BadgeDefinitionRequest: {
+            name: string;
+            description: string;
+            imageUrl: null | string;
+        };
+        BadgeDefinitionView: {
+            kind: string;
+            perLevel: boolean;
+            name: string;
+            description: string;
+            imageUrl: null | string;
+        };
+        BadgeView: {
+            kind: string;
+            /** Format: uuid */
+            levelId: null | string;
+            name: string;
+            description: string;
+            imageUrl: null | string;
+            earned: boolean;
+            /** Format: date-time */
+            awardedAtUtc: null | string;
         };
         ChildProfileOptionsResponse: {
             avatarKeys: string[];
@@ -5531,6 +5890,11 @@ export interface components {
             session: string;
             childProfile: null | components["schemas"]["CurrentChildResponse"];
         };
+        EarnedRewards: {
+            /** Format: int32 */
+            points: number | string;
+            badges: components["schemas"]["BadgeView"][];
+        };
         GetFoundationStatusResponse: {
             message: string;
             isFoundationExample: boolean;
@@ -5546,9 +5910,6 @@ export interface components {
         LearnCardRequest: {
             show: boolean;
             version: string;
-        };
-        LearnerMap: {
-            levels: components["schemas"]["MapLevel"][];
         };
         LessonActivities: {
             /** Format: uuid */
@@ -5645,25 +6006,6 @@ export interface components {
         };
         LogoutRequest: {
             refreshToken: string;
-        };
-        MapBoss: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            imageUrl: null | string;
-        };
-        MapLesson: {
-            /** Format: uuid */
-            id: string;
-            title: string;
-        };
-        MapLevel: {
-            /** Format: uuid */
-            id: string;
-            title: string;
-            description: null | string;
-            lessons: components["schemas"]["MapLesson"][];
-            boss: null | components["schemas"]["MapBoss"];
         };
         MatchedPair: {
             /** Format: uuid */
@@ -5791,6 +6133,11 @@ export interface components {
         ResendEmailConfirmationRequest: {
             email: string;
             language: null | string;
+        };
+        RewardsOverview: {
+            /** Format: int32 */
+            points: number | string;
+            badges: components["schemas"]["BadgeView"][];
         };
         SetUserRolesRequest: {
             roles: string[];

@@ -1,8 +1,8 @@
 import { MotionConfig } from 'motion/react'
-import { Volume2, VolumeX, X } from 'lucide-react'
+import { Trophy, Volume2, VolumeX, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useNavigate } from 'react-router'
+import { Link, Outlet, useNavigate } from 'react-router'
 import { setMuted, unlockSound, useMuted } from '@/areas/kids/adventure/sound'
 import { signOut } from '@/shared/auth/session'
 import {
@@ -42,6 +42,16 @@ export function KidsLayout() {
         onPointerDown={unlockSound}
       >
         <header className="fixed top-0 right-0 z-40 flex gap-2 p-3 sm:p-4">
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-12 rounded-full bg-white/85 px-4 text-base shadow-md backdrop-blur hover:bg-white"
+          >
+            <Link to="/kids/badges">
+              <Trophy className="size-5" aria-hidden />
+              <span className="sr-only sm:not-sr-only">{t('kids.rewards.room')}</span>
+            </Link>
+          </Button>
           <Button
             variant="ghost"
             className="min-h-12 rounded-full bg-white/85 px-4 text-base shadow-md backdrop-blur hover:bg-white"

@@ -26,7 +26,16 @@
       "toSea": "Lên thuyền ra biển",
       "levelTitle": "Level {{number}} · {{title}}",
       "dragHint": "Kéo bản đồ để xem thêm đảo",
-      "level": "Level {{number}}"
+      "level": "Level {{number}}",
+      "islandLocked": "Đảo này còn chìm trong sương. Hãy đánh bại {{boss}} để mở đường nhé!",
+      "islandLockedState": "Đang khóa",
+      "islandOpen": "Đã mở",
+      "islandBeaten": "Đã chinh phục",
+      "stopLocked": "Học xong bài trước để mở bài này nhé!",
+      "bossLocked": "Hãy có sao ở mọi bài của đảo để gặp boss!",
+      "stopLockedState": "Đang khóa",
+      "stopAvailable": "Đã mở",
+      "stopCompleted": "Đã xong, {{count}} / 3 sao"
     },
     "play": {
       "backToMap": "Về bản đồ",
@@ -40,7 +49,11 @@
       "toGames": "Chơi thôi!",
       "bossIntro": "Đánh bại {{name}}!",
       "skipCards": "Vào chơi luôn",
-      "listen": "Nghe"
+      "listen": "Nghe",
+      "locked": "Bài này chưa mở. Hãy học bài trước trên đảo nhé!",
+      "newIsland": "Một hòn đảo mới đã hiện ra khỏi sương!",
+      "toNewIsland": "Lên thuyền tới đảo mới",
+      "allIslands": "Bạn đã chinh phục mọi hòn đảo! 🎉"
     },
     "game": {
       "start": "Bắt đầu chơi",
@@ -96,6 +109,18 @@
       "wrong": "Máy nghe thành “{{heard}}”. Nghe lại rồi nói lại nhé!",
       "silent": "Chưa nghe thấy gì. Bé nói to hơn nhé!",
       "blocked": "Cần cho phép dùng micro để tập nói."
+    },
+    "rewards": {
+      "room": "Huy hiệu",
+      "total": "⭐ {{points}} điểm",
+      "points": "+{{points}} điểm",
+      "newBadge": "Huy hiệu mới!",
+      "won": "Đã có {{won}} / {{count}} huy hiệu",
+      "general": "Huy hiệu chung",
+      "earnedOn": "Nhận ngày {{date}}",
+      "notYet": "Chưa nhận",
+      "loading": "Đang mở phòng huy hiệu…",
+      "loadError": "Chưa mở được phòng huy hiệu."
     }
   }
 }

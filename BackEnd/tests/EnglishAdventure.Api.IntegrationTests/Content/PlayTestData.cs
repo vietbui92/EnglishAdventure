@@ -13,6 +13,7 @@ internal static class PlayTestData
 {
     private const string LevelsRoute = "/api/v1/admin/content/levels";
     private const string LessonsRoute = "/api/v1/admin/content/lessons";
+    private const string PlayRoute = "/api/v1/play";
 
     /// <param name="Admin">The ContentAdmin who built it.</param>
     /// <param name="WordIds">The lesson's words: cat, dog, fish.</param>
@@ -80,6 +81,14 @@ internal static class PlayTestData
         var levelVersion = (await ReadAsync(await admin.GetAsync($"{LevelsRoute}/{levelId}"))).GetProperty("level").GetProperty("version").GetString();
         Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync($"{LevelsRoute}/{levelId}/publish", new { version = levelVersion })).StatusCode);
 
+        // Earlier tests of the class published levels too. A new child starts on the first level (S4.2), so this one
+        // goes first.
+        var levelIds = (await ReadAsync(await admin.GetAsync(LevelsRoute))).EnumerateArray()
+            .Select(item => item.GetProperty("id").GetString()!)
+            .ToList();
+        var order = levelIds.Where(id => id != levelId).Prepend(levelId).ToArray();
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsync($"{LevelsRoute}/order", new { levelIds = order })).StatusCode);
+
         return new PublishedContent(
             admin,
             levelId,
@@ -88,6 +97,72 @@ internal static class PlayTestData
             draftLesson.GetProperty("id").GetString()!,
             draftLevel.GetProperty("level").GetProperty("id").GetString()!,
             words);
+    }
+
+    /// <summary>
+    /// Plays the whole "Pets" lesson as a child: the three questions (the first <paramref name="wrongAnswers"/> of them
+    /// wrong) and the matching, every pair right at once. Returns the finished attempt: 5 items, 20% each.
+    /// </summary>
+    public static async Task<JsonElement> PlayPetsAsync(AdminApiClient child, string lessonId, int wrongAnswers = 0) =>
+        (await PlayPetsWithRewardsAsync(child, lessonId, wrongAnswers)).GetProperty("attempt");
+
+    /// <summary>Like <see cref="PlayPetsAsync"/>, but returns the last answer's whole result, with what it earned.</summary>
+    public static async Task<JsonElement> PlayPetsWithRewardsAsync(AdminApiClient child, string lessonId, int wrongAnswers = 0)
+    {
+        var attempt = await ReadAsync(await child.PostAsync($"{PlayRoute}/lessons/{lessonId}/attempts"));
+        var lesson = await ReadAsync(await child.GetAsync($"{PlayRoute}/lessons/{lessonId}"));
+        var attemptRoute = $"{PlayRoute}/attempts/{attempt.GetProperty("attemptId").GetString()}";
+        var questions = lesson.GetProperty("activities")[0].GetProperty("questions").EnumerateArray().ToList();
+        string[] answers = ["cat", "dog", "fish"];
+        for (var index = 0; index < questions.Count; index++)
+        {
+            var options = questions[index].GetProperty("options").EnumerateArray().ToList();
+            var right = options.Single(option => option.GetProperty("text").GetString() == answers[index]
+                                                 || option.GetProperty("imageUrl").GetString() == Picture(answers[index]));
+            var chosen = index < wrongAnswers ? options.First(option => !option.Equals(right)) : right;
+            var answered = await child.PostAsync(
+                $"{attemptRoute}/questions/{questions[index].GetProperty("id").GetString()}",
+                new { optionId = chosen.GetProperty("id").GetString() });
+            Assert.Equal(HttpStatusCode.OK, answered.StatusCode);
+        }
+
+        var matching = lesson.GetProperty("activities")[1].GetProperty("matching");
+        JsonElement last = default;
+        foreach (var word in new[] { "cat", "dog" })
+        {
+            var leftId = matching.GetProperty("left").EnumerateArray()
+                .Single(choice => choice.GetProperty("text").GetString() == word).GetProperty("id").GetString();
+            var rightId = matching.GetProperty("right").EnumerateArray()
+                .Single(choice => choice.GetProperty("imageUrl").GetString() == Picture(word)).GetProperty("id").GetString();
+            last = await ReadAsync(await child.PostAsync($"{attemptRoute}/matches", new { leftId, rightId }));
+        }
+
+        Assert.Equal("Finished", last.GetProperty("attempt").GetProperty("status").GetString());
+        return last;
+    }
+
+    /// <summary>Publishes the draft lesson "Farm" (cow, pig, one question), after "Pets" in the level.</summary>
+    public static async Task PublishFarmAsync(PublishedContent content)
+    {
+        var route = $"{LessonsRoute}/{content.DraftLessonId}";
+        var version = (await ReadAsync(await content.Admin.GetAsync(route))).GetProperty("version").GetString()!;
+        JsonElement bank = default;
+        foreach (var (english, meaning) in new[] { ("cow", "con bò"), ("pig", "con lợn") })
+        {
+            bank = await ReadAsync(await content.Admin.PostAsync(
+                $"{route}/words",
+                new { english, meaning, imageUrl = Picture(english), version }));
+            version = LessonVersion(bank);
+        }
+
+        var words = QuizTestData.WordIds(bank);
+        var activities = await ReadAsync(await content.Admin.PostAsync($"{route}/activities/quiz", new { version }));
+        var quizRoute = $"{route}/activities/{activities.GetProperty("activities")[0].GetProperty("id").GetString()}/questions";
+        activities = await ReadAsync(await content.Admin.PostAsync(
+            quizRoute,
+            Question("PictureToWord", words[0], [words[1]], null, LessonVersion(activities))));
+        var published = await content.Admin.PostAsync($"{route}/publish", new { version = LessonVersion(activities) });
+        Assert.Equal(HttpStatusCode.OK, published.StatusCode);
     }
 
     private static object Question(string form, string correctWordId, string[] wrongWordIds, string? sentence, string version) =>

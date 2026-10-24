@@ -7,6 +7,8 @@ using EnglishAdventure.Application.Family.Commands.UpdateChildProfile;
 using EnglishAdventure.Application.Family.Models;
 using EnglishAdventure.Application.Family.Queries.GetChildProfile;
 using EnglishAdventure.Application.Family.Queries.ListChildProfiles;
+using EnglishAdventure.Application.Rewards.Models;
+using EnglishAdventure.Application.Rewards.Queries.GetChildRewards;
 using EnglishAdventure.Domain.Entities.Family;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -43,6 +45,16 @@ public sealed class ChildProfilesController : ControllerBase
     }
 
     /// <summary>The avatars a profile can use, and how many active profiles a Parent may have.</summary>
+    /// <summary>One of the Parent's children's points and badges (S5.3); another family's child is not found.</summary>
+    [HttpGet("{profileId:guid}/rewards")]
+    [Authorize(Policy = Permissions.Family.ReadProgress)]
+    [ProducesResponseType(typeof(RewardsOverview), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RewardsOverview>> Rewards(Guid profileId, CancellationToken cancellationToken)
+    {
+        return Ok(await _mediator.Send(new GetChildRewardsQuery(profileId), cancellationToken));
+    }
+
     [HttpGet("options")]
     [ProducesResponseType(typeof(ChildProfileOptionsResponse), StatusCodes.Status200OK)]
     public ActionResult<ChildProfileOptionsResponse> Options() =>

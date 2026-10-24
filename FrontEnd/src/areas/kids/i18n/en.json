@@ -26,7 +26,16 @@
       "toSea": "Sail out to sea",
       "levelTitle": "Level {{number}} · {{title}}",
       "dragHint": "Drag the map to see more islands",
-      "level": "Level {{number}}"
+      "level": "Level {{number}}",
+      "islandLocked": "This island is still in the mist. Defeat {{boss}} to open the way!",
+      "islandLockedState": "Locked",
+      "islandOpen": "Open",
+      "islandBeaten": "Conquered",
+      "stopLocked": "Finish the lesson before to open this one!",
+      "bossLocked": "Get a star in every lesson of the island to meet the boss!",
+      "stopLockedState": "Locked",
+      "stopAvailable": "Open",
+      "stopCompleted": "Done, {{count}} of 3 stars"
     },
     "play": {
       "backToMap": "Back to the map",
@@ -40,7 +49,11 @@
       "toGames": "Let’s play!",
       "bossIntro": "Defeat {{name}}!",
       "skipCards": "Go straight to the games",
-      "listen": "Listen"
+      "listen": "Listen",
+      "locked": "This lesson is not open yet. Learn the lessons before it first!",
+      "newIsland": "A new island has come out of the mist!",
+      "toNewIsland": "Sail to the new island",
+      "allIslands": "You conquered every island! 🎉"
     },
     "game": {
       "start": "Start playing",
@@ -96,6 +109,18 @@
       "wrong": "I heard “{{heard}}”. Listen again and try once more!",
       "silent": "I didn’t hear anything. Say it louder!",
       "blocked": "Allow the microphone to practise speaking."
+    },
+    "rewards": {
+      "room": "Badges",
+      "total": "⭐ {{points}} points",
+      "points": "+{{points}} points",
+      "newBadge": "New badge!",
+      "won": "{{won}} of {{count}} badges won",
+      "general": "Everyday badges",
+      "earnedOn": "Won on {{date}}",
+      "notYet": "Not won yet",
+      "loading": "Opening the badge room…",
+      "loadError": "The badge room could not open."
     }
   }
 }

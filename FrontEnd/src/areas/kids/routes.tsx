@@ -15,6 +15,7 @@ export const kidsRoutes: RouteObject = {
       children: [
         { index: true, lazy: lazyPage(area, (kids) => kids.KidsHomePage) },
         { path: 'lessons/:lessonId', lazy: lazyPage(area, (kids) => kids.LessonPlayPage) },
+        { path: 'badges', lazy: lazyPage(area, (kids) => kids.BadgeRoomPage) },
       ],
     },
   ],
