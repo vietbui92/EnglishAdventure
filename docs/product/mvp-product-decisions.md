@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Owner** | Quoc Viet Bui (product owner). Only the owner changes a decision. |
-| **Status** | Baseline. PD-001 to PD-012 are decided; PD-010 reconciles PD-001 and PD-007 (Section 8, option B). |
+| **Status** | Baseline. PD-001 to PD-013 are decided; PD-010 reconciles PD-001 and PD-007 (Section 8, option B). |
 | **Last updated** | 2026-10-24 |
 | **Related** | [Implementation plan](../roadmap/mvp-implementation-plan.md) · [Domain model proposal](../../BackEnd/docs/architecture/domain-model-proposal.md) · [Architecture decisions](../../BackEnd/docs/architecture/decisions.md) |
 
@@ -53,6 +53,7 @@ User type, role and permission are three different things:
 | PD-009 | Parent registration (answers OQ-010) | Parents register themselves on the public site and must confirm their email before signing in | ✅ Decided 2026-10-23 (details in S1.4) |
 | PD-011 | Lesson design, stars, levels and rewards (answers OQ-002, OQ-003, OQ-004, OQ-016) | Word bank and learn step per lesson, 0–3 stars per lesson, a boss challenge ends each level, 10 points per new star, four badge types | ✅ Decided 2026-10-24 |
 | PD-012 | Content editing, pictures, quiz answers, resume, boss (answers OQ-005, OQ-011, OQ-012, OQ-015, OQ-017) | Structure locked once published; picture URLs; one correct quiz option; resume per activity; boss rules | ✅ Decided 2026-10-24 |
+| PD-013 | Discovery walk, review cards and speaking practice (changes PD-011's learn step) | Words met moving on the island; cards only to review; speech recognition, not scored | ✅ Decided 2026-10-24 |
 
 ### PD-001: Parent-managed child profiles
 - A Parent can manage several child profiles.
@@ -184,6 +185,16 @@ Decided by the owner on 2026-10-24 (all proposals accepted).
   - A boss health bar drops with each correct answer. It is display only; the server still grades.
   - Same star thresholds as a lesson; it gives stars and points like a lesson. No lives.
   - "Level superstar" includes the boss.
+
+### PD-013: Discovery walk, review cards and speaking practice
+
+Decided by the owner on 2026-10-24. It changes the learn step of PD-011: the word cards are now for review, after a discovery walk.
+
+- **Discovery first.** On the island the child walks along and meets each word in turn: its picture moves the way the word does, it plays its sound if it has one, and shows the English word and its meaning while the device's voice reads the word.
+- **How a picture moves.** The Admin picks a movement per word: still (the default), walk, hop, fly, swim, crawl or wiggle. The app animates the word's picture; no animated media is needed.
+- **Sounds.** The sound a word makes (a cat's meow) is an optional https link to a sound file, like pictures (PD-012). The word itself is read by the device's English voice, not by recorded files.
+- **Review and speaking after.** When the walk ends, the cards come back for review, and the child can practise saying each word. The browser's speech recognition checks what the child said. It is on whenever the browser supports it, without a Parent setting (owner's choice). Practice is never scored: stars still come only from quizzes and matching (PD-012), and nothing about it is saved on the server.
+- **Privacy note (accepted by the owner).** With speech recognition, the browser sends the child's voice to its maker's servers (Google for Chrome, Apple for Safari) to turn it into text. Our servers never receive or store audio. This must be covered in the privacy text and reviewed with OQ-008 before the production release.
 
 ## 4. Privacy principles (they apply now)
 

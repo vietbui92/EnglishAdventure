@@ -9,6 +9,8 @@ public sealed class AddLessonWordCommandValidator : AbstractValidator<AddLessonW
         RuleFor(command => command.English).ValidEnglishWord();
         RuleFor(command => command.Meaning).ValidMeaning();
         RuleFor(command => command.ImageUrl).ValidOptionalImageUrl();
+        RuleFor(command => command.Movement).ValidOptionalMovement();
+        RuleFor(command => command.SoundUrl).ValidOptionalSoundUrl();
         RuleFor(command => command.Version).ValidVersion();
     }
 }

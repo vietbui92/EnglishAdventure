@@ -78,6 +78,33 @@
   .kids-hint {
     animation: kids-hint 1s ease-in-out infinite;
   }
+  .kids-glide {
+    animation: kids-glide 30s linear infinite;
+  }
+  .kids-flap {
+    animation: kids-flap 0.5s ease-in-out infinite;
+  }
+  .kids-swim {
+    animation: kids-swim 7s ease-in-out infinite alternate;
+  }
+  .kids-leap {
+    animation: kids-leap 8s ease-out infinite;
+  }
+  .kids-ripple {
+    animation: kids-ripple 8s ease-out infinite;
+  }
+  .kids-firefly {
+    animation: kids-firefly 4.2s ease-in-out infinite;
+  }
+  .kids-blink {
+    animation: kids-blink 3.4s ease-in-out infinite;
+  }
+  .kids-rustle {
+    animation: kids-rustle 0.18s linear infinite;
+  }
+  .kids-trek {
+    animation: kids-trek 0.64s ease-in-out infinite;
+  }
 }
 
 @keyframes kids-bob {
@@ -155,8 +182,119 @@
     opacity: 0.6;
   }
 }
+/* A gull crosses a good stretch of sky, then starts again. */
+@keyframes kids-glide {
+  from {
+    transform: translate(-300px, 0);
+  }
+  50% {
+    transform: translate(300px, -20px);
+  }
+  to {
+    transform: translate(900px, 0);
+  }
+}
+@keyframes kids-flap {
+  50% {
+    transform: scaleY(0.35);
+  }
+}
+@keyframes kids-swim {
+  to {
+    transform: translateX(140px);
+  }
+}
+/* Most of the time under water; now and then a quick arc out of it. */
+@keyframes kids-leap {
+  0%,
+  78% {
+    opacity: 0;
+    transform: translate(0, 10px) rotate(-50deg);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(-50deg);
+  }
+  86% {
+    transform: translate(22px, -46px) rotate(0deg);
+  }
+  92% {
+    opacity: 1;
+    transform: translate(44px, 0) rotate(50deg);
+  }
+  94%,
+  100% {
+    opacity: 0;
+    transform: translate(44px, 10px) rotate(60deg);
+  }
+}
+@keyframes kids-ripple {
+  0%,
+  91% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  94% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+@keyframes kids-firefly {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: translate(0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(12px, -18px);
+  }
+}
+@keyframes kids-blink {
+  0%,
+  44%,
+  50%,
+  100% {
+    transform: scaleY(1);
+  }
+  47% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes kids-rustle {
+  25% {
+    transform: rotate(-3deg) translateX(-2%);
+  }
+  75% {
+    transform: rotate(3deg) translateX(2%);
+  }
+}
+/* The camera bobs gently with each step while the explorer walks. */
+@keyframes kids-trek {
+  25% {
+    transform: translateY(-0.6%);
+  }
+  75% {
+    transform: translateY(0.4%);
+  }
+}
 @keyframes kids-hint {
   50% {
     transform: translateY(-25%);
+  }
+}
+
+/* The cards and games grow on large screens, so they do not look lost in the middle (owner 2026-10-24). */
+@media (min-width: 1024px) and (min-height: 720px) {
+  .kids-zoom {
+    zoom: 1.2;
+  }
+}
+@media (min-width: 1440px) and (min-height: 860px) {
+  .kids-zoom {
+    zoom: 1.4;
   }
 }

@@ -64,6 +64,10 @@ public sealed class PlaySqlServerTests : IClassFixture<SqlServerAuthDatabaseFixt
         Assert.Equal(
             ["cat", "dog", "fish"],
             lesson.GetProperty("learnCards").EnumerateArray().Select(card => card.GetProperty("english").GetString()));
+        var cards = lesson.GetProperty("learnCards").EnumerateArray().ToList();
+        Assert.Equal(["Walk", "Still", "Swim"], cards.Select(card => card.GetProperty("movement").GetString()));
+        Assert.Equal("https://cdn.example.test/meow.mp3", cards[0].GetProperty("soundUrl").GetString());
+        Assert.Equal(JsonValueKind.Null, cards[1].GetProperty("soundUrl").ValueKind);
 
         var activities = lesson.GetProperty("activities").EnumerateArray().ToList();
         var questions = activities[0].GetProperty("questions").EnumerateArray().ToList();

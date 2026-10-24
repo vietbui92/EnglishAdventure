@@ -33,7 +33,16 @@ public sealed record ReorderLessonsRequest(IReadOnlyList<Guid> LessonIds);
 /// <param name="Meaning">The Vietnamese meaning, 1 to 100 characters.</param>
 /// <param name="ImageUrl">An https:// address, or blank for none yet (required before publishing).</param>
 /// <param name="Version">The lesson's <c>version</c>.</param>
-public sealed record LessonWordRequest(string English, string Meaning, string? ImageUrl, string Version);
+/// <param name="Movement">How the picture moves on the discovery walk (S3.9): "Still" (default when null), "Walk", "Hop",
+/// "Fly", "Swim", "Crawl" or "Wiggle".</param>
+/// <param name="SoundUrl">The sound the word makes (https), if any.</param>
+public sealed record LessonWordRequest(
+    string English,
+    string Meaning,
+    string? ImageUrl,
+    string? Movement,
+    string? SoundUrl,
+    string Version);
 
 /// <param name="Show">Whether the word is a card of the learn step.</param>
 /// <param name="Version">The lesson's <c>version</c>.</param>

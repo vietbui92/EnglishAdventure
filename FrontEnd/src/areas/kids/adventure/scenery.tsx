@@ -227,26 +227,29 @@ export function Cloud({ x, y, size = 1, slow = false }: { x: number; y: number; 
   )
 }
 
-/** Rows of little waves across a band of sea, rolling sideways. */
+/** Rows of little waves across a band of sea, from x `from` to `to` and y `top` to `bottom`, rolling sideways. */
 export function WaveRows({
-  width,
   from,
   to,
+  top,
+  bottom,
   color = '#ffffff',
 }: {
-  width: number
   from: number
   to: number
+  top: number
+  bottom: number
   color?: string
 }) {
   const rows: number[] = []
-  for (let y = from; y <= to; y += 46) rows.push(y)
+  for (let y = top; y <= bottom; y += 46) rows.push(y)
+  const start = Math.floor(from / 140) * 140 - 140
   return (
     <g aria-hidden stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.55">
       {rows.map((y, row) => (
         <g key={y} className={row % 2 ? 'kids-wave' : 'kids-wave-back'}>
-          {Array.from({ length: Math.ceil(width / 140) + 2 }, (_, index) => {
-            const x = index * 140 - 140 + (row % 2) * 70
+          {Array.from({ length: Math.ceil((to - start) / 140) + 2 }, (_, index) => {
+            const x = start + index * 140 + (row % 2) * 70
             return <path key={index} d={`M${x} ${y} q12 -9 24 0 q12 9 24 0`} />
           })}
         </g>

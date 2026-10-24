@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { routes } from '@/app/routes'
 import type { AttemptView, LearnerMap, PlayLesson } from '@/areas/kids/play/api'
 import { mockApi, problem } from '@/shared/test/api-mocks'
@@ -35,8 +35,14 @@ function lesson(overrides: Partial<PlayLesson> = {}): PlayLesson {
     kind: 'Regular',
     bossImageUrl: null,
     learnCards: [
-      { english: 'cat', meaning: 'con mèo', imageUrl: 'https://cdn.example.test/cat.png' },
-      { english: 'dog', meaning: 'con chó', imageUrl: null },
+      {
+        english: 'cat',
+        meaning: 'con mèo',
+        imageUrl: 'https://cdn.example.test/cat.png',
+        movement: 'Walk',
+        soundUrl: null,
+      },
+      { english: 'dog', meaning: 'con chó', imageUrl: null, movement: 'Still', soundUrl: null },
     ],
     activities: [],
     ...overrides,
@@ -56,6 +62,24 @@ describe('adventure map', () => {
     expect(screen.getByText('Chạm vào một hòn đảo để chèo thuyền tới đó nhé!')).toBeTruthy()
     const islands = within(screen.getByRole('list', { name: 'Bản đồ phiêu lưu' })).getAllByRole('button')
     expect(islands.map((island) => island.getAttribute('aria-label'))).toEqual(['Đảo 1: Animal Island'])
+    // The sign: the level's title, and the island's name from the level's description.
+    expect(within(islands[0]!).getByText('Level 1 · Animal Island')).toBeTruthy()
+    expect(within(islands[0]!).getByText('Cats and dogs')).toBeTruthy()
+  })
+
+  it('does not repeat "Level n" when that is already the title of the level', async () => {
+    server.use(
+      mockApi('get', '/api/v1/play/map', () => ({
+        levels: [{ ...map.levels[0]!, title: 'Level 1', description: 'Đảo Thú Cưng' }],
+      })),
+    )
+    signInAsChild()
+    await renderRoutes(routes, { route: '/kids' })
+
+    const island = await screen.findByRole('button', { name: 'Đảo 1: Level 1' })
+    expect(within(island).getByText('Level 1')).toBeTruthy()
+    expect(within(island).queryByText(/Level 1 · /)).toBeNull()
+    expect(within(island).getByText('Đảo Thú Cưng')).toBeTruthy()
   })
 
   it('walks from the island to a lesson and opens it', async () => {
@@ -142,14 +166,107 @@ describe('adventure map', () => {
   })
 })
 
-describe('learn step', () => {
+/** A browser that hears the child say the next answer in `heard` (its guesses, best first). */
+class FakeRecognition {
+  static heard: string[] = []
+  lang = ''
+  interimResults = true
+  continuous = true
+  maxAlternatives = 1
+  onresult: ((event: { results: { transcript: string }[][] }) => void) | null = null
+  onerror: ((event: { error: string }) => void) | null = null
+  onend: (() => void) | null = null
+  start() {
+    queueMicrotask(() => {
+      this.onresult?.({ results: [FakeRecognition.heard.map((transcript) => ({ transcript }))] })
+      this.onend?.()
+    })
+  }
+  abort() {}
+}
+
+afterEach(() => vi.unstubAllGlobals())
+
+describe('discovery walk', () => {
+  it('meets each word moving, with its sound and name, then goes to the review cards', async () => {
+    server.use(
+      mockApi('get', '/api/v1/play/lessons/{lessonId}', () =>
+        lesson({
+          learnCards: [
+            {
+              english: 'cat',
+              meaning: 'con mèo',
+              imageUrl: 'https://cdn.example.test/cat.png',
+              movement: 'Walk',
+              soundUrl: 'https://cdn.example.test/meow.mp3',
+            },
+            { english: 'dog', meaning: 'con chó', imageUrl: null, movement: 'Still', soundUrl: null },
+          ],
+        }),
+      ),
+    )
+    signInAsChild()
+    const { user } = await renderRoutes(routes, { route: `/kids/lessons/${petsId}` })
+
+    expect(await screen.findByText('Khu rừng bí ẩn có những người bạn đang trốn. Cùng đi tìm nhé!')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Vào rừng thôi!' }))
+
+    expect(await screen.findByText('Bạn thứ 1 / 2')).toBeTruthy()
+    const cat = screen.getByRole('article', { name: 'cat' })
+    expect(within(cat).getByText('con mèo')).toBeTruthy()
+    expect(within(cat).getByRole('button', { name: 'Nghe' })).toBeTruthy()
+    expect(within(cat).getByRole('button', { name: 'Tiếng kêu' })).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Đi tiếp' }))
+    expect(await screen.findByText('Bạn thứ 2 / 2')).toBeTruthy()
+    const dog = screen.getByRole('article', { name: 'dog' })
+    expect(within(dog).queryByRole('button', { name: 'Tiếng kêu' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Xem thẻ luôn' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Ôn lại thẻ' }))
+    expect(screen.getByText('Thẻ 1 / 2')).toBeTruthy()
+  })
+
+  it('can go straight to the cards', async () => {
+    server.use(mockApi('get', '/api/v1/play/lessons/{lessonId}', () => lesson()))
+    signInAsChild()
+    const { user } = await renderRoutes(routes, { route: `/kids/lessons/${petsId}` })
+
+    await user.click(await screen.findByRole('button', { name: 'Xem thẻ luôn' }))
+
+    expect(screen.getByText('Thẻ 1 / 2')).toBeTruthy()
+  })
+})
+
+describe('review cards', () => {
+  it('practises saying each word where the browser can hear the child', async () => {
+    vi.stubGlobal('webkitSpeechRecognition', FakeRecognition)
+    server.use(mockApi('get', '/api/v1/play/lessons/{lessonId}', () => lesson()))
+    signInAsChild()
+    const { user } = await renderRoutes(routes, { route: `/kids/lessons/${petsId}` })
+    await user.click(await screen.findByRole('button', { name: 'Xem thẻ luôn' }))
+
+    expect(screen.getByText('Nghe rồi bấm micro và nói to từ này nhé!')).toBeTruthy()
+    FakeRecognition.heard = ['a cat', 'hat']
+    await user.click(screen.getByRole('button', { name: 'Bé nói thử' }))
+    expect(await screen.findByText('Giỏi quá! Bé nói đúng rồi! 🎉')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Tiếp' }))
+    FakeRecognition.heard = ['duck', 'dug']
+    await user.click(screen.getByRole('button', { name: 'Bé nói thử' }))
+    expect(await screen.findByText('Máy nghe thành “duck”. Nghe lại rồi nói lại nhé!')).toBeTruthy()
+  })
+
   it('shows the word cards one at a time, then leads to the games', async () => {
     server.use(mockApi('get', '/api/v1/play/lessons/{lessonId}', () => lesson()))
     signInAsChild()
     const { user } = await renderRoutes(routes, { route: `/kids/lessons/${petsId}` })
 
     expect(await screen.findByRole('heading', { name: 'Pets' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Xem thẻ luôn' }))
     const first = screen.getByRole('article', { name: 'cat' })
+    // Without speech recognition there is only "Listen".
+    expect(screen.queryByRole('button', { name: 'Bé nói thử' })).toBeNull()
     expect(within(first).getByRole('img', { name: 'cat' }).getAttribute('src')).toBe('https://cdn.example.test/cat.png')
     expect(within(first).getByText('con mèo')).toBeTruthy()
     expect(screen.getByText('Thẻ 1 / 2')).toBeTruthy()
@@ -339,7 +456,8 @@ describe('games', () => {
     const { user } = await renderRoutes(routes, { route: `/kids/lessons/${petsId}` })
 
     // The cards can be skipped; the attempt starts only with the games.
-    await user.click(await screen.findByRole('button', { name: 'Vào chơi luôn' }))
+    await user.click(await screen.findByRole('button', { name: 'Xem thẻ luôn' }))
+    await user.click(screen.getByRole('button', { name: 'Vào chơi luôn' }))
     expect(fake.starts).toEqual([])
     await user.click(screen.getByRole('button', { name: 'Bắt đầu chơi' }))
 

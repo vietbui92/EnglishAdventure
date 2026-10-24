@@ -5540,6 +5540,8 @@ export interface components {
             english: string;
             meaning: string;
             imageUrl: null | string;
+            movement: string;
+            soundUrl: null | string;
         };
         LearnCardRequest: {
             show: boolean;
@@ -5599,6 +5601,8 @@ export interface components {
             english: string;
             meaning: string;
             imageUrl: null | string;
+            movement: null | string;
+            soundUrl: null | string;
             version: string;
         };
         LessonWordSummary: {
@@ -5609,6 +5613,8 @@ export interface components {
             english: string;
             meaning: string;
             imageUrl: null | string;
+            movement: string;
+            soundUrl: null | string;
             showInLearnStep: boolean;
         };
         LevelDetails: {

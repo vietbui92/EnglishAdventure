@@ -138,7 +138,14 @@ public sealed class Lesson : OrderedContent
     }
 
     /// <summary>Adds a word at the end of the word bank. Only while the lesson is a draft (PD-012).</summary>
-    public LessonWord AddWord(Level level, string english, string meaning, ImageUrl? imageUrl, DateTime nowUtc)
+    /// <param name="discovery">How the child meets it on the discovery walk (S3.9); null: still, without a sound.</param>
+    public LessonWord AddWord(
+        Level level,
+        string english,
+        string meaning,
+        ImageUrl? imageUrl,
+        DateTime nowUtc,
+        WordDiscovery? discovery = null)
     {
         EnsureHasWordBank();
         EnsureStructureCanChange(level);
@@ -148,14 +155,25 @@ public sealed class Lesson : OrderedContent
         }
 
         EnsureNoOtherWord(english, exceptWordId: null);
-        var word = LessonWord.Create(Id, _words.Count + 1, english, meaning, imageUrl);
+        var word = LessonWord.Create(Id, _words.Count + 1, english, meaning, imageUrl, discovery ?? WordDiscovery.Default);
         _words.Add(word);
         ContentChangedAtUtc = nowUtc;
         return word;
     }
 
-    /// <summary>Corrects a word's texts and picture, also while published (PD-012 allows fixing texts and pictures).</summary>
-    public void UpdateWord(Level level, Guid wordId, string english, string meaning, ImageUrl? imageUrl, DateTime nowUtc)
+    /// <summary>
+    /// Corrects a word's texts, picture, movement and sound, also while published (PD-012 allows fixing texts and
+    /// pictures; the movement and sound are presentation too, S3.9).
+    /// </summary>
+    /// <param name="discovery">How the child meets it on the discovery walk; null: still, without a sound.</param>
+    public void UpdateWord(
+        Level level,
+        Guid wordId,
+        string english,
+        string meaning,
+        ImageUrl? imageUrl,
+        DateTime nowUtc,
+        WordDiscovery? discovery = null)
     {
         EnsureCanChange(level);
         EnsureNotArchived();
@@ -168,7 +186,7 @@ public sealed class Lesson : OrderedContent
         }
 
         EnsureNoOtherWord(english, word.Id);
-        word.Change(english, meaning, imageUrl);
+        word.Change(english, meaning, imageUrl, discovery ?? WordDiscovery.Default);
         ContentChangedAtUtc = nowUtc;
     }
 

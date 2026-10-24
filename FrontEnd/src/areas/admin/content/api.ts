@@ -204,7 +204,15 @@ export interface WordInput {
   meaning: string
   /** Blank for no picture yet; every word needs one before the lesson is published. */
   imageUrl: string
+  /** How the picture moves on the discovery walk (S3.9, PD-013). */
+  movement: WordMovement
+  /** The sound the word makes; blank for none. */
+  soundUrl: string
 }
+
+/** The movements of the backend's WordMovement, in the order the Admin sees them. */
+export const wordMovements = ['Still', 'Walk', 'Hop', 'Fly', 'Swim', 'Crawl', 'Wiggle'] as const
+export type WordMovement = (typeof wordMovements)[number]
 
 /** Word changes send the lesson's version: it covers the whole word bank (409 when someone else changed it). */
 export function useAddWord(lessonId: string) {
@@ -212,7 +220,7 @@ export function useAddWord(lessonId: string) {
     unwrap(
       api.POST('/api/v1/admin/content/lessons/{lessonId}/words', {
         params: { path: { lessonId } },
-        body: { ...input, imageUrl: input.imageUrl || null },
+        body: { ...input, imageUrl: input.imageUrl || null, soundUrl: input.soundUrl || null },
       }),
     ),
   )
@@ -223,7 +231,7 @@ export function useUpdateWord(lessonId: string) {
     unwrap(
       api.PUT('/api/v1/admin/content/lessons/{lessonId}/words/{wordId}', {
         params: { path: { lessonId, wordId } },
-        body: { ...input, imageUrl: input.imageUrl || null },
+        body: { ...input, imageUrl: input.imageUrl || null, soundUrl: input.soundUrl || null },
       }),
     ),
   )

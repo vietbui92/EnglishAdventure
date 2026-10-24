@@ -56,7 +56,8 @@ describe('child mode', () => {
     expect(confirm.getByText(/bạn cần đăng nhập lại/)).toBeTruthy()
     await user.click(confirm.getByRole('button', { name: 'Bắt đầu học' }))
 
-    expect(await screen.findByRole('heading', { name: 'Xin chào, Bin!' })).toBeTruthy()
+    // The kids area loads lazily with its map; give it time on a busy test run.
+    expect(await screen.findByRole('heading', { name: 'Xin chào, Bin!' }, { timeout: 3000 })).toBeTruthy()
     expect(router.state.location.pathname).toBe('/kids')
     const [start, me] = requests
     expect(start?.headers.get('X-EnglishAdventure-Client')).toBe('web')

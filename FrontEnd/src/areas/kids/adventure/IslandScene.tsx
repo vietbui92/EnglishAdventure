@@ -3,8 +3,10 @@ import { Sailboat, Swords } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
+import { levelLabel } from '@/areas/kids/adventure/labels'
 import { Boat, Decor, Explorer, themeOf, WaveRows } from '@/areas/kids/adventure/scenery'
 import { playSound, unlockSound } from '@/areas/kids/adventure/sound'
+import { Stage } from '@/areas/kids/adventure/Stage'
 import { glide, pause, smooth, svgPath, track, type Point } from '@/areas/kids/adventure/track'
 import { type MapLevel } from '@/areas/kids/play/api'
 import { KidsPicture } from '@/areas/kids/play/KidsPicture'
@@ -142,153 +144,167 @@ export function IslandScene({ level, index, avatarKey, lessonId, greeting, onOpe
       initial={{ opacity: 0, scale: 1.25 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: still ? 0 : 0.6, ease: 'easeOut' }}
-      className="@container relative aspect-[5/3] w-full overflow-hidden rounded-[2rem] bg-[#4fb7e3] shadow-xl select-none"
+      className="size-full"
     >
-      <svg viewBox={`0 0 ${VIEW} ${HEIGHT}`} className="absolute inset-0 size-full" aria-hidden>
-        <defs>
-          <radialGradient id="island-sea" cx="0.5" cy="0.5" r="0.75">
-            <stop offset="0.5" stopColor="#6fd3e6" />
-            <stop offset="1" stopColor="#2b86cf" />
-          </radialGradient>
-        </defs>
-        <rect width={VIEW} height={HEIGHT} fill="url(#island-sea)" />
-        <WaveRows width={VIEW} from={30} to={HEIGHT - 10} />
-        <path
-          d="M40 560 C0 420 110 250 250 190 C370 80 640 50 820 100 C970 150 1000 330 950 450 C905 570 700 610 500 595 C300 610 110 610 40 560 Z"
-          fill="#a7efe9"
-          opacity="0.7"
-          className="kids-shimmer"
-        />
-        <path
-          d="M70 545 C30 420 130 270 260 210 C380 105 640 75 815 122 C950 170 975 330 930 445 C890 550 700 585 500 575 C300 588 130 588 70 545 Z"
-          fill={theme.sand}
-        />
-        <path
-          d="M115 515 C85 410 170 290 285 238 C395 140 640 112 800 152 C915 192 935 330 895 430 C860 520 690 548 500 540 C320 552 160 552 115 515 Z"
-          fill={theme.grass}
-        />
-        {/* The boss's mountain and its cave. */}
-        <path d="M700 205 L830 40 L960 215 Z" fill={theme.hill} />
-        <path d="M830 40 L862 82 Q838 92 812 80 Z" fill="#ffffff" opacity="0.7" />
-        <path d="M790 215 Q790 150 830 150 Q870 150 870 215 Z" fill="#3b2a20" />
-        {trees.map((tree) => (
-          <Decor key={`${tree.x}-${tree.y}`} kind={theme.decor} x={tree.x} y={tree.y} size={tree.size} />
-        ))}
-        {/* The footpath, sandy with white stones down its middle. */}
-        <path d={svgPath(footpath)} stroke={theme.sand} strokeWidth="34" fill="none" strokeLinecap="round" />
-        <path
-          d={svgPath(footpath)}
-          stroke="#ffffff"
-          strokeWidth="5"
-          strokeDasharray="4 22"
-          fill="none"
-          strokeLinecap="round"
-          opacity="0.8"
-        />
-      </svg>
-
-      {/* The boat waiting at the beach. */}
-      <div
-        className="kids-bob absolute w-[13cqw] -translate-x-1/2 -translate-y-1/2"
-        style={{ left: left(95), top: top(555) }}
-      >
-        <div className="aspect-[8/5]">
-          <Boat rowing={false} />
-        </div>
-      </div>
-
-      <h1
-        id="island-title"
-        className="absolute top-[3%] left-1/2 -translate-x-1/2 rounded-[1.4cqw] border-[0.3cqw] border-[#7a4b22] bg-[#c8924f] px-[2cqw] py-[0.6cqw] text-center font-heading text-[2.6cqw] leading-tight font-bold text-white shadow-md"
-      >
-        <span className="block text-[1.6cqw] font-semibold opacity-90">
-          {t('kids.map.level', { number: index + 1 })}
-        </span>
-        {level.title}
-      </h1>
-
-      <ol aria-label={t('kids.map.lessonsOf', { level: level.title })}>
-        {lessonStops.map((stop) => {
-          const point = trail.at(stop.at)
-          return (
-            <li
-              key={stop.id}
-              className="absolute -translate-x-1/2 -translate-y-[85%]"
-              style={{ left: left(point.x), top: top(point.y) }}
-            >
-              <Link
-                to={`/kids/lessons/${stop.id}`}
-                onClick={(event) => {
-                  event.preventDefault()
-                  void go(stop)
-                }}
-                aria-label={t('kids.map.lesson', { number: stop.number, title: stop.title })}
-                className="group flex flex-col items-center focus-visible:outline-none"
+      <Stage
+        horizon={0}
+        sky={['#4fb7e3', '#4fb7e3']}
+        ground={['#4fb7e3', '#2b86cf']}
+        hud={
+          <>
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-start gap-2 p-3 pr-44 sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:pr-56">
+              {greeting}
+              <h1
+                id="island-title"
+                className="rounded-2xl border-4 border-[#7a4b22] bg-[#c8924f] px-4 py-1 font-heading text-lg leading-tight font-bold text-white shadow-md sm:text-2xl lg:text-3xl"
               >
-                <span className="flex size-[6.5cqw] items-center justify-center rounded-full border-[0.4cqw] border-white bg-[#f59e0b] font-heading text-[3cqw] font-bold text-white shadow-lg transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white">
-                  {stop.number}
+                <span className="block text-sm font-semibold opacity-90 sm:text-base">
+                  {levelLabel(t, index + 1, level.title)}
                 </span>
-                <span className="h-[2.4cqw] w-[0.8cqw] bg-[#7a4b22]" />
-                <span className="max-w-[16cqw] truncate rounded-full bg-white/90 px-[1.2cqw] py-[0.2cqw] text-[1.7cqw] font-bold text-foreground shadow">
-                  {stop.title}
-                </span>
-              </Link>
-            </li>
-          )
-        })}
-      </ol>
+                {level.description ?? level.title}
+              </h1>
+            </div>
+            <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-3 sm:p-5">
+              <p
+                aria-live="polite"
+                className="max-w-[60%] rounded-full bg-white/90 px-5 py-2 text-base font-bold text-foreground shadow-md sm:text-xl lg:text-2xl"
+              >
+                {walking === 'boat'
+                  ? t('kids.map.toBoat')
+                  : walking
+                    ? t('kids.map.walking', { place: walking.title })
+                    : t('kids.map.pickStop')}
+              </p>
+              <Button
+                variant="secondary"
+                className="h-auto min-h-12 rounded-full px-5 text-base shadow-md sm:min-h-14 sm:text-xl"
+                disabled={walking !== null}
+                onClick={() => void leave()}
+              >
+                <Sailboat aria-hidden className="size-6" />
+                {t('kids.map.toSea')}
+              </Button>
+            </div>
+          </>
+        }
+      >
+        <svg viewBox={`0 0 ${VIEW} ${HEIGHT}`} className="absolute inset-0 size-full overflow-visible" aria-hidden>
+          <defs>
+            <radialGradient id="island-sea" cx="0.5" cy="0.5" r="0.75">
+              <stop offset="0.5" stopColor="#6fd3e6" />
+              <stop offset="1" stopColor="#4fb7e3" />
+            </radialGradient>
+          </defs>
+          {/* The sea goes on past the stage on wide or tall screens. */}
+          <rect x={-VIEW * 2} y={-HEIGHT * 2} width={VIEW * 5} height={HEIGHT * 5} fill="#4fb7e3" />
+          <rect width={VIEW} height={HEIGHT} fill="url(#island-sea)" />
+          <WaveRows from={-VIEW * 1.5} to={VIEW * 2.5} top={-HEIGHT} bottom={HEIGHT * 2} />
+          <path
+            d="M40 560 C0 420 110 250 250 190 C370 80 640 50 820 100 C970 150 1000 330 950 450 C905 570 700 610 500 595 C300 610 110 610 40 560 Z"
+            fill="#a7efe9"
+            opacity="0.7"
+            className="kids-shimmer"
+          />
+          <path
+            d="M70 545 C30 420 130 270 260 210 C380 105 640 75 815 122 C950 170 975 330 930 445 C890 550 700 585 500 575 C300 588 130 588 70 545 Z"
+            fill={theme.sand}
+          />
+          <path
+            d="M115 515 C85 410 170 290 285 238 C395 140 640 112 800 152 C915 192 935 330 895 430 C860 520 690 548 500 540 C320 552 160 552 115 515 Z"
+            fill={theme.grass}
+          />
+          {/* The boss's mountain and its cave. */}
+          <path d="M700 205 L830 40 L960 215 Z" fill={theme.hill} />
+          <path d="M830 40 L862 82 Q838 92 812 80 Z" fill="#ffffff" opacity="0.7" />
+          <path d="M790 215 Q790 150 830 150 Q870 150 870 215 Z" fill="#3b2a20" />
+          {trees.map((tree) => (
+            <Decor key={`${tree.x}-${tree.y}`} kind={theme.decor} x={tree.x} y={tree.y} size={tree.size} />
+          ))}
+          {/* The footpath, sandy with white stones down its middle. */}
+          <path d={svgPath(footpath)} stroke={theme.sand} strokeWidth="34" fill="none" strokeLinecap="round" />
+          <path
+            d={svgPath(footpath)}
+            stroke="#ffffff"
+            strokeWidth="5"
+            strokeDasharray="4 22"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+        </svg>
 
-      {bossStop && (
-        <Link
-          to={`/kids/lessons/${bossStop.id}`}
-          onClick={(event) => {
-            event.preventDefault()
-            void go(bossStop)
-          }}
-          aria-label={t('kids.map.bossStop', { name: bossStop.title })}
-          className="group absolute flex -translate-x-1/2 -translate-y-full flex-col items-center focus-visible:outline-none"
-          style={{ left: left(830), top: top(150) }}
+        {/* The boat waiting at the beach. */}
+        <div
+          className="kids-bob absolute w-[13cqw] -translate-x-1/2 -translate-y-1/2"
+          style={{ left: left(95), top: top(555) }}
         >
-          <span className="kids-pulse absolute top-[2cqw] size-[11cqw] rounded-full bg-red-500/40" />
-          <span className="relative overflow-hidden rounded-full border-[0.5cqw] border-red-500 bg-white shadow-xl transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white">
-            <KidsPicture url={bossStop.imageUrl} alt="" className="size-[11cqw]" />
-          </span>
-          <span className="relative -mt-[1.4cqw] flex items-center gap-[0.5cqw] rounded-full bg-red-500 px-[1.2cqw] py-[0.2cqw] text-[1.7cqw] font-bold text-white shadow">
-            <Swords aria-hidden className="size-[1.8cqw]" />
-            {bossStop.title}
-          </span>
-        </Link>
-      )}
-
-      <motion.div
-        className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
-        style={{ left: heroLeft, top: heroTop }}
-      >
-        <div style={{ transform: `scaleX(${facing})` }}>
-          <Explorer avatarKey={avatarKey} walking={walking !== null} className="size-[7cqw]" />
+          <div className="aspect-[8/5]">
+            <Boat rowing={false} />
+          </div>
         </div>
-      </motion.div>
 
-      <div className="pointer-events-none absolute top-[3%] left-[3%]">{greeting}</div>
-      <Button
-        variant="secondary"
-        className="absolute right-[3%] bottom-[4%] h-auto min-h-12 rounded-full px-[2cqw] text-[2cqw] shadow-md"
-        disabled={walking !== null}
-        onClick={() => void leave()}
-      >
-        <Sailboat aria-hidden className="size-[2.4cqw]" />
-        {t('kids.map.toSea')}
-      </Button>
-      <p
-        aria-live="polite"
-        className="absolute bottom-[4%] left-[3%] max-w-[55%] rounded-full bg-white/90 px-[2cqw] py-[0.8cqw] text-[2cqw] font-bold text-foreground shadow-md"
-      >
-        {walking === 'boat'
-          ? t('kids.map.toBoat')
-          : walking
-            ? t('kids.map.walking', { place: walking.title })
-            : t('kids.map.pickStop')}
-      </p>
+        <ol aria-label={t('kids.map.lessonsOf', { level: level.title })}>
+          {lessonStops.map((stop) => {
+            const point = trail.at(stop.at)
+            return (
+              <li
+                key={stop.id}
+                className="absolute -translate-x-1/2 -translate-y-[85%]"
+                style={{ left: left(point.x), top: top(point.y) }}
+              >
+                <Link
+                  to={`/kids/lessons/${stop.id}`}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void go(stop)
+                  }}
+                  aria-label={t('kids.map.lesson', { number: stop.number, title: stop.title })}
+                  className="group flex flex-col items-center focus-visible:outline-none"
+                >
+                  <span className="flex size-[6.5cqw] items-center justify-center rounded-full border-[0.4cqw] border-white bg-[#f59e0b] font-heading text-[3cqw] font-bold text-white shadow-lg transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white">
+                    {stop.number}
+                  </span>
+                  <span className="h-[2.4cqw] w-[0.8cqw] bg-[#7a4b22]" />
+                  <span className="max-w-[16cqw] truncate rounded-full bg-white/90 px-[1.2cqw] py-[0.2cqw] text-[1.7cqw] font-bold text-foreground shadow">
+                    {stop.title}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ol>
+
+        {bossStop && (
+          <Link
+            to={`/kids/lessons/${bossStop.id}`}
+            onClick={(event) => {
+              event.preventDefault()
+              void go(bossStop)
+            }}
+            aria-label={t('kids.map.bossStop', { name: bossStop.title })}
+            className="group absolute flex -translate-x-1/2 -translate-y-full flex-col items-center focus-visible:outline-none"
+            style={{ left: left(830), top: top(150) }}
+          >
+            <span className="kids-pulse absolute top-[2cqw] size-[11cqw] rounded-full bg-red-500/40" />
+            <span className="relative overflow-hidden rounded-full border-[0.5cqw] border-red-500 bg-white shadow-xl transition-transform group-hover:scale-110 group-focus-visible:ring-[0.6cqw] group-focus-visible:ring-white">
+              <KidsPicture url={bossStop.imageUrl} alt="" className="size-[11cqw]" />
+            </span>
+            <span className="relative -mt-[1.4cqw] flex items-center gap-[0.5cqw] rounded-full bg-red-500 px-[1.2cqw] py-[0.2cqw] text-[1.7cqw] font-bold text-white shadow">
+              <Swords aria-hidden className="size-[1.8cqw]" />
+              {bossStop.title}
+            </span>
+          </Link>
+        )}
+
+        <motion.div
+          className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
+          style={{ left: heroLeft, top: heroTop }}
+        >
+          <div style={{ transform: `scaleX(${facing})` }}>
+            <Explorer avatarKey={avatarKey} walking={walking !== null} className="size-[7cqw]" />
+          </div>
+        </motion.div>
+      </Stage>
     </motion.section>
   )
 }

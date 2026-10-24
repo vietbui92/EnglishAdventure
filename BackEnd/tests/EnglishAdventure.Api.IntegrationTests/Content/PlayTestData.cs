@@ -45,9 +45,17 @@ internal static class PlayTestData
 
         var version = lesson.GetProperty("version").GetString()!;
         JsonElement bank = default;
-        foreach (var (english, meaning) in new[] { ("cat", "con mèo"), ("dog", "con chó"), ("fish", "con cá") })
+        // The cat walks and meows on the discovery walk (S3.9); the others keep the defaults.
+        foreach (var (english, meaning, movement, soundUrl) in new[]
+                 {
+                     ("cat", "con mèo", "Walk", "https://cdn.example.test/meow.mp3"),
+                     ("dog", "con chó", null, null),
+                     ("fish", "con cá", "Swim", null),
+                 })
         {
-            bank = await ReadAsync(await admin.PostAsync($"{route}/words", new { english, meaning, imageUrl = Picture(english), version }));
+            bank = await ReadAsync(await admin.PostAsync(
+                $"{route}/words",
+                new { english, meaning, imageUrl = Picture(english), movement, soundUrl, version }));
             version = LessonVersion(bank);
         }
 

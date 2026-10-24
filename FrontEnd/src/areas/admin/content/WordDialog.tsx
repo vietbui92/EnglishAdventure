@@ -1,9 +1,10 @@
 import type { ParseKeys } from 'i18next'
+import { Volume2 } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import type { LessonWord, WordInput } from '@/areas/admin/content/api'
+import { wordMovements, type LessonWord, type WordInput, type WordMovement } from '@/areas/admin/content/api'
 import { ContentError } from '@/areas/admin/content/ContentParts'
 import { WordPicture } from '@/areas/admin/content/WordPicture'
 import { ApiError } from '@/shared/api/problem-details'
@@ -20,7 +21,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { zodResolver } from '@/shared/lib/zod-resolver'
 
-// Same limits as the backend LessonWord entity and ImageUrl value object (S3.6).
+// Same limits as the backend LessonWord entity and its ImageUrl and SoundUrl value objects (S3.6, S3.9).
 const englishMaxLength = 50
 const meaningMaxLength = 100
 const imageUrlMaxLength = 2000
@@ -55,6 +56,13 @@ function wordSchema(pictureRequired: boolean) {
       .refine((value) => !pictureRequired || value !== '', {
         message: 'admin.content.words.form.validation.imageUrlRequired' satisfies ParseKeys,
       }),
+    movement: z.enum(wordMovements),
+    soundUrl: z
+      .string()
+      .trim()
+      .refine((value) => value === '' || isHttpsUrl(value), {
+        message: 'admin.content.words.form.validation.soundUrlHttps' satisfies ParseKeys,
+      }),
   })
 }
 
@@ -69,7 +77,10 @@ interface WordDialogProps {
   onSave: (values: WordInput) => Promise<unknown>
 }
 
-/** Add or correct a word: the English word, its Vietnamese meaning and a picture address. */
+/**
+ * Add or correct a word: the English word, its Vietnamese meaning, a picture address, and how the child meets it on
+ * the discovery walk: its movement and, optionally, its sound (S3.9, PD-013).
+ */
 export function WordDialog(props: WordDialogProps) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -87,10 +98,18 @@ function WordForm({ onOpenChange, word, pictureRequired, onSave }: WordDialogPro
   const schema = wordSchema(pictureRequired)
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { english: word?.english ?? '', meaning: word?.meaning ?? '', imageUrl: word?.imageUrl ?? '' },
+    defaultValues: {
+      english: word?.english ?? '',
+      meaning: word?.meaning ?? '',
+      imageUrl: word?.imageUrl ?? '',
+      movement: (word?.movement as WordMovement | undefined) ?? 'Still',
+      soundUrl: word?.soundUrl ?? '',
+    },
   })
   const { errors, isSubmitting } = form.formState
-  const imageUrl = form.watch('imageUrl').trim()
+  const [imageUrl, soundUrl] = useWatch({ control: form.control, name: ['imageUrl', 'soundUrl'] }).map((value) =>
+    value.trim(),
+  ) as [string, string]
 
   const submit = form.handleSubmit(async (values) => {
     setError(null)
@@ -102,7 +121,8 @@ function WordForm({ onOpenChange, word, pictureRequired, onSave }: WordDialogPro
         form.setError('english', { type: 'server', message: 'admin.content.words.form.validation.duplicate' })
       } else if (cause instanceof ApiError && cause.kind === 'validation') {
         // The server's messages are English; show the form's own text on the field the server names.
-        const field = (['imageUrl', 'meaning', 'english'] as const).find((name) => cause.fieldErrors[name]) ?? 'english'
+        const field =
+          (['soundUrl', 'imageUrl', 'meaning', 'english'] as const).find((name) => cause.fieldErrors[name]) ?? 'english'
         form.setError(field, { type: 'server', message: serverFieldKeys[field] })
       } else {
         setError(cause)
@@ -110,7 +130,7 @@ function WordForm({ onOpenChange, word, pictureRequired, onSave }: WordDialogPro
     }
   })
 
-  const fieldError = (name: 'english' | 'meaning' | 'imageUrl') => {
+  const fieldError = (name: 'english' | 'meaning' | 'imageUrl' | 'soundUrl') => {
     const message = errors[name]?.message
     return message ? (
       <p id={`word-${name}-error`} className="text-sm text-destructive">
@@ -182,6 +202,56 @@ function WordForm({ onOpenChange, word, pictureRequired, onSave }: WordDialogPro
         )}
       </div>
 
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="word-movement">{t('admin.content.words.form.movement')}</Label>
+        <select
+          id="word-movement"
+          className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          aria-describedby="word-movement-hint"
+          {...form.register('movement')}
+        >
+          {wordMovements.map((movement) => (
+            <option key={movement} value={movement}>
+              {t(`admin.content.words.movements.${movement}`)}
+            </option>
+          ))}
+        </select>
+        <p id="word-movement-hint" className="text-sm text-muted-foreground">
+          {t('admin.content.words.form.movementHint')}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="word-soundUrl">{t('admin.content.words.form.soundUrl')}</Label>
+        <div className="flex items-start gap-3">
+          <Input
+            id="word-soundUrl"
+            type="url"
+            inputMode="url"
+            autoComplete="off"
+            placeholder="https://"
+            maxLength={imageUrlMaxLength}
+            aria-invalid={errors.soundUrl ? true : undefined}
+            aria-describedby={errors.soundUrl ? 'word-soundUrl-error' : 'word-soundUrl-hint'}
+            {...form.register('soundUrl')}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!isHttpsUrl(soundUrl)}
+            onClick={() => void new Audio(soundUrl).play().catch(() => undefined)}
+          >
+            <Volume2 aria-hidden />
+            {t('admin.content.words.form.playSound')}
+          </Button>
+        </div>
+        {fieldError('soundUrl') ?? (
+          <p id="word-soundUrl-hint" className="text-sm text-muted-foreground">
+            {t('admin.content.words.form.soundUrlHint')}
+          </p>
+        )}
+      </div>
+
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
           {t('admin.content.actions.cancel')}
@@ -198,8 +268,9 @@ function WordForm({ onOpenChange, word, pictureRequired, onSave }: WordDialogPro
   )
 }
 
-const serverFieldKeys: Record<'english' | 'meaning' | 'imageUrl', ParseKeys> = {
+const serverFieldKeys: Record<'english' | 'meaning' | 'imageUrl' | 'soundUrl', ParseKeys> = {
   english: 'admin.content.words.form.validation.englishRequired',
   meaning: 'admin.content.words.form.validation.meaningRequired',
   imageUrl: 'admin.content.words.form.validation.imageUrlHttps',
+  soundUrl: 'admin.content.words.form.validation.soundUrlHttps',
 }

@@ -33,7 +33,7 @@ function word(
   sortOrder: number,
   showInLearnStep = true,
 ): LessonWord {
-  return { id, english, meaning, imageUrl, sortOrder, showInLearnStep }
+  return { id, english, meaning, imageUrl, movement: 'Still', soundUrl: null, sortOrder, showInLearnStep }
 }
 
 interface Recorded {
@@ -297,7 +297,14 @@ describe('lesson page', () => {
         method: 'POST',
         path: `/api/v1/admin/content/lessons/${lessonId}/words`,
         search: '',
-        body: { english: 'fish', meaning: 'con cá', imageUrl: null, version: 'words-v1' },
+        body: {
+          english: 'fish',
+          meaning: 'con cá',
+          imageUrl: null,
+          movement: 'Still',
+          soundUrl: null,
+          version: 'words-v1',
+        },
       },
     ])
   })
@@ -322,6 +329,36 @@ describe('lesson page', () => {
     expect(within(dialog).getByRole('img', { name: 'Xem trước hình' }).getAttribute('src')).toBe(
       'https://cdn.example.test/fish.png',
     )
+  })
+
+  it('sets how a word moves and sounds on the discovery walk', async () => {
+    const state = serveLesson()
+    signInAs('ContentAdmin')
+    const { user } = await renderRoutes(routes, { route })
+
+    await user.click(await screen.findByRole('button', { name: 'Sửa từ dog' }))
+    const dialog = await screen.findByRole('dialog')
+    const movement = within(dialog).getByLabelText('Cách di chuyển khi khám phá')
+    expect((movement as HTMLSelectElement).value).toBe('Still')
+    expect(within(dialog).getByRole('button', { name: 'Nghe thử' }).hasAttribute('disabled')).toBe(true)
+    await user.selectOptions(movement, 'Walk')
+    const sound = within(dialog).getByLabelText('Địa chỉ tiếng kêu (https://, không bắt buộc)')
+    await user.type(sound, 'http://cdn.example.test/woof.mp3')
+    await user.click(within(dialog).getByRole('button', { name: 'Lưu' }))
+
+    expect(await within(dialog).findByText(/Địa chỉ tiếng kêu phải bắt đầu bằng https:\/\//)).toBeTruthy()
+    expect(state.requests).toEqual([])
+
+    await user.clear(sound)
+    await user.type(sound, 'https://cdn.example.test/woof.mp3')
+    expect(within(dialog).getByRole('button', { name: 'Nghe thử' }).hasAttribute('disabled')).toBe(false)
+    await user.click(within(dialog).getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(state.requests).toHaveLength(1))
+    expect(state.requests[0]!.body).toMatchObject({ movement: 'Walk', soundUrl: 'https://cdn.example.test/woof.mp3' })
+    const row = (await screen.findByRole('cell', { name: /Đi bộ/ })).closest('tr')!
+    expect(within(row).getByText('dog')).toBeTruthy()
+    expect(within(row).getByText('có tiếng')).toBeTruthy()
   })
 
   it('marks a duplicate word on the field', async () => {
@@ -367,7 +404,14 @@ describe('lesson page', () => {
         method: 'PUT',
         path: `/api/v1/admin/content/lessons/${lessonId}/words/${dogId}`,
         search: '',
-        body: { english: 'dog', meaning: 'con chó', imageUrl: 'https://cdn.example.test/dog.png', version: 'words-v1' },
+        body: {
+          english: 'dog',
+          meaning: 'con chó',
+          imageUrl: 'https://cdn.example.test/dog.png',
+          movement: 'Still',
+          soundUrl: null,
+          version: 'words-v1',
+        },
       },
       {
         method: 'PUT',

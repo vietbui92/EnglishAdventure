@@ -36,6 +36,8 @@ public sealed record LessonWordBank(
     IReadOnlyList<LessonWordSummary> Words);
 
 /// <param name="ImageUrl">Null while the Admin has not added a picture yet; required before publishing.</param>
+/// <param name="Movement">How the picture moves on the discovery walk (S3.9), a <c>WordMovement</c> name.</param>
+/// <param name="SoundUrl">The sound the word makes, if any.</param>
 /// <param name="ShowInLearnStep">Whether the word is a card of the learn step (S3.7).</param>
 public sealed record LessonWordSummary(
     Guid Id,
@@ -43,6 +45,8 @@ public sealed record LessonWordSummary(
     string English,
     string Meaning,
     string? ImageUrl,
+    string Movement,
+    string? SoundUrl,
     bool ShowInLearnStep);
 
 /// <summary>A lesson's activities (S3.2) with what a client needs to change them. Admin view: answers included.</summary>

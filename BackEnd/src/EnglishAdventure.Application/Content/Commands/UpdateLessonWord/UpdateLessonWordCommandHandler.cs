@@ -35,7 +35,8 @@ public sealed class UpdateLessonWordCommandHandler : IRequestHandler<UpdateLesso
             request.English,
             request.Meaning,
             ImageUrl.FromOptional(request.ImageUrl),
-            _timeProvider.GetUtcNow().UtcDateTime);
+            _timeProvider.GetUtcNow().UtcDateTime,
+            ContentRules.Discovery(request.Movement, request.SoundUrl));
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

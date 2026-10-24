@@ -1,37 +1,46 @@
-import { motion, motionValue, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
+import { motion, motionValue, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { across, down, follow, HEIGHT, Layer, spread, VIEW } from '@/areas/kids/adventure/Layer'
+import { levelLabel } from '@/areas/kids/adventure/labels'
 import { Boat, Cloud, Explorer, IslandArt, Mainland, WaveRows } from '@/areas/kids/adventure/scenery'
+import { FishShadows, FoamWaves, Gulls, LeapingFish, SeaMist } from '@/areas/kids/adventure/sea'
 import { playSound, unlockSound } from '@/areas/kids/adventure/sound'
+import { Stage } from '@/areas/kids/adventure/Stage'
 import { crossing, glide, svgPath, track, type Point } from '@/areas/kids/adventure/track'
 import { type MapLevel } from '@/areas/kids/play/api'
 import { cn } from '@/shared/lib/utils'
 
-// The screen shows 1000 × 600 units of the world; the world grows to the right with each level's island.
-const VIEW = 1000
-const HEIGHT = 600
-const HORIZON = 150
-const MAINLAND_STAND: Point = { x: 250, y: 470 }
-const MAINLAND_DOCK: Point = { x: 395, y: 500 }
+// An overview of the sea (owner 2026-10-24: see many islands at once): the mainland is drawn at MAINLAND_SCALE in
+// the bottom left corner, and the islands are scattered on three rows, zigzagging away to the right.
+const HORIZON = 110
+const MAINLAND_SCALE = 0.75
+const onMainland = (point: Point): Point => ({
+  x: point.x * MAINLAND_SCALE,
+  y: HEIGHT - (HEIGHT - point.y) * MAINLAND_SCALE,
+})
+const MAINLAND_STAND = onMainland({ x: 250, y: 470 })
+const MAINLAND_DOCK = onMainland({ x: 395, y: 500 })
 
-const islandCenter = (index: number): Point => ({ x: 690 + index * 430, y: index % 2 ? 260 : 350 })
-const worldWidth = (islands: number) => Math.max(VIEW, islandCenter(islands - 1).x + 320)
+// An island is ISLAND_WIDTH across: its sign above, its drawing (400 × 260, scaled) below.
+const ISLAND_WIDTH = 220
+const SIGN_HEIGHT = 56
+const ART_HEIGHT = (ISLAND_WIDTH * 260) / 400
+const rows = [235, 425, 300, 470, 250, 405]
+const islandCenter = (index: number): Point => ({ x: 410 + index * 235, y: rows[index % rows.length]! })
+const worldWidth = (islands: number) => Math.max(VIEW, islandCenter(islands - 1).x + 220)
 
 /** Where the character stands and where its boat waits: -1 is the mainland, otherwise a level's index. */
 function standOf(at: number): Point {
   if (at < 0) return MAINLAND_STAND
   const center = islandCenter(at)
-  return { x: center.x - 110, y: center.y + 60 }
+  return { x: center.x - 50, y: center.y + 30 }
 }
 function dockOf(at: number): Point {
   if (at < 0) return MAINLAND_DOCK
   const center = islandCenter(at)
-  return { x: center.x - 175, y: center.y + 105 }
+  return { x: center.x - 100, y: center.y + 42 }
 }
-
-/** World units as a share of the world's width or height, for placing HTML on the drawing. */
-const across = (x: number, width: number) => `${(x / width) * 100}%`
-const down = (y: number) => `${(y / HEIGHT) * 100}%`
 
 interface SeaSceneProps {
   levels: MapLevel[]
@@ -62,7 +71,11 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
   const heroTop = useTransform(heroY, down)
   const boatLeft = useTransform(boatX, (x) => across(x, width))
   const boatTop = useTransform(boatY, down)
-  const camera = useTransform(boatX, (x) => Math.min(Math.max(x - VIEW / 2, 0), width - VIEW))
+  // Where the camera looks: the boat while sailing, anywhere the child drags the map otherwise.
+  const look = useMotionValue(boatX.get())
+  const camera = useTransform(look, (x) => follow(x, width))
+  const stage = useRef<HTMLDivElement>(null)
+  const pannedAt = useRef(-Infinity)
   const zoom = useMotionValue(1)
   const fade = useTransform(zoom, [1, 2.6], [1, 0])
 
@@ -90,29 +103,33 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
     playSound('splash')
     const route = track(crossing(dockOf(from), dockOf(to)))
     const progress = motionValue(0)
-    const follow = progress.on('change', (fraction) => {
+    const unfollow = progress.on('change', (fraction) => {
       const point = route.at(fraction)
       boatX.set(point.x)
       boatY.set(point.y)
+      look.set(point.x)
     })
     setFacing(dockOf(to).x >= dockOf(from).x ? 1 : -1)
     setPose('row')
     const splashes = still ? undefined : setInterval(() => playSound('splash'), 900)
     await glide(progress, 1, Math.min(6, 1.4 + route.length / 380), still)
     clearInterval(splashes)
-    follow()
+    unfollow()
     heroX.set(dockOf(to).x)
     heroY.set(dockOf(to).y)
     setAboard(false)
     setPose('idle')
   }
 
-  const visit = async (index: number) => {
-    if (trip) return
+  const visit = async (index: number, tappedAt: number) => {
+    // A drag that ends on an island only looks around.
+    if (trip || tappedAt - pannedAt.current < 250) return
     unlockSound()
     playSound('tap')
     const level = levels[index]!
     setTrip(level)
+    // Back to the boat, if the child had looked elsewhere.
+    await glide(look, boatX.get(), Math.min(1, Math.abs(look.get() - boatX.get()) / 1500), still)
     if (index !== here.current) await row(here.current, index)
     here.current = index
     await walk(standOf(index))
@@ -128,46 +145,90 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
   const next = trip ? -1 : at + 1
 
   return (
-    <div className="@container relative aspect-[5/3] w-full overflow-hidden rounded-[2rem] bg-[#8fd8ff] shadow-xl select-none">
-      <motion.div className="absolute inset-0" style={{ scale: zoom, opacity: fade, transformOrigin: origin }}>
-        {/* The sky and the sun stay; the clouds, the far islets and the world move slower or faster than each other. */}
-        <svg viewBox={`0 0 ${VIEW} ${HEIGHT}`} className="absolute inset-0 size-full" aria-hidden>
-          <defs>
-            <linearGradient id="sea-sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#6cc8ff" />
-              <stop offset="1" stopColor="#dff5ff" />
-            </linearGradient>
-          </defs>
-          <rect width={VIEW} height={HORIZON + 10} fill="url(#sea-sky)" />
-          <g transform="translate(860 70)">
-            <g className="kids-spin">
-              {Array.from({ length: 12 }, (_, index) => (
-                <rect
-                  key={index}
-                  x="-3"
-                  y="-62"
-                  width="6"
-                  height="18"
-                  rx="3"
-                  fill="#ffd34d"
-                  transform={`rotate(${index * 30})`}
-                />
-              ))}
-            </g>
-            <circle r="36" fill="#ffd34d" />
-            <circle r="28" fill="#ffe27a" />
-          </g>
-        </svg>
+    <Stage
+      minWidth={800}
+      horizon={HORIZON + 14}
+      sky={['#5f8fb5', '#d4e9f1']}
+      ground={['#4ba9c6', '#1b5a8c']}
+      hud={
+        <>
+          {/* The child's corner and what is happening, read out to screen readers. */}
+          {/* Mist darkens the far corners a little. */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(20,40,70,0.35))]" />
+          <div className="pointer-events-none absolute top-3 left-3 sm:top-4 sm:left-4">{greeting}</div>
+          <p
+            aria-live="polite"
+            className="absolute bottom-4 left-1/2 w-max max-w-[90%] -translate-x-1/2 rounded-full bg-white/90 px-5 py-2 text-center text-base font-bold text-foreground shadow-md sm:bottom-6 sm:text-xl lg:text-2xl"
+          >
+            {trip ? t('kids.map.sailing', { level: trip.title }) : t('kids.map.pickIsland')}
+            {!trip && width > VIEW && (
+              <span className="block text-sm font-semibold text-muted-foreground sm:text-base">
+                {t('kids.map.dragHint')}
+              </span>
+            )}
+          </p>
+        </>
+      }
+    >
+      <motion.div
+        ref={stage}
+        className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
+        style={{ scale: zoom, opacity: fade, transformOrigin: origin }}
+        onPan={(_, info) => {
+          if (trip || !stage.current) return
+          // Screen pixels to world units: the stage is VIEW units across.
+          const units = (info.delta.x * VIEW) / stage.current.offsetWidth
+          look.set(Math.min(Math.max(look.get() - units, VIEW / 2), width - VIEW / 2))
+        }}
+        onPanEnd={(event) => {
+          pannedAt.current = event.timeStamp
+        }}
+      >
+        {/* The sun stays; the clouds, the far islets and the world move slower or faster than each other. */}
+        <Layer
+          camera={camera}
+          world={width}
+          depth={0.05}
+          drawing={(from, to) => (
+            <>
+              <defs>
+                <linearGradient id="sea-sky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#5f8fb5" />
+                  <stop offset="1" stopColor="#d4e9f1" />
+                </linearGradient>
+              </defs>
+              <rect x={from} width={to - from} height={HORIZON + 10} fill="url(#sea-sky)" />
+              <g transform="translate(860 70)">
+                <g className="kids-spin">
+                  {Array.from({ length: 12 }, (_, index) => (
+                    <rect
+                      key={index}
+                      x="-3"
+                      y="-62"
+                      width="6"
+                      height="18"
+                      rx="3"
+                      fill="#ffd34d"
+                      transform={`rotate(${index * 30})`}
+                    />
+                  ))}
+                </g>
+                <circle r="36" fill="#ffd34d" />
+                <circle r="28" fill="#ffe27a" />
+              </g>
+            </>
+          )}
+        />
 
         <Layer
           camera={camera}
           world={width}
           depth={0.15}
-          drawing={(layer) =>
-            Array.from({ length: Math.ceil(layer / 260) }, (_, index) => (
+          drawing={(from, to) =>
+            spread(from, to, 260).map((x, index) => (
               <Cloud
-                key={index}
-                x={120 + index * 260}
+                key={x}
+                x={x + 120}
                 y={40 + (index % 3) * 26}
                 size={0.7 + (index % 2) * 0.4}
                 slow={index % 2 === 0}
@@ -179,15 +240,22 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
         <Layer
           camera={camera}
           world={width}
+          depth={0.25}
+          drawing={(from, to) => <Gulls from={from} to={to} top={20} />}
+        />
+
+        <Layer
+          camera={camera}
+          world={width}
           depth={0.4}
-          drawing={(layer) => (
+          drawing={(from, to) => (
             <>
-              <rect y={HORIZON} width={layer} height={HEIGHT - HORIZON} fill="#7fd6e8" />
-              {Array.from({ length: Math.ceil(layer / 330) }, (_, index) => (
+              <rect x={from} y={HORIZON} width={to - from} height={HEIGHT - HORIZON} fill="#6db8cf" />
+              {spread(from, to, 330).map((x, index) => (
                 <path
-                  key={index}
-                  d={`M${60 + index * 330} ${HORIZON + 2} q40 -${22 + (index % 3) * 8} 90 0 Z`}
-                  fill="#5fb3c9"
+                  key={x}
+                  d={`M${x + 60} ${HORIZON + 2} q40 -${22 + (Math.abs(index) % 3) * 8} 90 0 Z`}
+                  fill="#4b8ea6"
                   opacity="0.7"
                 />
               ))}
@@ -199,17 +267,22 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
           camera={camera}
           world={width}
           depth={1}
-          drawing={(layer) => (
+          drawing={(from, to) => (
             <>
               <defs>
                 <linearGradient id="sea-water" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#6fd3e6" />
-                  <stop offset="1" stopColor="#2b86cf" />
+                  <stop offset="0" stopColor="#4ba9c6" />
+                  <stop offset="1" stopColor="#1b5a8c" />
                 </linearGradient>
               </defs>
-              <rect y={HORIZON + 14} width={layer} height={HEIGHT} fill="url(#sea-water)" />
-              <WaveRows width={layer} from={HORIZON + 40} to={HEIGHT - 20} />
-              <Mainland />
+              <rect x={from} y={HORIZON + 14} width={to - from} height={HEIGHT} fill="url(#sea-water)" />
+              <SeaMist from={from} to={to} y={HORIZON + 12} opacity={0.55} />
+              <WaveRows from={from} to={to} top={HORIZON + 40} bottom={HEIGHT - 20} />
+              <FishShadows from={from} to={to} top={HORIZON + 80} bottom={HEIGHT - 40} />
+              <LeapingFish from={from} to={to} top={HORIZON + 90} bottom={HEIGHT - 60} />
+              <g transform={`translate(0 ${HEIGHT * (1 - MAINLAND_SCALE)}) scale(${MAINLAND_SCALE})`}>
+                <Mainland />
+              </g>
               {/* The sea lanes between the docks, dotted like a treasure map. */}
               <g
                 stroke="#ffffff"
@@ -234,14 +307,15 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
                 index={index}
                 width={width}
                 next={index === next}
+                misty={!trip && index > at + 1}
                 disabled={trip !== null}
-                onVisit={() => void visit(index)}
+                onVisit={(tappedAt) => void visit(index, tappedAt)}
               />
             ))}
           </ol>
 
           <motion.div
-            className="absolute w-[14cqw] -translate-x-1/2 -translate-y-[62%]"
+            className="absolute w-[9cqw] -translate-x-1/2 -translate-y-[62%]"
             style={{ left: boatLeft, top: boatTop }}
           >
             <div className={cn('relative aspect-[8/5]', pose === 'row' ? 'kids-rock' : 'kids-bob')}>
@@ -252,7 +326,7 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
                 <Explorer
                   avatarKey={avatarKey}
                   walking={false}
-                  className="absolute top-[-38%] left-[34%] size-[6cqw]"
+                  className="absolute top-[-40%] left-[33%] size-[4cqw]"
                 />
               )}
             </div>
@@ -264,7 +338,7 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
               style={{ left: heroLeft, top: heroTop }}
             >
               <div style={{ transform: `scaleX(${facing})` }}>
-                <Explorer avatarKey={avatarKey} walking={pose === 'walk'} className="size-[7cqw]" />
+                <Explorer avatarKey={avatarKey} walking={pose === 'walk'} className="size-[5cqw]" />
               </div>
             </motion.div>
           )}
@@ -275,60 +349,28 @@ export function SeaScene({ levels, at, avatarKey, greeting, onArrive }: SeaScene
           world={width}
           depth={1.25}
           className="pointer-events-none"
-          drawing={(layer) => <WaveRows width={layer} from={HEIGHT - 12} to={HEIGHT - 12} />}
+          drawing={(from, to) => (
+            <>
+              <SeaMist from={from} to={to} y={300} opacity={0.12} />
+              <FoamWaves from={from} to={to} y={HEIGHT - 18} />
+            </>
+          )}
         />
       </motion.div>
-
-      {/* The child's corner and what is happening, read out to screen readers. */}
-      <div className="pointer-events-none absolute top-[3%] left-[3%]">{greeting}</div>
-      <p
-        aria-live="polite"
-        className="absolute bottom-[4%] left-1/2 max-w-[80%] -translate-x-1/2 rounded-full bg-white/90 px-[2.4cqw] py-[1cqw] text-center text-[2.2cqw] font-bold text-foreground shadow-md"
-      >
-        {trip ? t('kids.map.sailing', { level: trip.title }) : t('kids.map.pickIsland')}
-      </p>
-    </div>
+    </Stage>
   )
 }
 
 /**
- * A layer of the world, moved by the camera at its own depth: 1 moves with the world, less is farther away, more is
- * nearer. `drawing` draws in SVG; children are HTML placed on top, in shares of the layer's size.
+ * A level's island, floating gently, with a wooden sign: "Level n · title", and the island's name below, which is the
+ * level's description (owner 2026-10-24). The next island to visit has a bouncing hand.
  */
-function Layer({
-  camera,
-  world,
-  depth,
-  className,
-  drawing,
-  children,
-}: {
-  camera: MotionValue<number>
-  world: number
-  depth: number
-  className?: string
-  drawing: (width: number) => ReactNode
-  children?: ReactNode
-}) {
-  const width = VIEW + (world - VIEW) * depth
-  const x = useTransform(camera, (left) => `${(-(left * depth) / width) * 100}%`)
-
-  return (
-    <motion.div className={cn('absolute inset-y-0 left-0', className)} style={{ width: `${(width / VIEW) * 100}%`, x }}>
-      <svg viewBox={`0 0 ${width} ${HEIGHT}`} className="absolute inset-0 size-full" aria-hidden>
-        {drawing(width)}
-      </svg>
-      {children}
-    </motion.div>
-  )
-}
-
-/** A level's island, floating gently, with its name on a wooden sign. The next island to visit has a bouncing hand. */
 function IslandButton({
   level,
   index,
   width,
   next,
+  misty,
   disabled,
   onVisit,
 }: {
@@ -336,8 +378,10 @@ function IslandButton({
   index: number
   width: number
   next: boolean
+  /** Far away, beyond the next island: half hidden in the mist. */
+  misty: boolean
   disabled: boolean
-  onVisit: () => void
+  onVisit: (tappedAt: number) => void
 }) {
   const { t } = useTranslation()
   const center = islandCenter(index)
@@ -346,36 +390,42 @@ function IslandButton({
     <li
       className="absolute"
       style={{
-        left: across(center.x - 200, width),
-        top: down(center.y - 175),
-        width: across(400, width),
-        height: down(300),
+        left: across(center.x - ISLAND_WIDTH / 2, width),
+        top: down(center.y - ART_HEIGHT / 2 - SIGN_HEIGHT - 10),
+        width: across(ISLAND_WIDTH, width),
+        height: down(SIGN_HEIGHT + ART_HEIGHT + 10),
       }}
     >
       <motion.button
         type="button"
         disabled={disabled}
-        onClick={onVisit}
+        onClick={(event) => onVisit(event.timeStamp)}
         aria-label={t('kids.map.island', { number: index + 1, title: level.title })}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.97 }}
-        className="relative flex size-full flex-col items-center rounded-[3cqw] focus-visible:ring-[0.6cqw] focus-visible:ring-white focus-visible:outline-none disabled:cursor-default"
+        className="group relative flex size-full flex-col items-center rounded-[3cqw] focus-visible:ring-[0.6cqw] focus-visible:ring-white focus-visible:outline-none disabled:cursor-default"
       >
-        <span className="relative z-10 flex flex-col items-center rounded-[1.4cqw] border-[0.3cqw] border-[#7a4b22] bg-[#c8924f] px-[1.6cqw] py-[0.5cqw] text-white shadow-md">
-          <span className="text-[1.5cqw] leading-tight font-semibold opacity-90">
-            {t('kids.map.level', { number: index + 1 })}
+        <span className="relative z-10 flex max-w-[26cqw] flex-col items-center rounded-[1.2cqw] border-[0.3cqw] border-[#7a4b22] bg-[#c8924f] px-[1.4cqw] py-[0.4cqw] text-white shadow-md">
+          <span className="max-w-full truncate text-[1.25cqw] leading-tight font-semibold opacity-90">
+            {levelLabel(t, index + 1, level.title)}
           </span>
-          <span className="max-w-[24cqw] truncate font-heading text-[2.2cqw] leading-tight font-bold">
-            {level.title}
-          </span>
+          {level.description && (
+            <span className="line-clamp-2 font-heading text-[1.8cqw] leading-tight font-bold">{level.description}</span>
+          )}
         </span>
         {next && (
-          <span aria-hidden className="kids-hint absolute -top-[16%] text-[3.2cqw]">
+          <span aria-hidden className="kids-hint absolute -top-[22%] text-[2.6cqw]">
             👇
           </span>
         )}
-        <span className="kids-bob block w-full flex-1">
+        <span className="kids-bob relative block w-full flex-1">
           <IslandArt index={index} boss={level.boss !== null} />
+          {misty && (
+            <span
+              aria-hidden
+              className="absolute inset-[-10%] rounded-[50%] bg-[radial-gradient(ellipse,rgba(244,251,255,0.75)_30%,transparent_70%)] transition-opacity duration-500 group-hover:opacity-30"
+            />
+          )}
         </span>
       </motion.button>
     </li>

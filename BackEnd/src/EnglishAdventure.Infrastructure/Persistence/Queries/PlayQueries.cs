@@ -86,7 +86,14 @@ internal sealed class PlayQueries : IPlayQueries
             lesson.Title.Value,
             lesson.Kind.ToString(),
             lesson.BossImageUrl?.Value,
-            lesson.LearnCards.Select(card => new LearnCard(card.English, card.Meaning, card.ImageUrl?.Value)).ToList(),
+            lesson.LearnCards
+                .Select(card => new LearnCard(
+                    card.English,
+                    card.Meaning,
+                    card.ImageUrl?.Value,
+                    card.Movement.ToString(),
+                    card.SoundUrl?.Value))
+                .ToList(),
             lesson.Activities.Select(activity => ToPlay(activity, words)).ToList());
     }
 

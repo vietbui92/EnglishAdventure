@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleAlert, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, CircleAlert, Pencil, Plus, Trash2, Volume2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
@@ -19,6 +19,7 @@ import {
   type LessonSummary,
   type LessonWord,
   type LessonWordBank,
+  type WordMovement,
 } from '@/areas/admin/content/api'
 import { ContentError, ContentStatusActions, ContentStatusBadge, MoveButtons } from '@/areas/admin/content/ContentParts'
 import { ActivitiesEditor } from '@/areas/admin/content/ActivitiesEditor'
@@ -279,6 +280,7 @@ function WordBank({ lessonId, bank }: { lessonId: string; bank: LessonWordBank }
               <TableHead className="w-16">{t('admin.content.words.columns.picture')}</TableHead>
               <TableHead>{t('admin.content.words.columns.english')}</TableHead>
               <TableHead>{t('admin.content.words.columns.meaning')}</TableHead>
+              <TableHead>{t('admin.content.words.columns.discovery')}</TableHead>
               <TableHead>{t('admin.content.words.columns.learnCard')}</TableHead>
               {canCorrect && <TableHead>{t('admin.content.columns.actions')}</TableHead>}
             </TableRow>
@@ -294,6 +296,15 @@ function WordBank({ lessonId, bank }: { lessonId: string; bank: LessonWordBank }
                   {word.english}
                 </TableCell>
                 <TableCell className="whitespace-normal">{word.meaning}</TableCell>
+                <TableCell className="text-sm whitespace-normal">
+                  {t(`admin.content.words.movements.${word.movement as WordMovement}`)}
+                  {word.soundUrl && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
+                      <Volume2 aria-hidden className="size-4" />
+                      {t('admin.content.words.hasSound')}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>
                   {/* Choosing the cards changes the lesson's structure: drafts only (owner, 2026-10-24). */}
                   {canRestructure ? (

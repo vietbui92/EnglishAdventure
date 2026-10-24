@@ -5,7 +5,8 @@ import { useSyncExternalStore } from 'react'
  * effects, the sea and a music-box tune. Browsers keep sound off until the first tap, so `unlockSound` runs on every
  * tap in the kids area. The child (or a Parent) can turn sound off; the choice is kept on the device.
  */
-export type SoundEffect = 'tap' | 'step' | 'splash' | 'correct' | 'wrong' | 'hit' | 'star' | 'win' | 'whoosh'
+export type SoundEffect =
+  'tap' | 'step' | 'splash' | 'correct' | 'wrong' | 'hit' | 'star' | 'win' | 'whoosh' | 'rustle' | 'reveal'
 
 const storageKey = 'kids.sound'
 const listeners = new Set<() => void>()
@@ -157,9 +158,75 @@ export function playSound(effect: SoundEffect) {
       ;[C5, E5, G5, C6].forEach((note, index) => tone(ctx, note, now + index * 0.12, 0.3, { type: 'triangle' }))
       ;[C5, E5, G5, C6].forEach((note) => tone(ctx, note, now + 0.5, 0.9, { type: 'triangle', volume: 0.1 }))
       break
+    case 'rustle':
+      // Leaves shaking: a few quick, bright brushes.
+      ;[0, 0.09, 0.2, 0.27].forEach((at) =>
+        hiss(ctx, now + at, 0.12, { frequency: 3200, to: 1800, q: 0.6, volume: 0.12 }),
+      )
+      break
+    case 'reveal':
+      hiss(ctx, now, 0.35, { frequency: 900, to: 3000, q: 0.8, volume: 0.1 })
+      ;[E6, G6, C6 * 2, E6 * 2].forEach((note, index) =>
+        tone(ctx, note, now + 0.1 + index * 0.07, 0.3, { volume: 0.09 }),
+      )
+      break
     case 'whoosh':
       hiss(ctx, now, 0.5, { frequency: 400, to: 2400, q: 0.9, volume: 0.15 })
       break
+  }
+}
+
+/**
+ * The forest of the discovery walk (owner 2026-10-24: mysterious, not dull): wind in the leaves, crickets, and a bird
+ * now and then. Returns the function that stops it. Like the sea, nothing piles up while the sound is off.
+ */
+export function startForest() {
+  const ctx = audio()
+  if (!ctx) return () => {}
+
+  const wind = ctx.createBufferSource()
+  const filter = ctx.createBiquadFilter()
+  const gain = ctx.createGain()
+  const gust = ctx.createOscillator()
+  const gustDepth = ctx.createGain()
+  wind.buffer = noiseBuffer(ctx)
+  wind.loop = true
+  filter.type = 'lowpass'
+  filter.frequency.value = 380
+  gain.gain.value = 0.05
+  gust.frequency.value = 0.08
+  gustDepth.gain.value = 0.035
+  gust.connect(gustDepth).connect(gain.gain)
+  wind.connect(filter).connect(gain).connect(master!)
+  wind.start()
+  gust.start()
+
+  const timer = setInterval(() => {
+    if (ctx.state !== 'running' || readMuted()) return
+    const now = ctx.currentTime
+    // Crickets: short high trills.
+    for (let i = 0; i < 3; i++) tone(ctx, 4400 + Math.random() * 300, now + i * 0.07, 0.04, { volume: 0.012 })
+    // A bird, sometimes: two or three quick rising chirps.
+    if (Math.random() < 0.35) {
+      const start = now + Math.random() * 0.6
+      const pitch = 1800 + Math.random() * 1200
+      const chirps = 2 + Math.floor(Math.random() * 2)
+      for (let i = 0; i < chirps; i++) {
+        tone(ctx, pitch, start + i * 0.13, 0.09, { volume: 0.05, to: pitch * 1.5 })
+      }
+    }
+    // An owl, rarely.
+    if (Math.random() < 0.06) {
+      tone(ctx, 420, now + 0.2, 0.35, { volume: 0.05, to: 380 })
+      tone(ctx, 400, now + 0.75, 0.5, { volume: 0.05, to: 340 })
+    }
+  }, 1300)
+
+  return () => {
+    clearInterval(timer)
+    wind.stop()
+    gust.stop()
+    gain.disconnect()
   }
 }
 
@@ -214,9 +281,34 @@ export function startAmbience() {
   }
 }
 
-/** Says an English word or sentence with the device's voice, slowly, for a child. */
-export function speak(text: string) {
-  if (!('speechSynthesis' in globalThis)) return
+/**
+ * Plays a sound file the Admin linked (a word's sound, S3.9), unless sound is off. Resolves when it ends, fails or
+ * has played for `limit` seconds, so a long or broken file never holds the child up.
+ */
+export function playClip(url: string, limit = 4) {
+  if (readMuted()) return Promise.resolve()
+  return new Promise<void>((resolve) => {
+    const clip = new Audio(url)
+    const done = () => {
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(() => {
+      clip.pause()
+      done()
+    }, limit * 1000)
+    clip.addEventListener('ended', done)
+    clip.addEventListener('error', done)
+    void Promise.resolve(clip.play()).catch(done)
+  })
+}
+
+/**
+ * Says an English word or sentence with the device's voice, slowly, for a child. When the app says it by itself
+ * (`auto`), it stays quiet with sound off; a tap on "Listen" always speaks.
+ */
+export function speak(text: string, { auto = false }: { auto?: boolean } = {}) {
+  if (!('speechSynthesis' in globalThis) || (auto && readMuted())) return
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = 'en-US'
   utterance.rate = 0.8

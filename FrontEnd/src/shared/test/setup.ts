@@ -25,6 +25,10 @@ globalThis.matchMedia ??= (query: string) =>
     dispatchEvent: () => false,
   }) as MediaQueryList
 
+// jsdom cannot play media; the kids area plays word sounds (S3.9) and only needs play() to settle.
+HTMLMediaElement.prototype.play = () => Promise.resolve()
+HTMLMediaElement.prototype.pause = () => {}
+
 // Tests start signed out (the app starts 'restoring'); sign in with signInAs() from '@/shared/test/session'.
 beforeEach(() => sessionStore.set({ status: 'signed-out' }))
 

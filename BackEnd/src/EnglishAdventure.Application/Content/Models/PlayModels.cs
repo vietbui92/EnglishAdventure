@@ -26,7 +26,13 @@ public sealed record PlayLesson(
     IReadOnlyList<LearnCard> LearnCards,
     IReadOnlyList<PlayActivity> Activities);
 
-public sealed record LearnCard(string English, string Meaning, string? ImageUrl);
+/// <summary>
+/// A word the child meets: first on the discovery walk (its picture moving as <see cref="Movement"/> says, its sound),
+/// then as a review card (S3.7, S3.9, PD-013). The word is read aloud by the device's voice.
+/// </summary>
+/// <param name="Movement">"Still", "Walk", "Hop", "Fly", "Swim", "Crawl" or "Wiggle".</param>
+/// <param name="SoundUrl">The sound the word makes (a meow), if any.</param>
+public sealed record LearnCard(string English, string Meaning, string? ImageUrl, string Movement, string? SoundUrl);
 
 /// <param name="Type">"Quiz" or "Matching".</param>
 /// <param name="Questions">A quiz's questions in order; empty for a matching.</param>

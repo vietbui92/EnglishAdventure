@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IslandScene } from '@/areas/kids/adventure/IslandScene'
 import { readPlace, savePlace, type AdventurePlace } from '@/areas/kids/adventure/place'
@@ -30,9 +30,11 @@ export function KidsHomePage() {
   }
 
   const greeting = (
-    <span className="flex items-center gap-[1cqw] rounded-full bg-white/90 py-[0.6cqw] pr-[2cqw] pl-[0.6cqw] shadow-md">
-      {child && <ChildAvatar avatarKey={child.avatarKey} size="sm" className="size-[5cqw] text-[3cqw]" />}
-      <span className="font-heading text-[2.2cqw] font-bold">
+    <span className="flex w-max items-center gap-2 rounded-full bg-white/90 py-1 pr-5 pl-1 shadow-md">
+      {child && (
+        <ChildAvatar avatarKey={child.avatarKey} size="sm" className="size-10 text-2xl sm:size-12 sm:text-3xl" />
+      )}
+      <span className="font-heading text-base font-bold sm:text-xl lg:text-2xl">
         {child ? t('kids.greeting', { nickname: child.nickname }) : t('kids.title')}
       </span>
     </span>
@@ -40,33 +42,37 @@ export function KidsHomePage() {
 
   if (map.isPending) {
     return (
-      <p role="status" className="text-xl text-muted-foreground">
-        {t('kids.map.loading')}
-      </p>
+      <Centered>
+        <p role="status" className="text-xl text-muted-foreground">
+          {t('kids.map.loading')}
+        </p>
+      </Centered>
     )
   }
 
   if (map.isError) {
     return (
-      <div role="alert" className="flex flex-col items-center gap-4 text-center">
-        <p className="text-xl">{t('kids.map.loadError')}</p>
-        <Button className="min-h-14 rounded-2xl px-8 text-xl" onClick={() => void map.refetch()}>
-          {t('kids.map.retry')}
-        </Button>
-      </div>
+      <Centered>
+        <div role="alert" className="flex flex-col items-center gap-4 text-center">
+          <p className="text-xl">{t('kids.map.loadError')}</p>
+          <Button className="min-h-14 rounded-2xl px-8 text-xl" onClick={() => void map.refetch()}>
+            {t('kids.map.retry')}
+          </Button>
+        </div>
+      </Centered>
     )
   }
 
   const levels = map.data.levels
   if (levels.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 text-center">
+      <Centered>
         {child && <ChildAvatar avatarKey={child.avatarKey} size="lg" />}
         <h1 className="font-heading text-4xl font-bold">
           {child ? t('kids.greeting', { nickname: child.nickname }) : t('kids.title')}
         </h1>
         <p className="text-xl text-muted-foreground">{t('kids.map.empty')}</p>
-      </div>
+      </Centered>
     )
   }
 
@@ -75,7 +81,7 @@ export function KidsHomePage() {
   const avatarKey = child?.avatarKey ?? ''
 
   return (
-    <div className="flex w-[min(100%,calc(78svh*5/3))] flex-col items-center">
+    <div className="h-svh w-full">
       {at >= 0 && !atSea ? (
         <IslandScene
           key={levels[at]!.id}
@@ -107,4 +113,9 @@ export function KidsHomePage() {
       )}
     </div>
   )
+}
+
+/** Loading, errors and the empty map: in the middle of the screen. */
+function Centered({ children }: { children: ReactNode }) {
+  return <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-4 text-center">{children}</div>
 }

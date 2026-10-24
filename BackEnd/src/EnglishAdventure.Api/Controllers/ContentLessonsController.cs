@@ -145,7 +145,14 @@ public sealed class ContentLessonsController : ControllerBase
         CancellationToken cancellationToken)
     {
         await _mediator.Send(
-            new AddLessonWordCommand(lessonId, request.English, request.Meaning, request.ImageUrl, request.Version),
+            new AddLessonWordCommand(
+                lessonId,
+                request.English,
+                request.Meaning,
+                request.ImageUrl,
+                request.Movement,
+                request.SoundUrl,
+                request.Version),
             cancellationToken);
         var words = await _mediator.Send(new GetLessonWordsQuery(lessonId), cancellationToken);
         return CreatedAtAction(nameof(GetWords), new { lessonId }, words);
@@ -169,7 +176,15 @@ public sealed class ContentLessonsController : ControllerBase
         CancellationToken cancellationToken)
     {
         await _mediator.Send(
-            new UpdateLessonWordCommand(lessonId, wordId, request.English, request.Meaning, request.ImageUrl, request.Version),
+            new UpdateLessonWordCommand(
+                lessonId,
+                wordId,
+                request.English,
+                request.Meaning,
+                request.ImageUrl,
+                request.Movement,
+                request.SoundUrl,
+                request.Version),
             cancellationToken);
         return Ok(await _mediator.Send(new GetLessonWordsQuery(lessonId), cancellationToken));
     }

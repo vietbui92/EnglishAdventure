@@ -30,6 +30,10 @@ internal sealed class LessonWordConfiguration : IEntityTypeConfiguration<LessonW
             .HasConversion(url => url!.Value, value => ImageUrl.From(value))
             .HasMaxLength(ImageUrl.MaxLength);
 
+        builder.Property(word => word.SoundUrl)
+            .HasConversion(url => url!.Value, value => SoundUrl.From(value))
+            .HasMaxLength(SoundUrl.MaxLength);
+
         // A backstop for the lesson's own rule. Positions are kept by the lesson (one aggregate, saved together), so they
         // have no unique index that a reorder would have to step around.
         builder.HasIndex(word => new { word.LessonId, word.English })

@@ -1,6 +1,7 @@
 using EnglishAdventure.Application.Common.Exceptions;
 using EnglishAdventure.Application.Common.Persistence;
 using EnglishAdventure.Domain.Entities.Content;
+using EnglishAdventure.Domain.Enums;
 using EnglishAdventure.Domain.ValueObjects;
 using FluentValidation;
 
@@ -131,6 +132,24 @@ internal static class ContentRules
             .Must(meaning => (meaning?.Trim().Length ?? 0) is > 0 and <= LessonWord.MeaningMaxLength)
             .WithMessage($"The meaning must have 1 to {LessonWord.MeaningMaxLength} characters.");
 
+    /// <summary>Null or blank is "Still"; otherwise a <see cref="WordMovement"/> name exactly as listed (S3.9).</summary>
+    public static IRuleBuilderOptions<T, string?> ValidOptionalMovement<T>(this IRuleBuilder<T, string?> rule) =>
+        rule
+            .Must(movement => string.IsNullOrWhiteSpace(movement) || WordMovements.TryParse(movement, out _))
+            .WithMessage($"The movement must be one of: {string.Join(", ", Enum.GetNames<WordMovement>())}.");
+
+    /// <summary>Blank means no sound; otherwise an https:// address (S3.9, PD-013).</summary>
+    public static IRuleBuilderOptions<T, string?> ValidOptionalSoundUrl<T>(this IRuleBuilder<T, string?> rule) =>
+        rule
+            .Must(url => string.IsNullOrWhiteSpace(url) || SoundUrl.IsValid(url))
+            .WithMessage($"The sound must be an https:// address of at most {SoundUrl.MaxLength} characters.");
+
+    /// <summary>The discovery fields of a word command, already validated.</summary>
+    public static WordDiscovery Discovery(string? movement, string? soundUrl) =>
+        new(
+            string.IsNullOrWhiteSpace(movement) ? WordMovement.Still : WordMovements.Parse(movement),
+            SoundUrl.FromOptional(soundUrl));
+
     /// <summary>Blank means no picture yet; otherwise an https:// address (PD-012, owner 2026-10-24).</summary>
     public static IRuleBuilderOptions<T, string?> ValidOptionalImageUrl<T>(this IRuleBuilder<T, string?> rule) =>
         rule
@@ -147,4 +166,19 @@ internal static class ContentRules
         rule
             .Must(ids => ids is not null && ids.All(id => id != Guid.Empty) && ids.Distinct().Count() == ids.Count)
             .WithMessage("The order must list each item once.");
+}
+
+public static class WordMovements
+{
+    /// <summary>The movement's name exactly as listed; numbers are not accepted.</summary>
+    public static bool TryParse(string? value, out WordMovement movement)
+    {
+        movement = default;
+        return !string.IsNullOrEmpty(value)
+               && Enum.GetNames<WordMovement>().Contains(value, StringComparer.Ordinal)
+               && Enum.TryParse(value, out movement);
+    }
+
+    public static WordMovement Parse(string value) =>
+        TryParse(value, out var movement) ? movement : throw new FormatException("Invalid movement.");
 }

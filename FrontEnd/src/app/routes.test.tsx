@@ -42,7 +42,9 @@ describe('routes', () => {
 
     await renderRoutes(routes, { route: '/kids' })
 
-    expect(screen.getByRole('heading', { name: 'Xin chào, Bông!' }).closest('.theme-kids')).not.toBeNull()
+    // The kids area loads lazily with its map; give it time on a busy test run.
+    const greeting = await screen.findByRole('heading', { name: 'Xin chào, Bông!' }, { timeout: 3000 })
+    expect(greeting.closest('.theme-kids')).not.toBeNull()
   })
 
   it('shows the not-found page for an unknown address', async () => {

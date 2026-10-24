@@ -239,12 +239,13 @@
           "picture": "Picture",
           "english": "English word",
           "meaning": "Meaning",
-          "learnCard": "Learn step"
+          "learnCard": "Learn step",
+          "discovery": "Discovery"
         },
         "form": {
           "addTitle": "Add a word",
           "editTitle": "Edit word",
-          "hint": "The English word, its Vietnamese meaning and a picture.",
+          "hint": "The English word, its Vietnamese meaning, a picture, and how the child meets it while exploring the island.",
           "english": "English word",
           "meaning": "Vietnamese meaning",
           "imageUrl": "Picture address (https://)",
@@ -259,13 +260,29 @@
             "meaningTooLong": "The meaning can have at most 100 characters.",
             "imageUrlHttps": "The picture address must start with https:// (at most 2000 characters).",
             "imageUrlRequired": "A word of a published lesson needs a picture.",
-            "duplicate": "The lesson already has this word."
-          }
+            "duplicate": "The lesson already has this word.",
+            "soundUrlHttps": "The sound address must start with https:// (at most 2000 characters)."
+          },
+          "movement": "Movement while exploring",
+          "movementHint": "The word’s picture moves like this when the child meets it on the island. For things, pick \"Still\" or \"Wiggles\".",
+          "soundUrl": "Sound address (https://, optional)",
+          "soundUrlHint": "For example a cat’s meow. The word itself is read by the device’s voice; no file needed.",
+          "playSound": "Play"
         },
         "learnCards": "Learn step cards: {{count}}, in the order above. Clear a word to leave out its card.",
         "showInLearnStep": "Show {{word}} in the learn step",
         "learnCardShown": "Yes",
-        "learnCardHidden": "No"
+        "learnCardHidden": "No",
+        "hasSound": "with sound",
+        "movements": {
+          "Still": "Still",
+          "Walk": "Walks",
+          "Hop": "Hops",
+          "Fly": "Flies",
+          "Swim": "Swims",
+          "Crawl": "Crawls",
+          "Wiggle": "Wiggles"
+        }
       },
       "quiz": {
         "title": "Activities ({{count}}/{{max}})",

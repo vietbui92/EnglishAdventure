@@ -101,6 +101,8 @@ internal sealed class ContentQueries : IContentQueries
                     word.English,
                     word.Meaning,
                     word.ImageUrl?.Value,
+                    word.Movement.ToString(),
+                    word.SoundUrl?.Value,
                     word.ShowInLearnStep))
                 .ToList());
     }

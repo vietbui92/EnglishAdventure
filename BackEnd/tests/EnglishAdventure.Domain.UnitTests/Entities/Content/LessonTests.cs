@@ -156,6 +156,39 @@ public sealed class LessonTests
     }
 
     [Fact]
+    public void A_word_stands_still_without_a_sound_unless_the_admin_picks_its_discovery()
+    {
+        var level = NewLevel();
+        var lesson = NewLesson(level);
+        var meow = SoundUrl.From(" https://cdn.example.test/meow.mp3 ");
+
+        var dog = lesson.AddWord(level, "dog", "con chó", null, Now);
+        var cat = lesson.AddWord(level, "cat", "con mèo", null, Now, new WordDiscovery(WordMovement.Walk, meow));
+
+        Assert.Equal(WordMovement.Still, dog.Movement);
+        Assert.Null(dog.SoundUrl);
+        Assert.Equal(WordMovement.Walk, cat.Movement);
+        Assert.Equal("https://cdn.example.test/meow.mp3", cat.SoundUrl!.Value);
+
+        lesson.UpdateWord(level, cat.Id, "cat", "con mèo", null, Now, new WordDiscovery(WordMovement.Hop, Sound: null));
+        Assert.Equal(WordMovement.Hop, cat.Movement);
+        Assert.Null(cat.SoundUrl);
+        Assert.Throws<DomainException>(() =>
+            lesson.UpdateWord(level, cat.Id, "cat", "con mèo", null, Now, new WordDiscovery((WordMovement)99, null)));
+    }
+
+    [Theory]
+    [InlineData("http://cdn.example.test/meow.mp3")]
+    [InlineData("meow.mp3")]
+    [InlineData("")]
+    public void A_sound_is_an_https_address(string value)
+    {
+        Assert.False(SoundUrl.IsValid(value));
+        Assert.Throws<DomainException>(() => SoundUrl.From(value));
+        Assert.Null(SoundUrl.FromOptional("  "));
+    }
+
+    [Fact]
     public void A_lesson_has_at_most_twelve_words()
     {
         var level = NewLevel();
@@ -198,6 +231,16 @@ public sealed class LessonTests
         lesson.Publish(level, Now);
 
         lesson.UpdateWord(level, cat.Id, "cats", "những con mèo", ImageUrl.From("https://cdn.example.test/cats.png"), Now);
+        // The movement and the sound are presentation too, so they can be corrected (S3.9).
+        lesson.UpdateWord(
+            level,
+            cat.Id,
+            "cats",
+            "những con mèo",
+            ImageUrl.From("https://cdn.example.test/cats.png"),
+            Now,
+            new WordDiscovery(WordMovement.Walk, SoundUrl.From("https://cdn.example.test/meow.mp3")));
+        Assert.Equal(WordMovement.Walk, cat.Movement);
         var add = Assert.Throws<DomainException>(() => lesson.AddWord(level, "dog", "con chó", Picture, Now));
         var remove = Assert.Throws<DomainException>(() => lesson.RemoveWord(level, cat.Id, Now));
         var reorder = Assert.Throws<DomainException>(() => lesson.ReorderWords(level, [cat.Id], Now));

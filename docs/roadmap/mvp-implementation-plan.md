@@ -60,6 +60,7 @@ Rules for every step:
 | S3.3 | Matching activities built from the word bank | | ✅ Done 2026-10-24 |
 | S3.8 | Boss challenge per level (PD-011, PD-012) | | ✅ Done 2026-10-24 |
 | S3.4 | Learner lesson map (read published content) | | ✅ Done 2026-10-24 |
+| S3.9 | Word discovery: movement and sound of each word (PD-013) | | ✅ Done 2026-10-24 |
 | S3.5 | Development seed content | OQ-006, S3.8 | 🟡 Needs decision |
 | **Phase 4: Learning** | | | |
 | S4.1 | Lesson attempts, server-side grading and stars | | ✅ Done 2026-10-24 |
@@ -338,6 +339,8 @@ Scope as approved:
 - **Rules:** a level can't be published without a valid boss challenge.
 - *Done when:* the rules are unit-tested.
 
+**S3.9 Word discovery (PD-013).** ✅ Done 2026-10-24. *As built:* each `LessonWord` has a `Movement` (`WordMovement`: Still (default), Walk, Hop, Fly, Swim, Crawl, Wiggle) and an optional `SoundUrl` (https, at most 2000 characters, value object like `ImageUrl`), passed to the lesson as one `WordDiscovery`. Both can be changed while published (presentation, like texts and pictures, PD-012) and neither is needed to publish. `POST/PUT .../lessons/{id}/words` take `movement` (a name; null is Still; numbers and unknown names are 400) and `soundUrl`; the word bank and the play view's learn cards return them. Migration `AddWordDiscovery` (existing words become Still: the default was hand-edited from 0 to 1). Tests: domain (defaults, change while published, unknown movement, https only), validators, SQL integration (save and change, 400s, play view); 379 backend tests pass.
+
 **S3.4 Learner lesson map.** ✅ Done 2026-10-24. *As built:* `PlayController` on `api/v1/play` for child sessions only (`learning.play`; Parents and Admins get 403): `GET map` (published levels in order, each with its published lessons in order and its published boss; a level without a published lesson is left out) and `GET lessons/{lessonId}` (a published lesson or boss of a published level, else 404): learn cards, then activities. **No answer is sent or can be derived:** quiz options use the options' own ids (never word ids) and are shuffled on every read (the stored order puts the correct one first); picture → word options carry text only, word → picture options pictures only; a matching's right side uses a separate `MatchingPair.ChoiceId` and its own shuffle. A boss is played with the words of the level's lessons and has no learn cards. Read model `PlayQueries` (`IPlayQueries`). Migration `AddMatchingChoiceIds` (each existing pair gets `NEWID()`). Tests: 5 SQL integration (map, no answers or word ids in the payload, new orders, boss and drafts, child session only); 344 backend tests pass.
 - **Includes:**
   - A read model of published levels, lessons and boss challenges for learners.
@@ -429,6 +432,7 @@ Every Phase 6 step must be done before any public release.
 | 2026-10-24 | S3.8 done: boss challenge per level (a boss lesson using the level's words, name and picture, level published only with its boss), migration `AddBossChallenges`. S3.4 learner lesson map and F2.8 boss editor are Ready. |
 | 2026-10-24 | S3.4 done: learner map and lessons to play (`api/v1/play`), answers never sent, migration `AddMatchingChoiceIds`. Phase 3 is done except S3.5 (OQ-006). S4.1 attempts and F4.6 learn step are Ready. |
 | 2026-10-24 | S4.1 done: lesson attempts graded by the server one question or pair at a time, stars, resume, migration `AddLessonAttempts`. S4.2 and F4.3/F4.4 (quiz and matching players) are Ready. |
+| 2026-10-24 | PD-013 (discovery walk, review cards, speaking practice) decided; S3.9 done: word movement and sound, migration `AddWordDiscovery`. |
 | 2026-10-24 | F4.3/F4.4 done on the frontend (quiz and matching players, result with stars, boss health bar). |
 | 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |
 | 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |

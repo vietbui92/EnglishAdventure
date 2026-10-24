@@ -50,6 +50,32 @@ public sealed class LessonWordsSqlServerTests : IClassFixture<SqlServerAuthDatab
     }
 
     [SqlServerFact]
+    public async Task A_word_keeps_its_discovery_movement_and_sound()
+    {
+        var (admin, route, version) = await NewLessonAsync();
+        var bank = await ReadAsync(await admin.PostAsync($"{route}/words", Word("cat", "con mèo", null, version)));
+        var cat = bank.GetProperty("words")[0];
+        Assert.Equal("Still", cat.GetProperty("movement").GetString());
+        Assert.Equal(JsonValueKind.Null, cat.GetProperty("soundUrl").ValueKind);
+
+        var updated = await ReadAsync(await admin.PutAsync(
+            $"{route}/words/{FirstWordId(bank)}",
+            new { english = "cat", meaning = "con mèo", imageUrl = (string?)null, movement = "Walk", soundUrl = "https://cdn.example.test/meow.mp3", version = LessonVersion(bank) }));
+        var unknown = await admin.PutAsync(
+            $"{route}/words/{FirstWordId(bank)}",
+            new { english = "cat", meaning = "con mèo", movement = "Run", version = LessonVersion(updated) });
+        var http = await admin.PutAsync(
+            $"{route}/words/{FirstWordId(bank)}",
+            new { english = "cat", meaning = "con mèo", soundUrl = "http://cdn.example.test/meow.mp3", version = LessonVersion(updated) });
+
+        cat = (await ReadAsync(await admin.GetAsync($"{route}/words"))).GetProperty("words")[0];
+        Assert.Equal("Walk", cat.GetProperty("movement").GetString());
+        Assert.Equal("https://cdn.example.test/meow.mp3", cat.GetProperty("soundUrl").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, http.StatusCode);
+    }
+
+    [SqlServerFact]
     public async Task Duplicate_words_and_bad_pictures_are_refused()
     {
         var (admin, route, version) = await NewLessonAsync();

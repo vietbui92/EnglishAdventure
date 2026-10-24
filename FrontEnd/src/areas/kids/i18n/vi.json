@@ -13,7 +13,6 @@
       "loadError": "Chưa mở được bản đồ.",
       "retry": "Thử lại",
       "empty": "Chưa có bài học nào. Bố mẹ hãy quay lại sau nhé!",
-      "level": "Level {{number}}",
       "lessonsOf": "Các bài của {{level}}",
       "boss": "Boss",
       "island": "Đảo {{number}}: {{title}}",
@@ -24,7 +23,10 @@
       "pickStop": "Chọn một điểm trên đảo để khám phá!",
       "walking": "Đang đi tới {{place}}…",
       "toBoat": "Đang về thuyền…",
-      "toSea": "Lên thuyền ra biển"
+      "toSea": "Lên thuyền ra biển",
+      "levelTitle": "Level {{number}} · {{title}}",
+      "dragHint": "Kéo bản đồ để xem thêm đảo",
+      "level": "Level {{number}}"
     },
     "play": {
       "backToMap": "Về bản đồ",
@@ -74,6 +76,26 @@
       "score": "Đúng {{correct}} / {{total}} ({{percent}}%)",
       "replay": "Chơi lại"
     },
-    "sound": "Âm thanh"
+    "sound": "Âm thanh",
+    "discover": {
+      "intro": "Khu rừng bí ẩn có những người bạn đang trốn. Cùng đi tìm nhé!",
+      "start": "Vào rừng thôi!",
+      "count": "Bạn thứ {{number}} / {{count}}",
+      "sound": "Tiếng kêu",
+      "next": "Đi tiếp",
+      "toReview": "Ôn lại thẻ",
+      "skip": "Xem thẻ luôn",
+      "walking": "Đang đi sâu vào rừng…",
+      "hiding": "Suỵt… có gì đó đang trốn trong bụi cây!"
+    },
+    "speak": {
+      "say": "Bé nói thử",
+      "listening": "Đang nghe…",
+      "hint": "Nghe rồi bấm micro và nói to từ này nhé!",
+      "right": "Giỏi quá! Bé nói đúng rồi! 🎉",
+      "wrong": "Máy nghe thành “{{heard}}”. Nghe lại rồi nói lại nhé!",
+      "silent": "Chưa nghe thấy gì. Bé nói to hơn nhé!",
+      "blocked": "Cần cho phép dùng micro để tập nói."
+    }
   }
 }

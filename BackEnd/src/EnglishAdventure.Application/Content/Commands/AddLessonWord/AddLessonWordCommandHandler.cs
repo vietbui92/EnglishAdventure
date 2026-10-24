@@ -34,7 +34,8 @@ public sealed class AddLessonWordCommandHandler : IRequestHandler<AddLessonWordC
             request.English,
             request.Meaning,
             ImageUrl.FromOptional(request.ImageUrl),
-            _timeProvider.GetUtcNow().UtcDateTime);
+            _timeProvider.GetUtcNow().UtcDateTime,
+            ContentRules.Discovery(request.Movement, request.SoundUrl));
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return word.Id;
     }

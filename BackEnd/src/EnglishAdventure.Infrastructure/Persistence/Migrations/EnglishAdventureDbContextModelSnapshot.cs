@@ -145,11 +145,18 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("Movement")
+                        .HasColumnType("int");
+
                     b.Property<bool>("ShowInLearnStep")
                         .HasColumnType("bit");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
+
+                    b.Property<string>("SoundUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.HasKey("Id");
 

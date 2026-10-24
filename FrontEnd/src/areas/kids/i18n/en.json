@@ -13,7 +13,6 @@
       "loadError": "The map could not be opened.",
       "retry": "Try again",
       "empty": "No lessons yet. Come back later!",
-      "level": "Level {{number}}",
       "lessonsOf": "Lessons of {{level}}",
       "boss": "Boss",
       "island": "Island {{number}}: {{title}}",
@@ -24,7 +23,10 @@
       "pickStop": "Pick a place on the island to explore!",
       "walking": "Walking to {{place}}…",
       "toBoat": "Going back to the boat…",
-      "toSea": "Sail out to sea"
+      "toSea": "Sail out to sea",
+      "levelTitle": "Level {{number}} · {{title}}",
+      "dragHint": "Drag the map to see more islands",
+      "level": "Level {{number}}"
     },
     "play": {
       "backToMap": "Back to the map",
@@ -74,6 +76,26 @@
       "score": "{{correct}} of {{total}} right ({{percent}}%)",
       "replay": "Play again"
     },
-    "sound": "Sound"
+    "sound": "Sound",
+    "discover": {
+      "intro": "Friends are hiding in the mysterious forest. Let’s find them!",
+      "start": "Into the forest!",
+      "count": "Friend {{number}} of {{count}}",
+      "sound": "Its sound",
+      "next": "Walk on",
+      "toReview": "Review the cards",
+      "skip": "Go to the cards",
+      "walking": "Walking deeper into the forest…",
+      "hiding": "Shh… something is hiding in the bush!"
+    },
+    "speak": {
+      "say": "Say it",
+      "listening": "Listening…",
+      "hint": "Listen, then tap the microphone and say the word out loud!",
+      "right": "Great! You said it right! 🎉",
+      "wrong": "I heard “{{heard}}”. Listen again and try once more!",
+      "silent": "I didn’t hear anything. Say it louder!",
+      "blocked": "Allow the microphone to practise speaking."
+    }
   }
 }
