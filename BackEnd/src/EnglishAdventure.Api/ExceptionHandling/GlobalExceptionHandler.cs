@@ -53,6 +53,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             problemDetails.Extensions["code"] = code;
         }
 
+        if (exception is DomainException { Code: { } ruleCode })
+        {
+            problemDetails.Extensions["code"] = ruleCode;
+        }
+
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 

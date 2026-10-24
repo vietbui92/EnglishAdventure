@@ -74,6 +74,69 @@ internal static class ContentRules
             .Must(description => (description?.Trim().Length ?? 0) <= Level.DescriptionMaxLength)
             .WithMessage($"The description must have at most {Level.DescriptionMaxLength} characters.");
 
+    /// <summary>The lesson when it has the word; another lesson's word is reported as not found.</summary>
+    public static async Task<Lesson> GetLessonWithWordAsync(
+        ILessonRepository lessons,
+        Guid lessonId,
+        Guid wordId,
+        CancellationToken cancellationToken)
+    {
+        var lesson = await GetLessonAsync(lessons, lessonId, cancellationToken);
+        return lesson.Words.Any(word => word.Id == wordId) ? lesson : throw new NotFoundException("LessonWord", wordId);
+    }
+
+    /// <summary>For a boss, the words of its level's lessons, which its activities may use; null for a lesson (S3.8).</summary>
+    public static async Task<LevelWords?> LevelWordsForAsync(
+        ILessonRepository lessons,
+        Lesson lesson,
+        CancellationToken cancellationToken) =>
+        lesson.IsBoss ? await lessons.GetLevelWordsAsync(lesson.LevelId, cancellationToken) : null;
+
+    /// <summary>The lesson when it has the activity (and the question, when given); otherwise not found.</summary>
+    public static async Task<Lesson> GetLessonWithActivityAsync(
+        ILessonRepository lessons,
+        Guid lessonId,
+        Guid activityId,
+        Guid? questionId,
+        CancellationToken cancellationToken)
+    {
+        var lesson = await GetLessonAsync(lessons, lessonId, cancellationToken);
+        var activity = lesson.Activities.SingleOrDefault(candidate => candidate.Id == activityId)
+                       ?? throw new NotFoundException("LessonActivity", activityId);
+        if (questionId is { } id && (activity is not QuizActivity quiz || quiz.Questions.All(question => question.Id != id)))
+        {
+            throw new NotFoundException("QuizQuestion", id);
+        }
+
+        return lesson;
+    }
+
+    /// <summary>Like reordering levels and lessons: a list that does not match means the items changed meanwhile.</summary>
+    public static void EnsureSameItems(IEnumerable<Guid> currentIds, IReadOnlyList<Guid> orderedIds)
+    {
+        var current = currentIds.ToHashSet();
+        if (orderedIds.Count != current.Count || !orderedIds.All(current.Contains))
+        {
+            throw new ConflictException("The list does not match the current items. Reload it and try again.");
+        }
+    }
+
+    public static IRuleBuilderOptions<T, string> ValidEnglishWord<T>(this IRuleBuilder<T, string> rule) =>
+        rule
+            .Must(english => (english?.Trim().Length ?? 0) is > 0 and <= LessonWord.EnglishMaxLength)
+            .WithMessage($"The English word must have 1 to {LessonWord.EnglishMaxLength} characters.");
+
+    public static IRuleBuilderOptions<T, string> ValidMeaning<T>(this IRuleBuilder<T, string> rule) =>
+        rule
+            .Must(meaning => (meaning?.Trim().Length ?? 0) is > 0 and <= LessonWord.MeaningMaxLength)
+            .WithMessage($"The meaning must have 1 to {LessonWord.MeaningMaxLength} characters.");
+
+    /// <summary>Blank means no picture yet; otherwise an https:// address (PD-012, owner 2026-10-24).</summary>
+    public static IRuleBuilderOptions<T, string?> ValidOptionalImageUrl<T>(this IRuleBuilder<T, string?> rule) =>
+        rule
+            .Must(url => string.IsNullOrWhiteSpace(url) || ImageUrl.IsValid(url))
+            .WithMessage($"The picture must be an https:// address of at most {ImageUrl.MaxLength} characters.");
+
     public static IRuleBuilderOptions<T, string> ValidVersion<T>(this IRuleBuilder<T, string> rule) =>
         rule
             .Must(ContentVersion.IsValid)

@@ -5,12 +5,18 @@ namespace EnglishAdventure.Application.Content.Commands.ArchiveLesson;
 
 public sealed class ArchiveLessonCommandHandler : IRequestHandler<ArchiveLessonCommand>
 {
+    private readonly ILevelRepository _levels;
     private readonly ILessonRepository _lessons;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _timeProvider;
 
-    public ArchiveLessonCommandHandler(ILessonRepository lessons, IUnitOfWork unitOfWork, TimeProvider timeProvider)
+    public ArchiveLessonCommandHandler(
+        ILevelRepository levels,
+        ILessonRepository lessons,
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider)
     {
+        _levels = levels;
         _lessons = lessons;
         _unitOfWork = unitOfWork;
         _timeProvider = timeProvider;
@@ -19,9 +25,11 @@ public sealed class ArchiveLessonCommandHandler : IRequestHandler<ArchiveLessonC
     public async Task Handle(ArchiveLessonCommand request, CancellationToken cancellationToken)
     {
         var lesson = await ContentRules.GetLessonAsync(_lessons, request.LessonId, cancellationToken);
+        var level = await ContentRules.GetLevelAsync(_levels, lesson.LevelId, cancellationToken);
         _lessons.ExpectVersion(lesson, ContentVersion.Decode(request.Version));
 
-        lesson.Archive(_timeProvider.GetUtcNow().UtcDateTime);
+        // The level is needed for the boss: a published level keeps its boss (S3.8).
+        lesson.Archive(level, _timeProvider.GetUtcNow().UtcDateTime);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

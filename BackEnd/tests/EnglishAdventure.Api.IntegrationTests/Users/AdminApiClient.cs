@@ -49,6 +49,8 @@ internal sealed class AdminApiClient
     public Task<HttpResponseMessage> PutAsync(string route, object body) =>
         SendAsync(HttpMethod.Put, route, JsonContent.Create(body));
 
+    public Task<HttpResponseMessage> DeleteAsync(string route) => SendAsync(HttpMethod.Delete, route, content: null);
+
     private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string route, HttpContent? content)
     {
         using var request = new HttpRequestMessage(method, route) { Content = content };

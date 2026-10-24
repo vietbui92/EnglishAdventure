@@ -52,10 +52,10 @@ Status values are the same as in the backend plan (✅ 🟢 🟡 ⚪ 💤).
 | F2.1 | Users: list, search, paging, detail | | ✅ Done 2026-10-23 |
 | F2.2 | Users: create, activate/deactivate, set roles | | ✅ Done 2026-10-23 (role list: S1.5) |
 | F2.3 | Role management | S1.5 | ⚪ Waiting |
-| F2.4 | Content: levels and lessons, publish | | 🟢 Ready (S3.1 done 2026-10-24) |
-| F2.7 | Content: word bank editor and learn-step cards (PD-011) | S3.6, S3.7 | ⚪ Waiting |
-| F2.5 | Content: quiz and matching editors (pick words from the word bank) | S3.2, S3.3 | ⚪ Waiting |
-| F2.8 | Content: boss challenge editor (PD-011) | S3.8 | ⚪ Waiting |
+| F2.4 | Content: levels and lessons, publish | | ✅ Done 2026-10-24 |
+| F2.7 | Content: word bank editor and learn-step cards (PD-011) | | ✅ Done 2026-10-24 |
+| F2.5 | Content: quiz and matching editors (pick words from the word bank) | | ✅ Done 2026-10-24 |
+| F2.8 | Content: boss challenge editor (PD-011) | | 🟢 Ready (S3.8 done 2026-10-24) |
 | F2.6 | Badge definitions | S5.2 | ⚪ Waiting |
 | **Phase F3: Parent area** | | | |
 | F3.1 | Child profiles: list, create, edit, archive, restore (several per Parent) | | ✅ Done 2026-10-24 |
@@ -313,9 +313,38 @@ Original scope:
 
 **F2.3 Role management.** After S1.5: list roles, create and edit with a permission checklist grouped by module; system roles read-only.
 
-**F2.4 Levels and lessons.** After S3.1 (needs OQ-005): ordered lists with drag-and-drop or up/down buttons, Draft/Published/Archived badges, publish actions gated by `content.publish`, 409 handling for concurrent edits.
+**F2.4 Levels and lessons.** ✅ Done 2026-10-24. API: S3.1 (`api/v1/admin/content/levels`, `.../lessons`).
+- `src/areas/admin/content`: `LevelsPage` on `/admin/content` and `LevelDetailPage` on `/admin/content/levels/:levelId`, both behind `content.read-drafts` (the menu item too; it was `content.manage` before).
+- Levels list: order, title (link), status badge, published/draft lesson counts, "show archived" checkbox; "Add level" dialog (title, description) that opens the new level.
+- Level detail: title, description, status; edit dialog; publish / unpublish / archive. Lessons table: add, rename, publish / unpublish / archive per lesson. Archived lessons come last without position or actions; an archived level is read-only with a note.
+- **Order with ↑ / ↓ buttons, no drag and drop** (owner's choice 2026-10-24: no new package, works with touch and keyboard). Each move sends the full new order.
+- Buttons by permission: create, edit and move need `content.manage`; publish, unpublish and archive need `content.publish`. Archiving asks for confirmation and says it is final (PD-012).
+- Errors: 409 says someone else changed the data; 404 that the item is gone; 422 on unpublish that children have started it, otherwise that the item or its level is archived. Every change (also a failed one) reloads the content queries. Forms check title (1–100) and description (≤ 500) like the backend.
+- shadcn `textarea` added (no new packages). API types regenerated from the S3.1 backend.
+- Tests (16): list, archived toggle, create and open, title check, move with the full order, read-only user, detail and lesson order, add/rename/reorder/publish with versions, archive confirmation, 409 reload, 422 unpublish, archived level read-only, unknown level, read-only detail, access without `content.read-drafts`, `moveInOrder`.
 
-**F2.5 Quiz and matching editors.** After S3.2 and S3.3: inline validation mirroring the server rules for fast feedback, with the server as the authority; image input per OQ-011.
+**F2.7 Word bank editor and learn cards.** ✅ Done 2026-10-24 (API: S3.6, S3.7).
+- **Learn cards (S3.7):** a "Learn step" column with a checkbox per word in drafts (`PUT .../learn-card` with the lesson version) and Yes/No in published or archived lessons; a line counts the cards; a draft without any card says so before publishing. Tests (3): switch a card off with the version, no-card notice, published read-only.
+- `LessonPage` on `/admin/content/lessons/:lessonId` (`content.read-drafts`); lesson titles on the level page link to it. It shows the lesson's status, publish / unpublish / archive, and the word bank `Words (n/12)`: position, picture thumbnail (placeholder when missing or broken; no referrer sent), English word, meaning.
+- Draft lessons: add (disabled at 12 words), correct, ↑ / ↓, remove with confirmation. Published lessons: correct only, and the picture cannot be removed (note on the page). Archived lessons: read-only. A draft lists what is missing before it can be published (no words, or how many words lack a picture).
+- Word dialog: English (1–50), meaning (1–100), picture address (`https://`, ≤ 2000) with a live preview, checked like the backend; a `word-duplicate` 422 marks the English field.
+- Every word change sends the word bank's `lessonVersion`. **422 messages now come from the backend `code`** (`content-archived`, `content-started`, `lesson-structure-locked`, `lesson-not-ready`, `word-limit`, `word-duplicate`), which also fixes the F2.4 publish message for a lesson that is not ready.
+- API types regenerated from the S3.6 backend. Tests (11): words and pictures, missing-picture notice, add with version, https check and preview, duplicate, correct/reorder/remove with versions, published structure lock, not-ready publish, 12-word limit, read-only user, unknown lesson, error codes.
+
+**F2.5 Quiz editor.** ✅ Done 2026-10-24 (API: S3.2). The matching editor follows S3.3.
+- `QuizEditor` on the lesson page, under the word bank: "Activities (n/4)", "Add quiz" (drafts; disabled under 2 words or at 4 activities). Each quiz is a card with ↑ / ↓, remove (with confirmation), its questions (form, prompt — picture, word or sentence —, correct and wrong answers) with ↑ / ↓, edit and remove, and "Add a question" (up to 10).
+- `QuestionDialog`: form (radio), correct word (select), 1–3 wrong words (checkboxes). **Wrong words are suggested** (owner, 2026-10-24): the words after the correct one in the word bank, wrapping around, refreshed when the correct word changes and by a "Suggest" button; the Admin can change them. Fill-in sentence with exactly one `___`, checked like the backend.
+- Published lessons: only fill-in sentences can be edited (the other fields are read-only); nothing can be added, moved or removed.
+- The lesson page now tells what a draft lacks also for activities (none yet, or a quiz without questions), and maps the new 422 codes (`word-in-use`, `activity-limit`, `question-limit`, `question-invalid`).
+- Tests (8): add a quiz and a question with suggestions, re-suggest and choose, fill-in sentence check, list/reorder/remove questions and remove a quiz, published sentence-only edit, two-word minimum, word in use, `suggestWrongWords`. The test API mock now registers `.../order` routes before `.../{id}` routes (MSW took "order" for an Id; also fixed for words).
+
+**F2.5 Matching editor.** ✅ Done 2026-10-24 (API: S3.3).
+- `ActivitiesEditor` (was `QuizEditor`) shows quizzes and matchings in their order; "Add matching" next to "Add quiz" (same 2-word minimum and 4-activity limit). The ↑ / ↓ and remove-with-confirmation controls are shared by both kinds (`ActivityActions`).
+- Matching card: mode, number of pairs, and each word ↔ its picture or meaning; "Edit" in drafts; nothing to change once published.
+- `MatchingDialog`: mode (word ↔ picture by default, or word ↔ meaning) and 2–6 words (the first four are preselected); the pairs keep the word bank's order. Maps `matching-invalid`.
+- Tests (4): add with chosen words and mode, two-word minimum, show and change in a draft, published lock.
+
+Earlier plan text: After S3.2 and S3.3: inline validation mirroring the server rules for fast feedback, with the server as the authority; image input per OQ-011.
 
 **F2.6 Badge definitions.** After S5.2.
 
@@ -348,6 +377,11 @@ All three steps depend on the child-identity decision (OQ-001, OQ-009, OQ-013).
 | Date | Change |
 |---|---|
 | 2026-10-23 | First draft. OQ-014 decided by the owner: React + Vite + TS, one app with three areas, refresh token in an httpOnly cookie, Vietnamese UI with i18n. |
+| 2026-10-24 | F2.5 done: matching editor next to the quizzes (mode, 2–6 words). |
+| 2026-10-24 | F2.5 quiz editor done: quizzes and questions on the lesson page, suggested wrong words, publish checklist for activities. |
+| 2026-10-24 | F2.7 done: learn-card switches per word (drafts), card count and no-card notice. |
+| 2026-10-24 | F2.7 word bank done: lesson page with the word bank editor; 422 messages from the backend rule codes. |
+| 2026-10-24 | F2.4 done: levels and lessons screens (order with ↑ / ↓, publish, final archive, 409/422 messages). |
 | 2026-10-24 | PD-011 (lesson design): added F2.7 word bank editor, F2.8 boss editor, F4.6 learn step, F4.7 boss battle; F4.2 becomes the adventure map with stars. |
 | 2026-10-23 | Owner chose shadcn/ui for the Admin and Parent areas (no admin dashboard template). F0.1 package list and structure updated. |
 | 2026-10-23 | F0.1 approved by the owner. B-F1 done (opt-in cookie via `X-EnglishAdventure-Client: web`). |

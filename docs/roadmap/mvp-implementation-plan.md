@@ -54,12 +54,12 @@ Rules for every step:
 | S2.2 | Child session started by the Parent | | ✅ Done 2026-10-24 |
 | **Phase 3: Content** | | | |
 | S3.1 | Levels and lessons: manage, order, publish | | ✅ Done 2026-10-24 |
-| S3.6 | Word bank per lesson (PD-011) | | 🟢 Ready |
-| S3.7 | Learn step: word cards from the word bank (PD-011) | S3.6 | ⚪ Waiting |
-| S3.2 | Quiz activities built from the word bank | S3.6 | ⚪ Waiting |
-| S3.3 | Matching activities built from the word bank | S3.6 | ⚪ Waiting |
-| S3.8 | Boss challenge per level (PD-011, PD-012) | S3.2, S3.3 | ⚪ Waiting |
-| S3.4 | Learner lesson map (read published content) | S3.7, S3.8 | ⚪ Waiting |
+| S3.6 | Word bank per lesson (PD-011) | | ✅ Done 2026-10-24 |
+| S3.7 | Learn step: word cards from the word bank (PD-011) | | ✅ Done 2026-10-24 |
+| S3.2 | Quiz activities built from the word bank | | ✅ Done 2026-10-24 |
+| S3.3 | Matching activities built from the word bank | | ✅ Done 2026-10-24 |
+| S3.8 | Boss challenge per level (PD-011, PD-012) | | ✅ Done 2026-10-24 |
+| S3.4 | Learner lesson map (read published content) | | 🟢 Ready |
 | S3.5 | Development seed content | OQ-006, S3.8 | 🟡 Needs decision |
 | **Phase 4: Learning** | | | |
 | S4.1 | Lesson attempts, server-side grading and stars | S2.2, S3.4 | ⚪ Waiting |
@@ -295,29 +295,45 @@ Scope as approved:
   - SQL integration: create and list in order, reorder (and a bad list → 400), stale version → 409, archived items leave the order, unpublish refused when learners started (with a fake reader), Parent → 403, anonymous → 401.
 - *Done when:* the tests above pass, and a ContentAdmin can create, order, publish, unpublish and archive levels and lessons through the API.
 
-**S3.6 Word bank per lesson (PD-011).**
+**S3.6 Word bank per lesson (PD-011).** ✅ Done 2026-10-24.
+
+*As built:* `LessonWord` is a child entity of the `Lesson` aggregate (table `content_lesson_words`, unique English word per lesson with a case-insensitive collation, cascade with the lesson). Every word change sets `Lesson.ContentChangedAtUtc`, so the **lesson's version** covers its words: each word request sends it and gets the new one back. Endpoints under `api/v1/admin/content/lessons/{lessonId}/words`: `GET` (`content.read-drafts`), `POST`, `PUT {wordId}`, `DELETE {wordId}?version=`, `PUT order` (`content.manage`); each returns the word bank (`lessonStatus`, `lessonVersion`, `maxWords`, `words`). Publishing a lesson now checks it is ready. **422 responses carry a `code`** (`DomainException.Code`, `ContentErrorCodes`): `lesson-not-ready`, `lesson-structure-locked`, `word-limit`, `word-duplicate`, `content-archived`, `content-started` (the last two also on the S3.1 rules). A word order that does not match the current words answers 409, like S3.1. Migration `AddLessonWords`. Tests: 17 domain cases, 9 application cases, 6 SQL integration (and the S3.1 tests that publish a lesson now add a word first); 273 backend tests pass.
+
+**Owner answers 2026-10-24:** a picture is optional when saving a word but required for every word before the lesson is published; at most **12** words per lesson (at least 1 to publish); picture URLs must be `https://` (up to 2000 characters).
 - **Includes:** add, edit, order and remove the lesson's words: English word, Vietnamese meaning, picture URL (PD-012; uploads later).
-- **Rules:** 1–50 characters per text, no duplicate English word in a lesson, a lesson can't be published with an empty word bank. A word used by an activity can't be removed.
+- **Rules:** English word 1–50 characters, meaning 1–100, no duplicate English word in a lesson (any letter case). Adding, removing and reordering words only while the lesson is a draft (PD-012: structure locked once published); fixing a word's texts and picture is allowed while published. A word used by an activity can't be removed (enforced from S3.2, when activities exist).
 - **Migration:** `content_lesson_words`.
 - *Done when:* the rules are unit-tested and only `content.*` permissions can change words.
 
-**S3.7 Learn step (PD-011).**
-- **Includes:** every lesson shows word cards built from its word bank before its activities. Not scored. The Admin chooses which words appear (default: all).
-- *Done when:* the play view returns the cards in order (tested).
+**S3.7 Learn step (PD-011).** ✅ Done 2026-10-24. *As built:* `LessonWord.ShowInLearnStep` (new words: true) and `Lesson.LearnCards` (the shown words in word-bank order); `Lesson.SetLearnCard` (drafts only, 422 `lesson-structure-locked`); publishing needs a card (422 `lesson-not-ready`). Endpoint `PUT api/v1/admin/content/lessons/{lessonId}/words/{wordId}/learn-card` `{ show, version }` (`content.manage`); the word bank returns `showInLearnStep` per word. Migration `AddLearnCards` adds the column with default **true**, so existing words become cards. Tests: 3 domain, validator checks, 1 SQL integration; 277 backend tests pass.
 
-**S3.2 Quiz activities.**
+**Owner answers 2026-10-24:** words are switched in or out of the learn step only while the lesson is a draft (a structural change, PD-012); a lesson needs at least one learn card to be published.
+- **Includes:** every lesson shows word cards built from its word bank before its activities. Not scored. The Admin chooses which words appear (default: all), in the word bank's order.
+- *Done when:* the cards are in order and the publishing rule is tested. The play view that sends the cards to children comes with S3.4, which tests them there.
+
+**S3.2 Quiz activities.** ✅ Done 2026-10-24.
+
+*As built:* the `Lesson` aggregate owns `LessonActivity` (abstract; one table `content_activities` with a `Type` column, EF table-per-hierarchy) → `QuizActivity` → `QuizQuestion` → `QuizOption`. A question points to words of the word bank (`CorrectWordId`, options by `WordId`), never copies them; "correct" is not stored on the option but follows from `CorrectWordId`, so a question cannot have two right answers. `QuizQuestionSpec` holds the rules (2–4 different options, a fill-in sentence of 1–200 characters with exactly one `___`, no sentence for the other forms). Endpoints in `ContentActivitiesController` under `api/v1/admin/content/lessons/{lessonId}/activities`: `GET`, `POST quiz`, `DELETE {activityId}`, `PUT order`, `POST/PUT/DELETE {activityId}/questions[/{questionId}]`, `PUT {activityId}/questions/order`; every change sends the lesson version and returns all activities. Badly shaped questions answer **400**; a word of another lesson 422 `question-invalid`. New 422 codes: `activity-limit`, `question-limit`, `question-invalid`, `word-in-use`. In a published lesson only a fill-in sentence can be corrected. Publishing now also needs at least one activity and no empty quiz. Migration `AddQuizActivities` (new tables only). Tests: 16 domain cases, 9 application cases, 6 SQL integration (and the earlier tests that publish a lesson now add a quiz through `QuizTestData`); 308 backend tests pass.
+
+**Owner answers 2026-10-24:** the Admin chooses the wrong options, with suggestions from the system (the editor, F2.5, suggests other words of the lesson; the choice is stored, so a question is the same every time); **2–4 options per question, 3 by default**; at most **4 activities per lesson** and **10 questions per quiz**; a lesson needs **at least one activity** to be published.
 - **Includes:** add, edit and order quiz activities and questions, built from the word bank. Forms: picture → word, word → picture, fill in the missing word.
 - **Rules:** at least 2 options and exactly 1 correct option (PD-012). Options come from the lesson's words. A lesson can't be published with an invalid activity.
 - **Migration:** `content_activities`, `content_quiz_questions`, `content_quiz_options`.
 - *Done when:* every invalid configuration returns a clear 400.
 
-**S3.3 Matching activities.**
+**S3.3 Matching activities.** ✅ Done 2026-10-24. *As built:* `MatchingActivity` (second kind of `LessonActivity`, `Type` 2, column `MatchingMode`) owns `MatchingPair`s, each just a word of the word bank: its English text is one side and its picture or meaning the other, so every pair has exactly one partner and nothing is typed twice. 2–6 different words (`matching-invalid` for a word of another lesson). Endpoints `POST .../activities/matching` and `PUT .../activities/{activityId}/matching` `{ mode, wordIds, version }`; the activity list returns `matchingMode` and `pairWordIds`. A matching has no texts of its own, so it is fully locked once the lesson is published. A lesson can be published with only a matching. Migration `AddMatchingActivities` (new column with a check constraint, new table). Tests: 7 domain, 8 application cases, 5 SQL integration; 328 backend tests pass.
+
+**Owner answers 2026-10-24:** the Admin chooses per activity whether children match each English word with its **picture** (default) or its **Vietnamese meaning**; **2–6 pairs** per activity.
 - **Includes:** a matching activity chooses 2–6 words from the word bank and pairs each word with its picture (or meaning).
 - **Rules:** at least 2 pairs, no duplicate values, exactly one right-hand value per pair.
 - **Migration:** `content_matching_pairs`.
 - *Done when:* the rules are tested and the activity can be published.
 
-**S3.8 Boss challenge (PD-011, PD-012).**
+**S3.8 Boss challenge (PD-011, PD-012).** ✅ Done 2026-10-24.
+
+*As built:* the boss is a `Lesson` of `Kind = Boss` (title = boss name, `BossImageUrl`), so quizzes, matchings, publishing and, later, attempts work the same for it. It has no word bank and no learn step (422 `boss-no-word-bank`); its activities point to words of the level's non-archived regular lessons, which the handlers load as `LevelWords`. It stays out of the lessons' order (filtered unique index on regular lessons only; another filtered unique index allows one non-archived boss per level, 422 `boss-exists`). Publishing a boss needs its picture, an activity ready to play and a picture for every word it uses. A level is published only with a published boss (422 `level-needs-boss`), and a published level keeps its boss (unpublish or archive the boss: 422 `boss-required`). A word the boss uses cannot be removed from its lesson (`word-in-use`). Endpoints `POST api/v1/admin/content/levels/{levelId}/boss` `{ title, imageUrl? }` and `PUT api/v1/admin/content/lessons/{lessonId}/boss` `{ title, imageUrl?, version }`; `GET .../lessons/{bossId}/words` returns the level's words (read-only, `maxWords` 0). Lessons now return `kind` and `bossImageUrl`, levels `bossStatus`; the lesson counts are regular lessons only. Migration `AddBossChallenges` (`Kind` defaults to 1 for existing lessons). Tests: 7 domain, 4 SQL integration (the S3.1 archive test no longer publishes its level); 339 backend tests pass.
+
+**Owner answers 2026-10-24:** the boss's quizzes and matchings **point to words of the level's lessons** (no word bank of its own; a word used by the boss cannot be removed from its lesson); a **level is published only with a published boss**; a boss has a **name and a picture**, the picture required to publish; the boss has **no learn step**.
 - **Includes:** each level has at most one boss challenge, placed after its lessons. It is built like a lesson (Quiz and Matching) from the words of the whole level, with a boss name and picture for display.
 - **Rules:** a level can't be published without a valid boss challenge.
 - *Done when:* the rules are unit-tested.
@@ -402,6 +418,11 @@ Every Phase 6 step must be done before any public release.
 | 2026-10-24 | PD-011 (lesson design): added S3.6 word bank, S3.7 learn step, S3.8 boss challenge; S3.2/S3.3 build from the word bank; S4.1 computes stars; S4.2 adds best result, boss and level unlocking; S5.1/S5.2 no longer wait for OQ-004. |
 | 2026-10-24 | PD-012 (OQ-005, 011, 012, 015, 017 decided): no Phase 3–5 step waits for a decision any more except S3.5 (OQ-006). S3.1 scope drafted for approval. |
 | 2026-10-24 | S3.1 done: levels and lessons API (order, publish, unpublish, final archive, versions), migration `AddContentLevelsAndLessons`. S3.6 is Ready; F2.4 can start. |
+| 2026-10-24 | S3.6 done: word bank per lesson (max 12 words, pictures required to publish, https only, structure locked once published), rule codes on 422, migration `AddLessonWords`. S3.7, S3.2, S3.3 and F2.7 are Ready. |
+| 2026-10-24 | S3.7 done: learn cards chosen per word in drafts, at least one card to publish, migration `AddLearnCards`. While making it, `AddLessonWords` was removed by mistake and recreated with its original ID `20261024022022` and identical schema (checked against the Development database, which had applied it). |
+| 2026-10-24 | S3.2 done: quiz activities (3 question forms, 2–4 options from the word bank, max 4 activities and 10 questions, at least one activity to publish), migration `AddQuizActivities`. F2.5 (quiz editor) is Ready. |
+| 2026-10-24 | S3.3 done: matching activities (word ↔ picture or word ↔ meaning, 2–6 pairs), migration `AddMatchingActivities`. S3.8 boss challenge is Ready; F2.5 matching editor is Ready. |
+| 2026-10-24 | S3.8 done: boss challenge per level (a boss lesson using the level's words, name and picture, level published only with its boss), migration `AddBossChallenges`. S3.4 learner lesson map and F2.8 boss editor are Ready. |
 | 2026-10-24 | S2.2 done: child sessions (`POST api/v1/auth/child-session`, session-only `learning.play`, child profile in the token and on `/me`, Parent's session on the device ended, refresh ends when the profile is archived), migration `AddChildSessions`. |
 | 2026-10-24 | S2.1 done: child profiles (at most 3 active per Parent, unique nicknames per family, 12 drawn avatars, archive and restore), migration `AddChildProfiles`. S2.2 next. |
 | 2026-10-24 | OQ-001, OQ-009, OQ-013 decided (PD-010): S2.1 drafted for approval (several profiles per Parent); S2.2 waits only for S2.1. |

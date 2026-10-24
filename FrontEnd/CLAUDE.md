@@ -19,7 +19,7 @@ src/
   app/routes.tsx        puts the areas' routes together; nothing else lives here
   areas/
     public/             landing, sign-in, registration, email confirmation, legal pages
-    admin/              AdminLayout, users/ (list, detail, create, roles), placeholders
+    admin/              AdminLayout, users/ (list, detail, create, roles), content/ (levels, lessons, word bank, quizzes, matchings), placeholders
     parent/             ParentLayout, placeholders
     kids/               KidsLayout, kids.css (bright theme), KidsHomePage
   shared/

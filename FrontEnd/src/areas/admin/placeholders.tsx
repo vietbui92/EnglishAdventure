@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { ComingSoonPage } from '@/shared/components/ComingSoonPage'
 
-// Admin pages that later steps replace: roles (F2.3) and content (F2.4).
+// Admin pages that later steps replace: roles (F2.3).
 
 export function AdminDashboardPage() {
   const { t } = useTranslation()
@@ -16,9 +16,4 @@ export function AdminDashboardPage() {
 export function AdminRolesPage() {
   const { t } = useTranslation()
   return <ComingSoonPage title={t('admin.nav.roles')} />
-}
-
-export function AdminContentPage() {
-  const { t } = useTranslation()
-  return <ComingSoonPage title={t('admin.nav.content')} />
 }

@@ -2,6 +2,7 @@ using EnglishAdventure.Application.Common.Persistence;
 using EnglishAdventure.Application.Content;
 using EnglishAdventure.Domain.Entities.Content;
 using EnglishAdventure.Domain.Enums;
+using EnglishAdventure.Domain.ValueObjects;
 
 namespace EnglishAdventure.Application.UnitTests.Content;
 
@@ -35,21 +36,39 @@ internal sealed class FakeLessonRepository : ILessonRepository
 
     public Task<IReadOnlyList<Lesson>> ListInOrderAsync(Guid levelId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Lesson>>(
-            Lessons.Where(lesson => lesson.LevelId == levelId && !lesson.IsArchived)
+            Lessons.Where(lesson => lesson.LevelId == levelId && !lesson.IsBoss && !lesson.IsArchived)
                 .OrderBy(lesson => lesson.SortOrder)
                 .ToList());
 
     public Task<int> MaxSortOrderAsync(Guid levelId, CancellationToken cancellationToken) =>
-        Task.FromResult(Lessons.Where(lesson => lesson.LevelId == levelId && !lesson.IsArchived)
+        Task.FromResult(Lessons.Where(lesson => lesson.LevelId == levelId && !lesson.IsBoss && !lesson.IsArchived)
             .Select(lesson => lesson.SortOrder)
             .DefaultIfEmpty()
             .Max());
+
+    public Task<bool> HasBossAsync(Guid levelId, CancellationToken cancellationToken) =>
+        Task.FromResult(Bosses(levelId).Any());
+
+    public Task<bool> HasPublishedBossAsync(Guid levelId, CancellationToken cancellationToken) =>
+        Task.FromResult(Bosses(levelId).Any(boss => boss.Status == ContentStatus.Published));
+
+    public Task<LevelWords> GetLevelWordsAsync(Guid levelId, CancellationToken cancellationToken) =>
+        Task.FromResult(LevelWords.From(Lessons
+            .Where(lesson => lesson.LevelId == levelId && !lesson.IsBoss && !lesson.IsArchived)
+            .SelectMany(lesson => lesson.Words)
+            .Select(word => (word.Id, word.ImageUrl is not null))));
+
+    public Task<bool> IsWordUsedByBossAsync(Guid levelId, Guid wordId, CancellationToken cancellationToken) =>
+        Task.FromResult(Bosses(levelId).Any(boss => boss.UsesWord(wordId)));
 
     public void Add(Lesson lesson) => Lessons.Add(lesson);
 
     public void ExpectVersion(Lesson lesson, byte[] version)
     {
     }
+
+    private IEnumerable<Lesson> Bosses(Guid levelId) =>
+        Lessons.Where(lesson => lesson.LevelId == levelId && lesson.IsBoss && !lesson.IsArchived);
 }
 
 internal sealed class FakeLearnerActivityReader : ILearnerActivityReader

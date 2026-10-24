@@ -91,8 +91,17 @@ public sealed class ContentLevelsAndLessonsSqlServerTests : IClassFixture<SqlSer
         var levelId = Id(await CreateLevelAsync(admin, "Food"));
         var lesson = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/lessons", new { title = "Fruit" }));
         var route = $"{LessonsRoute}/{lesson.GetProperty("id").GetString()}";
+        // A lesson needs words with pictures (S3.6) and a quiz (S3.2) before it is published.
+        var words = await ReadAsync(await admin.PostAsync(
+            $"{route}/words",
+            new { english = "apple", meaning = "quả táo", imageUrl = "https://cdn.example.test/apple.png", version = Version(lesson) }));
+        words = await ReadAsync(await admin.PostAsync(
+            $"{route}/words",
+            new { english = "pear", meaning = "quả lê", imageUrl = "https://cdn.example.test/pear.png", version = words.GetProperty("lessonVersion").GetString() }));
+        var wordIds = QuizTestData.WordIds(words);
+        var (_, ready) = await QuizTestData.AddQuizAsync(admin, route, words.GetProperty("lessonVersion").GetString()!, wordIds[0], wordIds[1]);
 
-        var published = await ReadAsync(await admin.PostAsync($"{route}/publish", new { version = Version(lesson) }));
+        var published = await ReadAsync(await admin.PostAsync($"{route}/publish", new { version = ready }));
         var corrected = await ReadAsync(await admin.PutAsync(route, new { title = "Fruits", version = Version(published) }));
         var stale = await admin.PutAsync(route, new { title = "Old", version = Version(published) });
         var unpublished = await ReadAsync(await admin.PostAsync($"{route}/unpublish", new { version = Version(corrected) }));
@@ -122,15 +131,14 @@ public sealed class ContentLevelsAndLessonsSqlServerTests : IClassFixture<SqlSer
         var levelId = Id(created);
         var lesson = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/lessons", new { title = "Rain" }));
 
-        var published = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/publish", new { version = Version(created.GetProperty("level")) }));
-        var archived = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/archive", new { version = Version(published.GetProperty("level")) }));
+        // Publishing a level needs a published boss (S3.8, tested in BossChallengesSqlServerTests); a draft archives too.
+        var archived = await ReadAsync(await admin.PostAsync($"{LevelsRoute}/{levelId}/archive", new { version = Version(created.GetProperty("level")) }));
         var addLesson = await admin.PostAsync($"{LevelsRoute}/{levelId}/lessons", new { title = "Snow" });
         var renameLesson = await admin.PutAsync(
             $"{LessonsRoute}/{lesson.GetProperty("id").GetString()}",
             new { title = "Storm", version = Version(lesson) });
         var update = await admin.PutAsync($"{LevelsRoute}/{levelId}", new { title = "X", version = Version(archived.GetProperty("level")) });
 
-        Assert.Equal("Published", published.GetProperty("level").GetProperty("status").GetString());
         Assert.Equal("Archived", archived.GetProperty("level").GetProperty("status").GetString());
         Assert.Equal(HttpStatusCode.UnprocessableEntity, addLesson.StatusCode);
         Assert.Equal(HttpStatusCode.UnprocessableEntity, renameLesson.StatusCode);

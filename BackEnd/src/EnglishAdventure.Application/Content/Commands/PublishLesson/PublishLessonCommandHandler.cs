@@ -28,7 +28,10 @@ public sealed class PublishLessonCommandHandler : IRequestHandler<PublishLessonC
         var level = await ContentRules.GetLevelAsync(_levels, lesson.LevelId, cancellationToken);
         _lessons.ExpectVersion(lesson, ContentVersion.Decode(request.Version));
 
-        lesson.Publish(level, _timeProvider.GetUtcNow().UtcDateTime);
+        lesson.Publish(
+            level,
+            _timeProvider.GetUtcNow().UtcDateTime,
+            await ContentRules.LevelWordsForAsync(_lessons, lesson, cancellationToken));
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

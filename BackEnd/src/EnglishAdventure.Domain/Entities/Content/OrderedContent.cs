@@ -49,13 +49,16 @@ public abstract class OrderedContent : Entity
     }
 
     /// <summary>Publishing published content changes nothing.</summary>
-    protected void PublishCore(DateTime nowUtc)
+    /// <param name="ensureReady">The derived type's checks that the content can be shown to learners.</param>
+    protected void PublishCore(DateTime nowUtc, Action? ensureReady = null)
     {
         EnsureNotArchived();
         if (Status == ContentStatus.Published)
         {
             return;
         }
+
+        ensureReady?.Invoke();
 
         Status = ContentStatus.Published;
         PublishedAtUtc = nowUtc;
@@ -74,7 +77,8 @@ public abstract class OrderedContent : Entity
         if (learnersStarted)
         {
             throw new DomainException(
-                "Children have already started this content, so it cannot be unpublished. Archive it and create a new one instead.");
+                "Children have already started this content, so it cannot be unpublished. Archive it and create a new one instead.",
+                ContentErrorCodes.Started);
         }
 
         Status = ContentStatus.Draft;
@@ -97,7 +101,9 @@ public abstract class OrderedContent : Entity
     {
         if (IsArchived)
         {
-            throw new DomainException("Archived content cannot be changed. Create new content instead.");
+            throw new DomainException(
+                "Archived content cannot be changed. Create new content instead.",
+                ContentErrorCodes.Archived);
         }
     }
 

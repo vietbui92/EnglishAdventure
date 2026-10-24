@@ -32,7 +32,17 @@ public sealed class Level : OrderedContent
 
     public void MoveTo(int sortOrder) => MoveToCore(sortOrder);
 
-    public void Publish(DateTime nowUtc) => PublishCore(nowUtc);
+    /// <param name="hasPublishedBoss">Whether the level's boss is published: a level needs it (S3.8, owner 2026-10-24).</param>
+    public void Publish(DateTime nowUtc, bool hasPublishedBoss) =>
+        PublishCore(nowUtc, () =>
+        {
+            if (!hasPublishedBoss)
+            {
+                throw new DomainException(
+                    "A level is published only with a published boss challenge.",
+                    ContentErrorCodes.LevelNeedsBoss);
+            }
+        });
 
     /// <param name="learnersStarted">Whether a child has started any lesson of this level.</param>
     public void Unpublish(bool learnersStarted) => UnpublishCore(learnersStarted);
@@ -42,7 +52,7 @@ public sealed class Level : OrderedContent
     {
         if (IsArchived)
         {
-            throw new DomainException("The lessons of an archived level cannot be changed.");
+            throw new DomainException("The lessons of an archived level cannot be changed.", ContentErrorCodes.Archived);
         }
     }
 

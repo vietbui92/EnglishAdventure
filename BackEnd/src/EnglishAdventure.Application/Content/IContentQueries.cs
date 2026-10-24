@@ -12,4 +12,10 @@ public interface IContentQueries
     Task<LevelDetails?> GetLevelAsync(Guid levelId, CancellationToken cancellationToken);
 
     Task<LessonSummary?> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken);
+
+    /// <summary>The lesson's words in their order, with the lesson's status and version.</summary>
+    Task<LessonWordBank?> GetLessonWordBankAsync(Guid lessonId, CancellationToken cancellationToken);
+
+    /// <summary>The lesson's activities in their order with their questions, for Admins (answers included).</summary>
+    Task<LessonActivities?> GetLessonActivitiesAsync(Guid lessonId, CancellationToken cancellationToken);
 }

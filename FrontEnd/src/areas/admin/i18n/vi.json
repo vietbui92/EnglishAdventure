@@ -120,6 +120,230 @@
           "ContentAdmin": "Soạn và xuất bản nội dung bài học."
         }
       }
+    },
+    "content": {
+      "loading": "Đang tải…",
+      "retry": "Thử lại",
+      "status": {
+        "Draft": "Bản nháp",
+        "Published": "Đã xuất bản",
+        "Archived": "Đã lưu trữ"
+      },
+      "columns": {
+        "order": "Thứ tự",
+        "title": "Tên",
+        "status": "Trạng thái",
+        "lessons": "Bài học",
+        "move": "Sắp xếp",
+        "actions": "Thao tác"
+      },
+      "levels": {
+        "title": "Nội dung bài học",
+        "description": "Các level của cuộc phiêu lưu theo thứ tự trẻ sẽ học. Mở một level để quản lý các bài học của nó.",
+        "add": "Thêm level",
+        "createTitle": "Thêm level mới",
+        "showArchived": "Hiện cả level đã lưu trữ",
+        "empty": "Chưa có level nào.",
+        "loadError": "Không tải được danh sách level.",
+        "lessonCounts": "{{published}} đã xuất bản · {{draft}} bản nháp"
+      },
+      "level": {
+        "back": "Tất cả level",
+        "edit": "Sửa tên và mô tả",
+        "editTitle": "Sửa level",
+        "notFound": "Không tìm thấy level này.",
+        "loadError": "Không tải được level.",
+        "archivedNote": "Level này đã được lưu trữ: trẻ không còn thấy nó và không thể thay đổi nữa."
+      },
+      "lessons": {
+        "title": "Bài học",
+        "add": "Thêm bài học",
+        "createTitle": "Thêm bài học mới",
+        "rename": "Đổi tên {{title}}",
+        "renameTitle": "Đổi tên bài học",
+        "empty": "Level này chưa có bài học nào.",
+        "contentLater": "Mở một bài để soạn từ vựng. Trò chơi (quiz, matching) sẽ có ở bước sau."
+      },
+      "form": {
+        "title": "Tên",
+        "description": "Mô tả",
+        "descriptionHint": "Không bắt buộc, tối đa 500 ký tự.",
+        "create": "Tạo",
+        "save": "Lưu",
+        "saving": "Đang lưu…",
+        "validation": {
+          "titleRequired": "Hãy nhập tên (1 đến 100 ký tự).",
+          "titleTooLong": "Tên chỉ được tối đa 100 ký tự.",
+          "descriptionTooLong": "Mô tả chỉ được tối đa 500 ký tự."
+        }
+      },
+      "actions": {
+        "publish": "Xuất bản",
+        "unpublish": "Gỡ xuất bản",
+        "archive": "Lưu trữ",
+        "archiveTitle": "Lưu trữ “{{title}}”?",
+        "archiveLevelDescription": "Level và các bài học của nó sẽ bị ẩn với trẻ và không thể sửa hay khôi phục nữa. Kết quả học của trẻ vẫn được giữ.",
+        "archiveLessonDescription": "Bài học sẽ bị ẩn với trẻ và không thể sửa hay khôi phục nữa. Kết quả học của trẻ vẫn được giữ.",
+        "archiveConfirm": "Lưu trữ vĩnh viễn",
+        "cancel": "Hủy",
+        "moveUp": "Chuyển {{title}} lên",
+        "moveDown": "Chuyển {{title}} xuống"
+      },
+      "errors": {
+        "conflict": "Dữ liệu vừa được người khác thay đổi. Trang đã tải lại, hãy kiểm tra rồi thử lại.",
+        "notFound": "Mục này không còn tồn tại. Trang đã tải lại.",
+        "started": "Đã có trẻ bắt đầu học nên không thể gỡ xuất bản. Bạn có thể lưu trữ và tạo nội dung mới.",
+        "archived": "Mục này hoặc level chứa nó đã được lưu trữ nên không thể thay đổi.",
+        "failed": "Không thực hiện được. Hãy thử lại.",
+        "structureLocked": "Bài đã xuất bản: chỉ sửa được chữ và hình của từ. Muốn thêm, xoá hay sắp xếp từ, hãy gỡ xuất bản trước.",
+        "notReady": "Bài chưa thể xuất bản: cần từ có hình, ít nhất một thẻ Làm quen, và ít nhất một quiz có câu hỏi.",
+        "wordLimit": "Bài đã đủ số từ tối đa.",
+        "duplicateWord": "Bài đã có từ này.",
+        "wordInUse": "Một câu hỏi quiz đang dùng từ này. Hãy sửa hoặc xoá câu hỏi đó trước.",
+        "activityLimit": "Bài đã có đủ số hoạt động tối đa.",
+        "questionLimit": "Quiz đã có đủ số câu hỏi tối đa.",
+        "questionInvalid": "Câu hỏi dùng một từ không còn trong bài. Hãy tải lại trang rồi chọn lại.",
+        "matchingInvalid": "Matching dùng một từ không còn trong bài. Hãy tải lại trang rồi chọn lại."
+      },
+      "lesson": {
+        "back": "Quay lại level",
+        "notFound": "Không tìm thấy bài học này.",
+        "loadError": "Không tải được bài học.",
+        "needsWords": "Thêm ít nhất một từ (có hình) trước khi xuất bản bài.",
+        "needsPictures": "Còn {{count}} từ chưa có hình. Từ nào cũng cần hình trước khi xuất bản bài.",
+        "publishedNote": "Bài đã xuất bản: bạn chỉ sửa được chữ và hình của từ. Muốn thêm, xoá hay sắp xếp từ, hãy gỡ xuất bản trước.",
+        "archivedNote": "Bài này đã được lưu trữ: trẻ không còn thấy nó và không thể thay đổi nữa.",
+        "needsCards": "Bước Làm quen chưa có thẻ nào. Hãy chọn ít nhất một từ để trẻ làm quen trước khi chơi.",
+        "needsActivity": "Bài chưa có hoạt động nào. Hãy thêm ít nhất một quiz trước khi xuất bản.",
+        "needsQuestions": "Có quiz chưa có câu hỏi nào. Hãy thêm câu hỏi hoặc xoá quiz đó trước khi xuất bản."
+      },
+      "words": {
+        "title": "Từ vựng ({{count}}/{{max}})",
+        "description": "Trẻ sẽ học các từ này theo thứ tự, rồi chơi quiz và matching với chúng.",
+        "full": "Bài đã có đủ {{max}} từ.",
+        "add": "Thêm từ",
+        "empty": "Bài này chưa có từ nào.",
+        "edit": "Sửa từ {{word}}",
+        "remove": "Xoá từ {{word}}",
+        "removeTitle": "Xoá từ “{{word}}”?",
+        "removeDescription": "Từ này sẽ bị xoá khỏi bài. Các từ phía sau sẽ lên một bậc.",
+        "removeConfirm": "Xoá từ",
+        "noPicture": "Chưa có hình",
+        "pictureBroken": "Không tải được hình",
+        "columns": {
+          "picture": "Hình",
+          "english": "Từ tiếng Anh",
+          "meaning": "Nghĩa",
+          "learnCard": "Làm quen"
+        },
+        "form": {
+          "addTitle": "Thêm từ",
+          "editTitle": "Sửa từ",
+          "hint": "Từ tiếng Anh, nghĩa tiếng Việt và hình minh hoạ.",
+          "english": "Từ tiếng Anh",
+          "meaning": "Nghĩa tiếng Việt",
+          "imageUrl": "Địa chỉ hình (https://)",
+          "imageUrlHint": "Có thể thêm sau, nhưng cần có trước khi xuất bản bài.",
+          "imageUrlHintRequired": "Bài đã xuất bản nên từ phải có hình.",
+          "preview": "Xem trước hình",
+          "add": "Thêm",
+          "validation": {
+            "englishRequired": "Hãy nhập từ tiếng Anh (1 đến 50 ký tự).",
+            "englishTooLong": "Từ tiếng Anh chỉ được tối đa 50 ký tự.",
+            "meaningRequired": "Hãy nhập nghĩa (1 đến 100 ký tự).",
+            "meaningTooLong": "Nghĩa chỉ được tối đa 100 ký tự.",
+            "imageUrlHttps": "Địa chỉ hình phải bắt đầu bằng https:// (tối đa 2000 ký tự).",
+            "imageUrlRequired": "Từ của bài đã xuất bản phải có hình.",
+            "duplicate": "Bài đã có từ này."
+          }
+        },
+        "learnCards": "Bước Làm quen: {{count}} thẻ, theo thứ tự trên. Bỏ chọn một từ để không hiện thẻ của nó.",
+        "showInLearnStep": "Hiện {{word}} trong bước Làm quen",
+        "learnCardShown": "Có",
+        "learnCardHidden": "Không"
+      },
+      "quiz": {
+        "title": "Hoạt động ({{count}}/{{max}})",
+        "description": "Sau bước Làm quen, trẻ chơi các hoạt động này theo thứ tự.",
+        "add": "Thêm quiz",
+        "needsWords": "Cần ít nhất {{min}} từ trong ngân hàng từ vựng để tạo quiz hoặc matching.",
+        "full": "Bài đã có đủ {{max}} hoạt động.",
+        "empty": "Bài này chưa có hoạt động nào.",
+        "name": "Quiz {{number}}",
+        "questionCount": "{{count}}/{{max}} câu hỏi",
+        "noQuestions": "Quiz này chưa có câu hỏi nào.",
+        "questionName": "câu {{number}}",
+        "addQuestion": "Thêm câu hỏi vào {{name}}",
+        "editQuestion": "Sửa {{name}}",
+        "removeQuestion": "Xoá {{name}}",
+        "remove": "Xoá {{name}}",
+        "removeTitle": "Xoá {{name}}?",
+        "removeDescription": "Quiz và tất cả câu hỏi của nó sẽ bị xoá khỏi bài.",
+        "removeConfirm": "Xoá quiz",
+        "columns": {
+          "form": "Dạng",
+          "prompt": "Câu hỏi",
+          "correct": "Đáp án đúng",
+          "wrong": "Đáp án sai"
+        },
+        "forms": {
+          "PictureToWord": "Nhìn hình chọn từ",
+          "WordToPicture": "Đọc từ chọn hình",
+          "FillInTheBlank": "Điền từ vào câu"
+        },
+        "formHints": {
+          "PictureToWord": "Trẻ thấy hình của từ đúng và chọn từ tiếng Anh.",
+          "WordToPicture": "Trẻ đọc từ tiếng Anh và chọn hình đúng.",
+          "FillInTheBlank": "Trẻ đọc câu có chỗ trống và chọn từ còn thiếu."
+        },
+        "form": {
+          "addTitle": "Thêm câu hỏi",
+          "editTitle": "Sửa câu hỏi",
+          "hint": "Chọn dạng câu hỏi, từ đúng và 1 đến 3 từ sai từ ngân hàng từ vựng của bài.",
+          "sentenceOnly": "Bài đã xuất bản: chỉ sửa được câu điền từ. Muốn đổi đáp án, hãy gỡ xuất bản bài trước.",
+          "form": "Dạng câu hỏi",
+          "correct": "Từ đúng",
+          "wrong": "Từ sai (tối đa {{max}})",
+          "suggest": "Gợi ý",
+          "sentence": "Câu có chỗ trống",
+          "sentenceHint": "Viết {{gap}} vào chỗ trẻ cần điền, ví dụ: I have a {{gap}}.",
+          "add": "Thêm",
+          "validation": {
+            "correctRequired": "Hãy chọn từ đúng.",
+            "wrongRequired": "Hãy chọn ít nhất một từ sai.",
+            "wrongTooMany": "Chỉ chọn tối đa 3 từ sai.",
+            "sentence": "Câu cần 1 đến 200 ký tự và đúng một chỗ trống ___."
+          }
+        }
+      },
+      "matching": {
+        "add": "Thêm matching",
+        "name": "Matching {{number}}",
+        "pairCount": "{{count}} cặp",
+        "edit": "Sửa {{name}}",
+        "removeDescription": "Matching này sẽ bị xoá khỏi bài. Các từ vẫn còn trong ngân hàng từ vựng.",
+        "removeConfirm": "Xoá matching",
+        "modes": {
+          "WordToPicture": "Nối từ với hình",
+          "WordToMeaning": "Nối từ với nghĩa"
+        },
+        "modeHints": {
+          "WordToPicture": "Trẻ nối mỗi từ tiếng Anh với hình của nó. Hợp với trẻ nhỏ.",
+          "WordToMeaning": "Trẻ nối mỗi từ tiếng Anh với nghĩa tiếng Việt."
+        },
+        "form": {
+          "addTitle": "Thêm matching",
+          "editTitle": "Sửa matching",
+          "hint": "Chọn cách nối và {{min}} đến {{max}} từ của bài. Mỗi từ là một cặp.",
+          "mode": "Cách nối",
+          "words": "Các từ để nối (tối đa {{max}})",
+          "add": "Thêm",
+          "validation": {
+            "tooFew": "Hãy chọn ít nhất 2 từ.",
+            "tooMany": "Chỉ chọn tối đa 6 từ."
+          }
+        }
+      }
     }
   }
 }

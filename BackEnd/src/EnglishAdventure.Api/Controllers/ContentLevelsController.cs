@@ -1,6 +1,7 @@
 using EnglishAdventure.Api.Contracts.Content;
 using EnglishAdventure.Application.Authorization;
 using EnglishAdventure.Application.Content.Commands.ArchiveLevel;
+using EnglishAdventure.Application.Content.Commands.CreateBoss;
 using EnglishAdventure.Application.Content.Commands.CreateLesson;
 using EnglishAdventure.Application.Content.Commands.CreateLevel;
 using EnglishAdventure.Application.Content.Commands.PublishLevel;
@@ -103,6 +104,7 @@ public sealed class ContentLevelsController : ControllerBase
         return Ok(await _mediator.Send(new ListLevelsQuery(IncludeArchived: false), cancellationToken));
     }
 
+    /// <summary>422 <c>level-needs-boss</c> until the level's boss is published (S3.8).</summary>
     [HttpPost("{levelId:guid}/publish")]
     [Authorize(Policy = Permissions.Content.Publish)]
     [ProducesResponseType(typeof(LevelDetails), StatusCodes.Status200OK)]
@@ -172,7 +174,29 @@ public sealed class ContentLevelsController : ControllerBase
     }
 
     /// <summary>
-    /// Puts the level's non-archived lessons in a new order. 409 when the list does not name exactly those lessons.
+    /// Adds the level's boss challenge as a draft (S3.8): a name and a picture. 422 <c>boss-exists</c> when the level
+    /// already has one that is not archived.
+    /// </summary>
+    [HttpPost("{levelId:guid}/boss")]
+    [Authorize(Policy = Permissions.Content.Manage)]
+    [ProducesResponseType(typeof(LessonSummary), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<LessonSummary>> CreateBoss(
+        Guid levelId,
+        CreateBossRequest request,
+        CancellationToken cancellationToken)
+    {
+        var lessonId = await _mediator.Send(new CreateBossCommand(levelId, request.Title, request.ImageUrl), cancellationToken);
+        var boss = await _mediator.Send(new GetLessonQuery(lessonId), cancellationToken);
+        return CreatedAtAction(nameof(ContentLessonsController.Get), "ContentLessons", new { lessonId }, boss);
+    }
+
+    /// <summary>
+    /// Puts the level's non-archived lessons in a new order (the boss is not in it). 409 when the list does not name
+    /// exactly those lessons.
     /// </summary>
     [HttpPut("{levelId:guid}/lessons/order")]
     [Authorize(Policy = Permissions.Content.Manage)]

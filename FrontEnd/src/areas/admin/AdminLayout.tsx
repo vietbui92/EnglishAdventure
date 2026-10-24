@@ -12,7 +12,7 @@ export function AdminLayout() {
     { to: '/admin', label: t('admin.nav.dashboard'), icon: LayoutDashboard, end: true },
     { to: '/admin/users', label: t('admin.nav.users'), icon: Users, permission: Permissions.usersRead },
     { to: '/admin/roles', label: t('admin.nav.roles'), icon: ShieldCheck, permission: Permissions.rolesManage },
-    { to: '/admin/content', label: t('admin.nav.content'), icon: BookOpen, permission: Permissions.contentManage },
+    { to: '/admin/content', label: t('admin.nav.content'), icon: BookOpen, permission: Permissions.contentReadDrafts },
   ]
 
   return (

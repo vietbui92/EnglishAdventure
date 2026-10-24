@@ -30,8 +30,18 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ArchivedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("BossImageUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ContentChangedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("LevelId")
                         .HasColumnType("uniqueidentifier");
@@ -61,13 +71,94 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("LevelId", "SortOrder")
                         .IsUnique()
-                        .HasFilter("[Status] <> 3");
+                        .HasFilter("[Status] <> 3 AND [Kind] = 1");
+
+                    b.HasIndex(new[] { "LevelId" }, "IX_content_lessons_LevelId_Boss")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 3 AND [Kind] = 2");
 
                     b.ToTable("content_lessons", null, t =>
                         {
+                            t.HasCheckConstraint("CK_content_lessons_BossImageUrl", "[Kind] = 2 OR [BossImageUrl] IS NULL");
+
+                            t.HasCheckConstraint("CK_content_lessons_Kind", "[Kind] IN (1, 2)");
+
                             t.HasCheckConstraint("CK_content_lessons_SortOrder", "[SortOrder] >= 1");
 
                             t.HasCheckConstraint("CK_content_lessons_Status", "[Status] IN (1, 2, 3)");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.LessonActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ActivityType")
+                        .HasColumnType("int")
+                        .HasColumnName("Type");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.ToTable("content_activities", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_activities_MatchingMode", "([Type] = 2 AND [MatchingMode] IN (1, 2)) OR ([Type] <> 2 AND [MatchingMode] IS NULL)");
+
+                            t.HasCheckConstraint("CK_content_activities_SortOrder", "[SortOrder] >= 1");
+
+                            t.HasCheckConstraint("CK_content_activities_Type", "[Type] IN (1, 2)");
+                        });
+
+                    b.HasDiscriminator<int>("ActivityType");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.LessonWord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("English")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Meaning")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("ShowInLearnStep")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "English")
+                        .IsUnique();
+
+                    b.ToTable("content_lesson_words", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_lesson_words_SortOrder", "[SortOrder] >= 1");
                         });
                 });
 
@@ -116,6 +207,95 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_content_levels_SortOrder", "[SortOrder] >= 1");
 
                             t.HasCheckConstraint("CK_content_levels_Status", "[Status] IN (1, 2, 3)");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.MatchingPair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActivityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WordId");
+
+                    b.HasIndex("ActivityId", "WordId")
+                        .IsUnique();
+
+                    b.ToTable("content_matching_pairs", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_matching_pairs_SortOrder", "[SortOrder] >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WordId");
+
+                    b.HasIndex("QuestionId", "WordId")
+                        .IsUnique();
+
+                    b.ToTable("content_quiz_options", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_quiz_options_SortOrder", "[SortOrder] >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActivityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CorrectWordId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Form")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sentence")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivityId");
+
+                    b.HasIndex("CorrectWordId");
+
+                    b.ToTable("content_quiz_questions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_content_quiz_questions_Form", "[Form] IN (1, 2, 3)");
+
+                            t.HasCheckConstraint("CK_content_quiz_questions_SortOrder", "[SortOrder] >= 1");
                         });
                 });
 
@@ -422,12 +602,111 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                     b.ToTable("auth_refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.MatchingActivity", b =>
+                {
+                    b.HasBaseType("EnglishAdventure.Domain.Entities.Content.LessonActivity");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("int")
+                        .HasColumnName("MatchingMode");
+
+                    b.ToTable(t =>
+                        {
+                            t.HasCheckConstraint("CK_content_activities_MatchingMode", "([Type] = 2 AND [MatchingMode] IN (1, 2)) OR ([Type] <> 2 AND [MatchingMode] IS NULL)");
+
+                            t.HasCheckConstraint("CK_content_activities_SortOrder", "[SortOrder] >= 1");
+
+                            t.HasCheckConstraint("CK_content_activities_Type", "[Type] IN (1, 2)");
+                        });
+
+                    b.HasDiscriminator().HasValue(2);
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizActivity", b =>
+                {
+                    b.HasBaseType("EnglishAdventure.Domain.Entities.Content.LessonActivity");
+
+                    b.ToTable(t =>
+                        {
+                            t.HasCheckConstraint("CK_content_activities_MatchingMode", "([Type] = 2 AND [MatchingMode] IN (1, 2)) OR ([Type] <> 2 AND [MatchingMode] IS NULL)");
+
+                            t.HasCheckConstraint("CK_content_activities_SortOrder", "[SortOrder] >= 1");
+
+                            t.HasCheckConstraint("CK_content_activities_Type", "[Type] IN (1, 2)");
+                        });
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.Lesson", b =>
                 {
                     b.HasOne("EnglishAdventure.Domain.Entities.Content.Level", null)
                         .WithMany()
                         .HasForeignKey("LevelId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.LessonActivity", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Lesson", null)
+                        .WithMany("Activities")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.LessonWord", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.Lesson", null)
+                        .WithMany("Words")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.MatchingPair", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.MatchingActivity", null)
+                        .WithMany("Pairs")
+                        .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.LessonWord", null)
+                        .WithMany()
+                        .HasForeignKey("WordId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizOption", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.QuizQuestion", null)
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.LessonWord", null)
+                        .WithMany()
+                        .HasForeignKey("WordId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizQuestion", b =>
+                {
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.QuizActivity", null)
+                        .WithMany("Questions")
+                        .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EnglishAdventure.Domain.Entities.Content.LessonWord", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectWordId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 
@@ -498,6 +777,18 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.Lesson", b =>
+                {
+                    b.Navigation("Activities");
+
+                    b.Navigation("Words");
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizQuestion", b =>
+                {
+                    b.Navigation("Options");
+                });
+
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.Role", b =>
                 {
                     b.Navigation("Permissions");
@@ -506,6 +797,16 @@ namespace EnglishAdventure.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EnglishAdventure.Domain.Entities.Identity.User", b =>
                 {
                     b.Navigation("Roles");
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.MatchingActivity", b =>
+                {
+                    b.Navigation("Pairs");
+                });
+
+            modelBuilder.Entity("EnglishAdventure.Domain.Entities.Content.QuizActivity", b =>
+                {
+                    b.Navigation("Questions");
                 });
 #pragma warning restore 612, 618
         }

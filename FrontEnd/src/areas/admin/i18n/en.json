@@ -120,6 +120,230 @@
           "ContentAdmin": "Writes and publishes lesson content."
         }
       }
+    },
+    "content": {
+      "loading": "Loading…",
+      "retry": "Try again",
+      "status": {
+        "Draft": "Draft",
+        "Published": "Published",
+        "Archived": "Archived"
+      },
+      "columns": {
+        "order": "Order",
+        "title": "Title",
+        "status": "Status",
+        "lessons": "Lessons",
+        "move": "Order",
+        "actions": "Actions"
+      },
+      "levels": {
+        "title": "Learning content",
+        "description": "The levels of the adventure in the order children play them. Open a level to manage its lessons.",
+        "add": "Add level",
+        "createTitle": "New level",
+        "showArchived": "Show archived levels",
+        "empty": "No levels yet.",
+        "loadError": "The levels could not be loaded.",
+        "lessonCounts": "{{published}} published · {{draft}} drafts"
+      },
+      "level": {
+        "back": "All levels",
+        "edit": "Edit title and description",
+        "editTitle": "Edit level",
+        "notFound": "This level was not found.",
+        "loadError": "The level could not be loaded.",
+        "archivedNote": "This level is archived: children no longer see it and it cannot be changed."
+      },
+      "lessons": {
+        "title": "Lessons",
+        "add": "Add lesson",
+        "createTitle": "New lesson",
+        "rename": "Rename {{title}}",
+        "renameTitle": "Rename lesson",
+        "empty": "This level has no lessons yet.",
+        "contentLater": "Open a lesson to edit its words. Games (quiz, matching) come in a later step."
+      },
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "descriptionHint": "Optional, up to 500 characters.",
+        "create": "Create",
+        "save": "Save",
+        "saving": "Saving…",
+        "validation": {
+          "titleRequired": "Enter a title (1 to 100 characters).",
+          "titleTooLong": "The title can have at most 100 characters.",
+          "descriptionTooLong": "The description can have at most 500 characters."
+        }
+      },
+      "actions": {
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "archive": "Archive",
+        "archiveTitle": "Archive “{{title}}”?",
+        "archiveLevelDescription": "The level and its lessons will be hidden from children and can no longer be edited or restored. Children’s results are kept.",
+        "archiveLessonDescription": "The lesson will be hidden from children and can no longer be edited or restored. Children’s results are kept.",
+        "archiveConfirm": "Archive for good",
+        "cancel": "Cancel",
+        "moveUp": "Move {{title}} up",
+        "moveDown": "Move {{title}} down"
+      },
+      "errors": {
+        "conflict": "Someone else just changed this. The page was reloaded; check it and try again.",
+        "notFound": "This item no longer exists. The page was reloaded.",
+        "started": "Children have started this, so it cannot be unpublished. You can archive it and create new content.",
+        "archived": "This item or its level is archived, so it cannot be changed.",
+        "failed": "That did not work. Try again.",
+        "structureLocked": "The lesson is published: its words can be corrected but not added, removed or reordered. Unpublish it first.",
+        "notReady": "The lesson cannot be published yet: it needs words with pictures, at least one learn card, and at least one quiz with questions.",
+        "wordLimit": "The lesson already has the maximum number of words.",
+        "duplicateWord": "The lesson already has this word.",
+        "wordInUse": "A quiz question uses this word. Change or remove that question first.",
+        "activityLimit": "The lesson already has the maximum number of activities.",
+        "questionLimit": "The quiz already has the maximum number of questions.",
+        "questionInvalid": "The question uses a word that is no longer in the lesson. Reload the page and choose again.",
+        "matchingInvalid": "The matching uses a word that is no longer in the lesson. Reload the page and choose again."
+      },
+      "lesson": {
+        "back": "Back to the level",
+        "notFound": "This lesson was not found.",
+        "loadError": "The lesson could not be loaded.",
+        "needsWords": "Add at least one word (with a picture) before publishing the lesson.",
+        "needsPictures": "Words without a picture: {{count}}. Every word needs one before the lesson is published.",
+        "publishedNote": "The lesson is published: you can correct its words and pictures. To add, remove or reorder words, unpublish it first.",
+        "archivedNote": "This lesson is archived: children no longer see it and it cannot be changed.",
+        "needsCards": "The learn step has no cards. Choose at least one word for children to meet before they play.",
+        "needsActivity": "The lesson has no activities. Add at least one quiz before publishing.",
+        "needsQuestions": "A quiz has no questions. Add questions or remove that quiz before publishing."
+      },
+      "words": {
+        "title": "Words ({{count}}/{{max}})",
+        "description": "Children learn these words in this order, then play quiz and matching with them.",
+        "full": "The lesson has all {{max}} words.",
+        "add": "Add word",
+        "empty": "This lesson has no words yet.",
+        "edit": "Edit the word {{word}}",
+        "remove": "Remove the word {{word}}",
+        "removeTitle": "Remove “{{word}}”?",
+        "removeDescription": "The word is removed from the lesson. The words after it move up.",
+        "removeConfirm": "Remove word",
+        "noPicture": "No picture yet",
+        "pictureBroken": "The picture could not be loaded",
+        "columns": {
+          "picture": "Picture",
+          "english": "English word",
+          "meaning": "Meaning",
+          "learnCard": "Learn step"
+        },
+        "form": {
+          "addTitle": "Add a word",
+          "editTitle": "Edit word",
+          "hint": "The English word, its Vietnamese meaning and a picture.",
+          "english": "English word",
+          "meaning": "Vietnamese meaning",
+          "imageUrl": "Picture address (https://)",
+          "imageUrlHint": "Can be added later, but is needed before the lesson is published.",
+          "imageUrlHintRequired": "The lesson is published, so the word needs a picture.",
+          "preview": "Picture preview",
+          "add": "Add",
+          "validation": {
+            "englishRequired": "Enter the English word (1 to 50 characters).",
+            "englishTooLong": "The English word can have at most 50 characters.",
+            "meaningRequired": "Enter the meaning (1 to 100 characters).",
+            "meaningTooLong": "The meaning can have at most 100 characters.",
+            "imageUrlHttps": "The picture address must start with https:// (at most 2000 characters).",
+            "imageUrlRequired": "A word of a published lesson needs a picture.",
+            "duplicate": "The lesson already has this word."
+          }
+        },
+        "learnCards": "Learn step cards: {{count}}, in the order above. Clear a word to leave out its card.",
+        "showInLearnStep": "Show {{word}} in the learn step",
+        "learnCardShown": "Yes",
+        "learnCardHidden": "No"
+      },
+      "quiz": {
+        "title": "Activities ({{count}}/{{max}})",
+        "description": "After the learn step, children play these activities in this order.",
+        "add": "Add quiz",
+        "needsWords": "The word bank needs at least {{min}} words for a quiz or a matching.",
+        "full": "The lesson has all {{max}} activities.",
+        "empty": "This lesson has no activities yet.",
+        "name": "Quiz {{number}}",
+        "questionCount": "{{count}}/{{max}} questions",
+        "noQuestions": "This quiz has no questions yet.",
+        "questionName": "question {{number}}",
+        "addQuestion": "Add a question to {{name}}",
+        "editQuestion": "Edit {{name}}",
+        "removeQuestion": "Remove {{name}}",
+        "remove": "Remove {{name}}",
+        "removeTitle": "Remove {{name}}?",
+        "removeDescription": "The quiz and all its questions are removed from the lesson.",
+        "removeConfirm": "Remove quiz",
+        "columns": {
+          "form": "Form",
+          "prompt": "Question",
+          "correct": "Correct answer",
+          "wrong": "Wrong answers"
+        },
+        "forms": {
+          "PictureToWord": "Picture → word",
+          "WordToPicture": "Word → picture",
+          "FillInTheBlank": "Fill in the word"
+        },
+        "formHints": {
+          "PictureToWord": "Children see the correct word’s picture and choose the English word.",
+          "WordToPicture": "Children read the English word and choose the right picture.",
+          "FillInTheBlank": "Children read a sentence with a gap and choose the missing word."
+        },
+        "form": {
+          "addTitle": "Add a question",
+          "editTitle": "Edit question",
+          "hint": "Choose the form, the correct word and 1 to 3 wrong words from the lesson’s word bank.",
+          "sentenceOnly": "The lesson is published: only a fill-in sentence can be corrected. Unpublish the lesson to change answers.",
+          "form": "Question form",
+          "correct": "Correct word",
+          "wrong": "Wrong words (up to {{max}})",
+          "suggest": "Suggest",
+          "sentence": "Sentence with a gap",
+          "sentenceHint": "Write {{gap}} where the child fills in, for example: I have a {{gap}}.",
+          "add": "Add",
+          "validation": {
+            "correctRequired": "Choose the correct word.",
+            "wrongRequired": "Choose at least one wrong word.",
+            "wrongTooMany": "Choose at most 3 wrong words.",
+            "sentence": "The sentence needs 1 to 200 characters and exactly one gap ___."
+          }
+        }
+      },
+      "matching": {
+        "add": "Add matching",
+        "name": "Matching {{number}}",
+        "pairCount": "Pairs: {{count}}",
+        "edit": "Edit {{name}}",
+        "removeDescription": "The matching is removed from the lesson. Its words stay in the word bank.",
+        "removeConfirm": "Remove matching",
+        "modes": {
+          "WordToPicture": "Match words with pictures",
+          "WordToMeaning": "Match words with meanings"
+        },
+        "modeHints": {
+          "WordToPicture": "Children match each English word with its picture. Good for young children.",
+          "WordToMeaning": "Children match each English word with its Vietnamese meaning."
+        },
+        "form": {
+          "addTitle": "Add a matching",
+          "editTitle": "Edit matching",
+          "hint": "Choose how to match and {{min}} to {{max}} words of the lesson. Each word is a pair.",
+          "mode": "How to match",
+          "words": "Words to match (up to {{max}})",
+          "add": "Add",
+          "validation": {
+            "tooFew": "Choose at least 2 words.",
+            "tooMany": "Choose at most 6 words."
+          }
+        }
+      }
     }
   }
 }

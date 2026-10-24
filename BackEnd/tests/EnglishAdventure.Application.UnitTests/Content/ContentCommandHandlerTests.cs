@@ -52,6 +52,10 @@ public sealed class ContentCommandHandlerTests
     {
         var level = AddLevel(1);
         var lesson = AddLesson(level, 1);
+        var cat = lesson.AddWord(level, "cat", "con mèo", ImageUrl.From("https://cdn.example.test/cat.png"), Now);
+        var dog = lesson.AddWord(level, "dog", "con chó", ImageUrl.From("https://cdn.example.test/dog.png"), Now);
+        var quiz = lesson.AddQuiz(level, Now);
+        lesson.AddQuizQuestion(level, quiz.Id, QuizQuestionSpec.Create(QuizQuestionForm.PictureToWord, cat.Id, [dog.Id], null), Now);
         lesson.Publish(level, Now);
         _learnerActivity.StartedLessons.Add(lesson.Id);
         var handler = new UnpublishLessonCommandHandler(_levels, _lessons, _learnerActivity, _unitOfWork);
@@ -65,7 +69,7 @@ public sealed class ContentCommandHandlerTests
     public async Task A_level_is_unpublished_only_while_no_child_started_it()
     {
         var level = AddLevel(1);
-        level.Publish(Now);
+        level.Publish(Now, hasPublishedBoss: true);
         var handler = new UnpublishLevelCommandHandler(_levels, _learnerActivity, _unitOfWork);
 
         _learnerActivity.StartedLevels.Add(level.Id);

@@ -56,12 +56,12 @@ public sealed class LevelTests
     {
         var level = NewLevel();
 
-        level.Publish(Now.AddHours(1));
+        level.Publish(Now.AddHours(1), hasPublishedBoss: true);
         Assert.Equal(ContentStatus.Published, level.Status);
         Assert.Equal(Now.AddHours(1), level.PublishedAtUtc);
 
         // Publishing again keeps the first publication time.
-        level.Publish(Now.AddHours(2));
+        level.Publish(Now.AddHours(2), hasPublishedBoss: true);
         Assert.Equal(Now.AddHours(1), level.PublishedAtUtc);
 
         level.Unpublish(learnersStarted: false);
@@ -77,7 +77,7 @@ public sealed class LevelTests
     public void A_level_that_children_started_cannot_be_unpublished()
     {
         var level = NewLevel();
-        level.Publish(Now);
+        level.Publish(Now, hasPublishedBoss: true);
 
         Assert.Throws<DomainException>(() => level.Unpublish(learnersStarted: true));
         Assert.Equal(ContentStatus.Published, level.Status);
@@ -87,7 +87,7 @@ public sealed class LevelTests
     public void Texts_can_be_corrected_while_published()
     {
         var level = NewLevel();
-        level.Publish(Now);
+        level.Publish(Now, hasPublishedBoss: true);
 
         level.Update(ContentTitle.From("Animal Islands"), "Fixed");
 
@@ -99,13 +99,13 @@ public sealed class LevelTests
     public void Archiving_is_final()
     {
         var level = NewLevel();
-        level.Publish(Now);
+        level.Publish(Now, hasPublishedBoss: true);
         level.Archive(Now.AddDays(1));
         level.Archive(Now.AddDays(2));
 
         Assert.Equal(ContentStatus.Archived, level.Status);
         Assert.Equal(Now.AddDays(1), level.ArchivedAtUtc);
-        Assert.Throws<DomainException>(() => level.Publish(Now));
+        Assert.Throws<DomainException>(() => level.Publish(Now, hasPublishedBoss: true));
         Assert.Throws<DomainException>(() => level.Unpublish(learnersStarted: false));
         Assert.Throws<DomainException>(() => level.Update(ContentTitle.From("X"), null));
         Assert.Throws<DomainException>(() => level.MoveTo(2));

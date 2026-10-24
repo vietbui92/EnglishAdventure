@@ -48,6 +48,11 @@ The API host starts again. The **authentication foundation** is implemented and 
   - Rules: Draft ⇄ Published → Archived, archived is final (422 on any change) and leaves the order; an archived level freezes its lessons; texts can be corrected while published; unpublish only while no child started (`ILearnerActivityReader`, which answers "nobody" until S4.1).
   - Every response has a `version` (row version, base64); changes send it back and a stale one answers 409. A reorder sends the full list of non-archived IDs (repeated ID 400, list not matching the current items 409) and is saved in one transaction through temporary positions.
   - Tables `content_levels`, `content_lessons` (positions unique among non-archived items), migration `AddContentLevelsAndLessons` (owner applies it with `POST /api/v1/database/migrate`).
+- **Word bank (S3.6, PD-011)**: `api/v1/admin/content/lessons/{lessonId}/words` — `GET` (`content.read-drafts`), `POST`, `PUT {wordId}`, `DELETE {wordId}?version=`, `PUT order` (`content.manage`), each returning the word bank with the lesson's status and version. At most 12 words per lesson; English 1–50 characters (unique per lesson, any case), meaning 1–100, optional `https://` picture (≤ 2000). Words are added, removed and reordered only in drafts; corrections are allowed while published. A lesson is published only with at least one word and a picture for every word. 422 responses carry a ProblemDetails `code` (`ContentErrorCodes`). Table `content_lesson_words`, migration `AddLessonWords`.
+- **Learn step (S3.7, PD-011)**: each word has `showInLearnStep` (new and existing words: true); `PUT .../words/{wordId}/learn-card` (`content.manage`, drafts only) switches it; a lesson needs at least one card to be published. Migration `AddLearnCards`.
+- **Quiz activities (S3.2, PD-011)**: `api/v1/admin/content/lessons/{lessonId}/activities` (`ContentActivitiesController`) — list (`content.read-drafts`); add a quiz, remove and reorder activities, add/change/remove/reorder questions (`content.manage`). Forms `PictureToWord`, `WordToPicture`, `FillInTheBlank`; 2–4 options from the lesson's words with exactly one correct; at most 4 activities per lesson and 10 questions per quiz; a word used by a question cannot be removed. A lesson is published only with at least one activity and no empty quiz. Tables `content_activities`, `content_quiz_questions`, `content_quiz_options`, migration `AddQuizActivities`.
+- **Matching activities (S3.3)**: `POST .../activities/matching`, `PUT .../activities/{activityId}/matching` (`content.manage`) with `{ mode: WordToPicture | WordToMeaning, wordIds: 2–6 words, version }`; locked once the lesson is published; words in a matching cannot be removed. Table `content_matching_pairs`, column `content_activities.MatchingMode`, migration `AddMatchingActivities`.
+- **Boss challenge (S3.8)**: `POST .../levels/{levelId}/boss`, `PUT .../lessons/{lessonId}/boss` (`content.manage`). The boss is a lesson of kind `Boss` (name, picture) without a word bank or learn step; its quizzes and matchings use the words of the level's lessons; one per level, outside the lessons' order. A level is published only with a published boss and keeps it while published. Columns `content_lessons.Kind`, `BossImageUrl`, migration `AddBossChallenges`.
 - **User management (S1.3)**:
   - `GET /api/v1/admin/users` (search, paging) and `GET /{id}` need `users.read`.
   - `POST /` (Admin or Parent; Parent gets the Parent role), `POST /{id}/deactivate` and `/activate` (deactivation ends all sessions) need `users.manage`.
@@ -59,6 +64,11 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 | Command | Result |
 |---|---|
+| 2026-10-24, S3.8: `dotnet test -c Release` with the SQL variable | ✅ 339 passed, 0 skipped, 0 failed (Domain 113, Application 112, Api 114) |
+| 2026-10-24, S3.3: `dotnet test -c Release` with the SQL variable | ✅ 328 passed, 0 skipped, 0 failed (Domain 106, Application 112, Api 110) |
+| 2026-10-24, S3.2: `dotnet test -c Release` with the SQL variable | ✅ 308 passed, 0 skipped, 0 failed (Domain 99, Application 104, Api 105) |
+| 2026-10-24, S3.7: `dotnet test -c Release` with the SQL variable | ✅ 277 passed, 0 skipped, 0 failed (Domain 83, Application 95, Api 99) |
+| 2026-10-24, S3.6: `dotnet test -c Release` with `ENGLISH_ADVENTURE_TEST_SQL_CONNECTION` = `localhost` | ✅ 273 passed, 0 skipped, 0 failed (Domain 80, Application 95, Api 98) |
 | 2026-10-24, S3.1: `dotnet test -c Release` with `ENGLISH_ADVENTURE_TEST_SQL_CONNECTION` = `localhost` | ✅ 241 passed, 0 skipped, 0 failed (Domain 63, Application 86, Api 92) |
 | `dotnet build EnglishAdventure.sln` | ✅ 0 errors, 12 warnings (all NU1902/NU1903 for transitive `System.Security.Cryptography.Pkcs` 9.0.11; pre-existing) |
 | `dotnet test` (no SQL variable) | ✅ 102 passed, 31 skipped (SQL-only), 0 failed (Domain 27, Application 51, Api 24 + 31 skipped) |
@@ -73,7 +83,7 @@ The API host starts again. The **authentication foundation** is implemented and 
 - Production email provider (S1.4 writes development emails to files).
 - Cleanup of expired tokens and of Parent accounts never confirmed within 7 days (S6.2).
 - Cleanup job for expired/revoked refresh-token rows.
-- Word bank, learn step, quiz, matching and boss content (S3.6, S3.7, S3.2, S3.3, S3.8); the learner lesson map (S3.4); attempts, progress and rewards (Phases 4–5).
+ the learner lesson map (S3.4); attempts, progress and rewards (Phases 4–5).
 - Architecture tests, CI/CD, Azure infrastructure.
 
 ## Known issues and risks
@@ -85,4 +95,4 @@ The API host starts again. The **authentication foundation** is implemented and 
 
 ## Recommended next task
 
-S3.6 word bank per lesson (PD-011), then S3.7 learn step and S3.2/S3.3 activities. The admin screens for S3.1 (F2.4) can start in parallel.
+The boss editor (F2.8), then S3.4 learner lesson map.
